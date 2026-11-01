@@ -3,6 +3,7 @@ import { CheckCircle2, CircleAlert, Loader2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { sendMessage } from '../messaging';
 import { type IndexStatus, indexProgress, indexStatus } from '../store/index-status';
+import { useAiPaused } from './useAi';
 
 /** "about 3 min left" from progress since `startedAt`; undefined until there's a rate. */
 export function eta(
@@ -32,6 +33,7 @@ function useIndexStatus(): IndexStatus {
 export function IndexProgress(props: { tag: string; className: string; button: string }) {
   const p = useLiveQuery(() => indexProgress(props.tag), [props.tag]);
   const s = useIndexStatus();
+  const paused = useAiPaused();
   if (!p) return null;
   const left = p.total - p.indexed;
   const pct = p.total ? Math.floor((p.indexed / p.total) * 100) : 100;
@@ -44,6 +46,8 @@ export function IndexProgress(props: { tag: string; className: string; button: s
         <CheckCircle2 className="size-4" /> All {p.total} items indexed
       </span>
     );
+  } else if (paused) {
+    line = `Paused at ${p.indexed} of ${p.total}: AI is paused (resume it from AI activity).`;
   } else if (s.running) {
     line = (
       <span className="flex items-center gap-1.5">
@@ -72,7 +76,7 @@ export function IndexProgress(props: { tag: string; className: string; button: s
             waiting.
           </div>
         </div>
-        {!!left && !s.running && (
+        {!!left && !s.running && !paused && (
           <button
             type="button"
             className={props.button}

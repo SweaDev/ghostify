@@ -3,7 +3,8 @@ import { modelTag } from '../ai/embed';
 import { db } from '../store/db';
 import { indexStatus, missingKeys } from '../store/index-status';
 import { getSettings, watchSettings } from '../store/settings';
-import { embedKey, runJob, whenIdle } from './jobs';
+import { JobStopped } from './ai-queue';
+import { embedKey, whenIdle } from './jobs';
 
 export const INDEX_ALARM = 'index-backfill';
 
@@ -41,10 +42,12 @@ async function run(): Promise<void> {
         });
       }
       await whenIdle();
-      await runJob(() => embedKey(next));
+      await embedKey(next);
     }
     await indexStatus.setValue({ running: false });
   } catch (e) {
+    // Stopped from the AI activity log: wait for the next alarm instead of asking again.
+    if (e instanceof JobStopped) return void (await indexStatus.setValue({ running: false }));
     console.warn('[ghostify:ai] index', e);
     await indexStatus.setValue({ running: false, error: (e as Error).message });
   }

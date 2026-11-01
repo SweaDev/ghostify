@@ -14,7 +14,13 @@ Ghostify is a browser extension (Chrome and Firefox) for feeds that keep showing
   - **Later** is what you want to read.
   - **Snoozed** holds posts that come back later.
 - **Snooze** a post until later today, tomorrow, the weekend, next week, or a date you choose. The post stays hidden on the site, and when the time is up it shows in **Back from snooze** at the top of Ghosted.
-- **Search** your ghosts by keyword, **filter** them by site, and click a thumbnail or excerpt to see the post's details.
+- **Search** your ghosts by keyword and **filter** them by site.
+- **The viewer** opens when you click a post's title, thumbnail or excerpt. It has three tabs:
+  - **Overview**: the summary, tags and excerpt.
+  - **Reader**: **Load full content** fetches the post and shows its main text inside Ghostify, without the site's ads and menus (the first time, you're asked to allow access to that site). **Reload** fetches it again.
+  - **Ask AI**: **Summarize** the full content, or ask your own questions about it. Answers stream in as they're written, and each one can be paused, resumed or stopped.
+
+  Toolbar buttons open the original post in a new tab or a new window, open the viewer as its own page (which you can also move to a new window), or widen the panel. The popup can open Ghostify in a new window.
 - **Add any site.** On a page with a feed, open the popup and click **Add this site**. Ghostify asks for access to that site only, and then:
   1. [feedgrab](https://github.com/SweaDev/feedgrab) proposes the feeds on the page, and its overlay lets you confirm them, pick containers and items, or type CSS/XPath selectors.
   2. You choose which page paths the feeds apply to.
@@ -33,7 +39,10 @@ Ghostify is a browser extension (Chrome and Firefox) for feeds that keep showing
 - **AI is optional and off by default.** Turn it on in **Settings → AI** to get:
   - **summaries and tags** for each ghosted post, written by the general model. Click a tag to filter by it.
   - **semantic search**: turn on **Semantic** next to the search box and describe what you remember.
+  - **summaries of the full content and answers to your questions** in the viewer's **Ask AI** tab;
   - **auto-ghostify rules**: in **Settings → Sites**, write plain-language rules per site, such as "posts that are mostly self-promotion". The decision model checks new feed items against them and ghosts the matches. Auto-ghosted posts are labelled with their rule. **Not this** brings a post back, and that rule never hides it again.
+- **AI activity** (the pulse button in the Ghostify page header, or **Settings → AI activity**) lists every AI request: summaries, tags, indexing, rule checks, searches, model tests and questions. Expand a row to see its model, prompt, input, output and error. Each job can be paused, resumed or stopped, and **Pause all**, **Resume all** and **Stop all** act on everything at once. A pause lasts across browser restarts. While AI is paused, searches fall back to keywords and auto-ghostify rules don't run.
+- **Settings → Prompts** lets you change what Ghostify asks the AI: the summary-and-tags prompt, the **Summarize** and **Ask** prompts, and the rule question sent to System One decision models. **Reset to default** restores the original prompt.
 - Everything stays local in your browser (IndexedDB), with no account and no sync. With Ollama, AI stays on your machine too.
 
 ## AI setup
@@ -163,6 +172,8 @@ git push origin v1.0.0
 - Ghostify isn't published to the Chrome Web Store or Firefox Add-ons. Install it from a release zip or a local build.
 - dev.to has only its logged-out home feeds built in.
 - Decision models get one yes/no (`noul`) System One question per rule. Ghostify reads the documented `{ "noul": <probability> }` answer and a few lenient variants (see `src/ai/decision.ts`). It treats anything else as "no match" and logs it.
+- **Load full content** shows what the page sends to Ghostify, using your cookies for that site. Pages built entirely in the browser by scripts may have little readable text. In that case, open the original.
+- Pausing a job that is already running stops its request, and **Resume** starts it again from the beginning. Rule checks and searches can't be paused, because a page is waiting for them, so pausing them stops them.
 - Data isn't synced between browsers. To move your sites, use export and import in **Settings → Sites**.
 
 ## Permissions
@@ -173,7 +184,7 @@ git push origin v1.0.0
 | `scripting` | Running Ghostify on sites you add |
 | `activeTab` | Reading the current tab's address in the popup, and opening the site picker |
 | dev.to | The built-in site |
-| Other sites (optional) | Requested for one site at a time when you add it |
+| Other sites (optional) | Requested for one site at a time, when you add it or load a post's full content |
 
 ## License
 MIT

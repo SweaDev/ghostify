@@ -35,9 +35,17 @@ export function IconButton(props: { label: string; onClick(): void; children: Re
 
 export function ItemCard(props: ItemCardProps) {
   const { item, compact, actions, note, onUnghost, onOpen } = props;
-  const thumb = compact ? 'size-12' : 'h-16 w-24';
+  const thumb = compact ? 'size-12' : 'size-16 sm:h-[72px] sm:w-28';
+  const titleClass =
+    'line-clamp-2 text-left font-medium text-sm leading-snug hover:text-ghost-600 dark:hover:text-ghost-300';
   return (
-    <article className="group flex gap-3 rounded-xl p-2 transition hover:bg-zinc-50 dark:hover:bg-zinc-900">
+    <article
+      className={`group flex gap-3 rounded-xl transition ${
+        compact
+          ? 'p-2 hover:bg-zinc-50 dark:hover:bg-zinc-900'
+          : 'flex-wrap border border-transparent p-2.5 hover:border-zinc-200 sm:flex-nowrap hover:bg-white hover:shadow-sm dark:hover:border-zinc-800 dark:hover:bg-zinc-900/60'
+      }`}
+    >
       <button
         type="button"
         aria-label="Show details"
@@ -51,15 +59,16 @@ export function ItemCard(props: ItemCardProps) {
           <GhostIcon className="size-full p-3 text-white/80 dark:text-ghost-700" />
         )}
       </button>
-      <div className="min-w-0 flex-1">
-        <a
-          href={item.url}
-          target="_blank"
-          rel="noreferrer"
-          className="line-clamp-2 font-medium text-sm leading-snug hover:text-ghost-600 dark:hover:text-ghost-300"
-        >
-          {item.title}
-        </a>
+      <div className="min-w-0 flex-1 basis-0">
+        {onOpen ? (
+          <button type="button" onClick={() => onOpen(item)} className={titleClass}>
+            {item.title}
+          </button>
+        ) : (
+          <a href={item.url} target="_blank" rel="noreferrer" className={titleClass}>
+            {item.title}
+          </a>
+        )}
         <p className="mt-0.5 truncate text-xs text-zinc-500 dark:text-zinc-400">
           {[item.host, item.author, timeAgo(item.createdAt)].filter(Boolean).join(' · ')}
         </p>
@@ -75,7 +84,9 @@ export function ItemCard(props: ItemCardProps) {
         )}
         {!compact && <Tags tags={item.tags} active={props.activeTag} onTag={props.onTag} />}
       </div>
-      <div className="flex shrink-0 items-start gap-0.5">
+      <div
+        className={`flex shrink-0 items-start gap-0.5 ${compact ? '' : 'max-sm:w-full max-sm:justify-end sm:opacity-60 sm:group-focus-within:opacity-100 sm:group-hover:opacity-100'}`}
+      >
         {actions}
         {onUnghost && (
           <IconButton label="Unghost (show on the site again)" onClick={() => onUnghost(item)}>

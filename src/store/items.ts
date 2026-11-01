@@ -23,9 +23,10 @@ export async function ghostify(draft: GhostDraft, now = Date.now()): Promise<Gho
 }
 
 export async function unghost(key: string): Promise<void> {
-  await db.transaction('rw', db.items, db.embeddings, async () => {
+  await db.transaction('rw', db.items, db.embeddings, db.contents, async () => {
     await db.items.delete(key);
     await db.embeddings.delete(key);
+    await db.contents.delete(key);
   });
 }
 

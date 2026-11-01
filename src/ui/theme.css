@@ -23,3 +23,62 @@
 body {
   @apply bg-white text-zinc-900 antialiased dark:bg-zinc-950 dark:text-zinc-100;
 }
+
+/* Reader view: grabbed article HTML (sanitized). */
+.reader {
+  @apply text-[15px] text-zinc-800 leading-7 dark:text-zinc-200;
+}
+.reader > * + * {
+  @apply mt-4;
+}
+.reader :is(h1, h2, h3, h4) {
+  @apply mt-7 font-semibold text-zinc-900 leading-snug tracking-tight dark:text-zinc-50;
+}
+.reader h1 {
+  @apply text-2xl;
+}
+.reader h2 {
+  @apply text-xl;
+}
+.reader h3 {
+  @apply text-lg;
+}
+.reader a {
+  @apply text-ghost-600 underline decoration-ghost-300 underline-offset-2 hover:decoration-ghost-600 dark:text-ghost-300;
+}
+.reader :is(ul, ol) {
+  @apply pl-6;
+}
+.reader ul {
+  @apply list-disc;
+}
+.reader ol {
+  @apply list-decimal;
+}
+.reader li + li {
+  @apply mt-1;
+}
+.reader blockquote {
+  @apply border-ghost-300 border-l-4 pl-4 text-zinc-600 italic dark:text-zinc-400;
+}
+.reader :is(img, video, picture, figure) {
+  @apply mx-auto h-auto max-w-full rounded-lg;
+}
+.reader figcaption {
+  @apply mt-1 text-center text-sm text-zinc-500;
+}
+.reader pre {
+  @apply overflow-x-auto rounded-lg bg-zinc-100 p-3 text-[13px] leading-6 dark:bg-zinc-900;
+}
+.reader :not(pre) > code {
+  @apply rounded bg-zinc-100 px-1 py-0.5 text-[0.9em] dark:bg-zinc-800;
+}
+.reader table {
+  @apply block w-full overflow-x-auto text-sm;
+}
+.reader :is(th, td) {
+  @apply border border-zinc-200 px-2 py-1 dark:border-zinc-700;
+}
+.reader hr {
+  @apply border-zinc-200 dark:border-zinc-800;
+}

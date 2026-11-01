@@ -2,7 +2,14 @@ import type { LanguageModel } from 'ai';
 import type { ClassifyRequest, ClassifyResponse, LlmResponse } from 'feedgrab';
 import { handleLlmRequest } from 'feedgrab/llm';
 import { getKeys } from '../store/secrets';
-import { getSettings, type Keys, type ModelRef, type Settings } from '../store/settings';
+import {
+  DEFAULT_PROMPTS,
+  getSettings,
+  type Keys,
+  type ModelRef,
+  prompt,
+  type Settings,
+} from '../store/settings';
 import { DECISION_NAME, ollamaKinds } from './catalog';
 import { cachedClassify } from './decision-cache';
 import { modelTag } from './embed';
@@ -63,13 +70,15 @@ export function parseNoul(raw: unknown): Answer | undefined {
   return undefined;
 }
 
-export function noulQuestions(criteria: string[]) {
+export function noulQuestions(criteria: string[], template = DEFAULT_PROMPTS.rule) {
   return Object.fromEntries(
     criteria.map((c, i) => [
       `c${i}`,
       {
         type: 'noul',
-        instructions: `Does this feed item match the rule: "${c}"?`,
+        instructions: template.includes('{rule}')
+          ? template.replaceAll('{rule}', c)
+          : `${template}\nRule: ${c}`,
         criteria: { true: `The item matches: ${c}`, false: `The item does not match: ${c}` },
       },
     ]),
@@ -81,16 +90,18 @@ export async function systemOneClassify(
   req: ClassifyRequest,
   target: SystemOneTarget,
   fetcher: typeof fetch = fetch,
+  opts: { template?: string; signal?: AbortSignal } = {},
 ): Promise<ClassifyResponse> {
   const headers: Record<string, string> = { 'content-type': 'application/json' };
   if (target.apiKey) headers.authorization = `Bearer ${target.apiKey}`;
-  const questions = noulQuestions(req.criteria);
+  const questions = noulQuestions(req.criteria, opts.template);
   const results: ClassifyResponse['results'] = [];
   for (const item of req.items) {
     const res = await fetcher(target.url, {
       method: 'POST',
       headers,
       body: JSON.stringify({ model: target.model, state: item.text, questions }),
+      signal: opts.signal,
     });
     if (!res.ok) throw new Error(`${target.model} answered ${res.status}`);
     const body = (await res.json()) as { answers?: Record<string, unknown> };
@@ -112,10 +123,11 @@ export async function systemOneClassify(
 }
 
 export interface DecisionDeps {
-  settings: Settings;
-  keys: Keys;
+  settings?: Settings;
+  keys?: Keys;
   model?: (ref: ModelRef) => LanguageModel;
   fetcher?: typeof fetch;
+  signal?: AbortSignal;
 }
 
 /**
@@ -124,25 +136,33 @@ export interface DecisionDeps {
  * general model.
  */
 export async function handleDecision(req: unknown, deps?: DecisionDeps): Promise<LlmResponse> {
-  const { settings, keys, model, fetcher } = deps ?? {
-    settings: await getSettings(),
-    keys: await getKeys(),
+  const { settings, keys, model, fetcher, signal } = {
+    settings: deps?.settings ?? (await getSettings()),
+    keys: deps?.keys ?? (await getKeys()),
+    ...deps,
   };
   if (!settings.ai.enabled) throw new Error('AI is turned off in Ghostify settings');
   const lm = model ?? ((ref: ModelRef) => languageModel(ref, settings, keys));
-  const general = () => handleLlmRequest(req, lm(settings.ai.general));
+  const general = () => handleLlmRequest(req, lm(settings.ai.general), { signal });
   const r = req as { task?: string };
   if (r.task !== 'classify') return general();
   const classify = req as ClassifyRequest;
   const decision = settings.ai.decision;
   const chat = (ref: ModelRef) => (r: ClassifyRequest) =>
-    handleLlmRequest(r, lm(ref)) as Promise<ClassifyResponse>;
+    handleLlmRequest(r, lm(ref), { signal }) as Promise<ClassifyResponse>;
+  // The rule question is part of the System One request, so it is part of the cache key.
+  const template = prompt(settings, 'rule');
+  const tag =
+    template === DEFAULT_PROMPTS.rule ? modelTag(decision) : `${modelTag(decision)}|${template}`;
   try {
-    return await cachedClassify(modelTag(decision), classify, async (r) => {
+    return await cachedClassify(tag, classify, async (r) => {
       const target = await systemOneTarget(decision, settings, keys, fetcher);
-      return target ? systemOneClassify(r, target, fetcher) : chat(decision)(r);
+      return target
+        ? systemOneClassify(r, target, fetcher, { template, signal })
+        : chat(decision)(r);
     });
   } catch (e) {
+    if (signal?.aborted) throw e;
     console.warn('[ghostify:ai] decision model failed, using the general model', e);
     return cachedClassify(modelTag(settings.ai.general), classify, chat(settings.ai.general));
   }

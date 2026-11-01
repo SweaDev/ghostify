@@ -1,10 +1,11 @@
-import { ArrowUpRight, Settings } from 'lucide-react';
+import { AppWindow, ArrowUpRight, Settings } from 'lucide-react';
 import { browser } from 'wxt/browser';
 import { unghost } from '@/src/store/items';
 import { CurrentSite } from '@/src/ui/CurrentSite';
 import { EmptyState } from '@/src/ui/EmptyState';
 import { GhostIcon } from '@/src/ui/GhostIcon';
 import { IconButton, ItemCard } from '@/src/ui/ItemCard';
+import { openUrl } from '@/src/ui/open';
 import { useCounts, useItems } from '@/src/ui/useItems';
 
 export function App() {
@@ -35,16 +36,28 @@ export function App() {
           <ItemCard key={item.key} item={item} compact onUnghost={(i) => void unghost(i.key)} />
         ))}
       </section>
-      <footer className="border-zinc-100 border-t p-2 dark:border-zinc-800">
+      <footer className="flex gap-1.5 border-zinc-100 border-t p-2 dark:border-zinc-800">
         <button
           type="button"
           onClick={() => {
-            void browser.tabs.create({ url: browser.runtime.getURL('/dashboard.html') });
+            openUrl(browser.runtime.getURL('/dashboard.html'), 'tab');
             window.close();
           }}
-          className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-ghost-500 px-3 py-2 font-medium text-sm text-white transition hover:bg-ghost-600"
+          className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-ghost-500 px-3 py-2 font-medium text-sm text-white transition hover:bg-ghost-600"
         >
           Open Ghostify <ArrowUpRight className="size-4" />
+        </button>
+        <button
+          type="button"
+          title="Open Ghostify in a new window"
+          aria-label="Open Ghostify in a new window"
+          onClick={() => {
+            openUrl(browser.runtime.getURL('/dashboard.html'), 'window');
+            window.close();
+          }}
+          className="rounded-lg border border-zinc-200 px-2.5 text-zinc-600 transition hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+        >
+          <AppWindow className="size-4" />
         </button>
       </footer>
     </main>

@@ -1,6 +1,7 @@
 import { generateText, type LanguageModel, Output } from 'ai';
 import { z } from 'zod';
 import type { GhostItem } from '../store/db';
+import { DEFAULT_PROMPTS } from '../store/settings';
 
 const EnrichSchema = z.object({
   summary: z.string().describe('One sentence, at most 30 words'),
@@ -33,14 +34,18 @@ export function itemText(item: Pick<GhostItem, 'title' | 'excerpt' | 'author' | 
 }
 
 /** One-sentence summary and topic tags for a ghosted item (general model, structured output). */
-export async function enrichItem(item: GhostItem, model: LanguageModel): Promise<Enrichment> {
+export async function enrichItem(
+  item: GhostItem,
+  model: LanguageModel,
+  opts: { system?: string; signal?: AbortSignal } = {},
+): Promise<Enrichment> {
   const { output } = await generateText({
     model,
     temperature: 0,
     output: Output.object({ schema: EnrichSchema }),
-    system:
-      'You describe items from content feeds (posts, videos, articles). Write a neutral one-sentence summary of what the item is about and 1-5 short lowercase topic tags. Use only the given text.',
+    system: opts.system ?? DEFAULT_PROMPTS.enrich,
     prompt: itemText(item),
+    abortSignal: opts.signal,
   });
   return { summary: output.summary.trim(), tags: normalizeTags(output.tags) };
 }

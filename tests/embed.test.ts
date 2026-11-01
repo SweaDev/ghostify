@@ -97,7 +97,10 @@ describe('semantic jobs', () => {
     await db.embeddings.clear();
     expect(await indexProgress(tag)).toEqual({ total: 2, indexed: 0 });
     let release!: () => void;
-    const busy = runJob(() => new Promise<void>((r) => (release = r)));
+    const busy = runJob(
+      { kind: 'check', label: 'busy' },
+      () => new Promise<void>((r) => (release = r)),
+    );
     const run = backfill();
     await new Promise((r) => setTimeout(r, 20));
     expect(await db.embeddings.count()).toBe(0); // waits for the queued job
