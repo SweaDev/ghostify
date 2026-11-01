@@ -54,7 +54,7 @@ Spec: `specs/SPEC-v1.md`. Plan: `specs/PLAN-v1.md`.
   Depends: T07
   Done: Ghosted / Later / Snoozed tabs with counts; per-item actions: open, move to Later, back to Ghosted, remove (un-ghost); popup "Open Ghostify" opens dashboard; render test passes.
 
-- [ ] T09: Snooze with alarms and "Back from snooze"
+- [x] T09: Snooze with alarms and "Back from snooze"
   Refs: specs/PLAN-v1.md L117-120; specs/SPEC-v1.md L3
   Files: src/background/snooze.ts, entrypoints/background.ts, src/ui/SnoozeMenu.tsx, src/ui/Dashboard.tsx, tests/snooze.test.ts
   Depends: T08

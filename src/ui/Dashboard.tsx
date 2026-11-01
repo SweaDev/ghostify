@@ -1,12 +1,32 @@
 import { Bookmark, Ghost } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { GhostItem, ItemState } from '../store/db';
-import { setState, unghost } from '../store/items';
+import { expireSnoozes, setState, unghost, updateItem } from '../store/items';
+import { timeAgo } from './format';
 import { GhostIcon } from './GhostIcon';
 import { IconButton } from './ItemCard';
 import { ItemList } from './ItemList';
+import { SnoozeMenu } from './SnoozeMenu';
 import { Tabs } from './Tabs';
 import { useCounts, useItems } from './useItems';
+
+const RETURNED_WINDOW = 7 * 86_400_000;
+const isReturned = (i: GhostItem, now: number) =>
+  i.state === 'ghost' && !!i.returnedAt && now - i.returnedAt < RETURNED_WINDOW;
+
+function Section(props: { title: string; action?: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <section className="mb-6">
+      <div className="mb-2 flex items-center justify-between px-2">
+        <h2 className="font-semibold text-xs text-zinc-500 uppercase tracking-wider">
+          {props.title}
+        </h2>
+        {props.action}
+      </div>
+      {props.children}
+    </section>
+  );
+}
 
 const EMPTY: Record<ItemState, { title: string; hint: string }> = {
   ghost: {
@@ -25,6 +45,17 @@ export function Dashboard() {
   const counts = useCounts();
   const items = useItems({ state: tab });
 
+  // Snoozes also expire while this page is open (the background checks every few minutes).
+  useEffect(() => {
+    void expireSnoozes();
+    const t = setInterval(() => void expireSnoozes(), 60_000);
+    return () => clearInterval(t);
+  }, []);
+
+  const now = Date.now();
+  const returned = tab === 'ghost' ? items?.filter((i) => isReturned(i, now)) : [];
+  const rest = items?.filter((i) => !returned?.includes(i));
+
   const move = (item: GhostItem, state: ItemState) => void setState(item.key, state);
   const actions = (item: GhostItem) => (
     <>
@@ -33,6 +64,7 @@ export function Dashboard() {
           <Bookmark className="size-4" />
         </IconButton>
       )}
+      <SnoozeMenu onSnooze={(until) => void setState(item.key, 'snoozed', until)} />
       {item.state !== 'ghost' && (
         <IconButton label="Back to Ghosted" onClick={() => move(item, 'ghost')}>
           <Ghost className="size-4" />
@@ -63,10 +95,37 @@ export function Dashboard() {
         </div>
       </header>
       <main className="mx-auto max-w-3xl px-4 py-6">
+        {!!returned?.length && (
+          <Section
+            title="Back from snooze"
+            action={
+              <button
+                type="button"
+                className="text-ghost-600 text-xs hover:underline dark:text-ghost-300"
+                onClick={() =>
+                  returned.forEach((i) => void updateItem(i.key, { returnedAt: undefined }))
+                }
+              >
+                Dismiss
+              </button>
+            }
+          >
+            <ItemList
+              items={returned}
+              empty={EMPTY.ghost}
+              actions={actions}
+              note={(i) => `Back ${timeAgo(i.returnedAt ?? now, now)}`}
+              onUnghost={(i) => void unghost(i.key)}
+            />
+          </Section>
+        )}
         <ItemList
-          items={items}
-          empty={EMPTY[tab]}
+          items={returned?.length && !rest?.length ? [] : rest}
+          empty={returned?.length ? { title: 'That’s all', hint: '' } : EMPTY[tab]}
           actions={actions}
+          note={(i) =>
+            i.state === 'snoozed' && i.snoozeUntil ? `Back ${timeAgo(i.snoozeUntil, now)}` : null
+          }
           onUnghost={(i) => void unghost(i.key)}
         />
       </main>

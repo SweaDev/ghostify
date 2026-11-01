@@ -7,6 +7,7 @@ export function ItemList(props: {
   items: GhostItem[] | undefined;
   empty: { title: string; hint?: ReactNode };
   actions?(item: GhostItem): ReactNode;
+  note?(item: GhostItem): ReactNode;
   onUnghost?: ItemCardProps['onUnghost'];
 }) {
   if (!props.items) return null;
@@ -16,7 +17,12 @@ export function ItemList(props: {
     <ul className="flex flex-col gap-1">
       {props.items.map((item) => (
         <li key={item.key}>
-          <ItemCard item={item} actions={props.actions?.(item)} onUnghost={props.onUnghost} />
+          <ItemCard
+            item={item}
+            actions={props.actions?.(item)}
+            note={props.note?.(item)}
+            onUnghost={props.onUnghost}
+          />
         </li>
       ))}
     </ul>

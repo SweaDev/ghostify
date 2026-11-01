@@ -47,3 +47,27 @@ describe('dashboard', () => {
     await screen.findByText('No ghosts here');
   });
 });
+
+describe('dashboard snooze', () => {
+  it('snoozes an item and shows it back from snooze', async () => {
+    await ghostify(draft('a'));
+    render(<Dashboard />);
+    await screen.findByText('Post a');
+    await click(screen.getByLabelText('Snooze'));
+    await click(screen.getByRole('menuitem', { name: /Tomorrow/ }));
+    await screen.findByText('No ghosts here');
+    expect((await db.items.get('dev.to:a'))?.state).toBe('snoozed');
+    cleanup();
+
+    await db.items.update('dev.to:a', {
+      state: 'ghost',
+      snoozeUntil: undefined,
+      returnedAt: Date.now(),
+    });
+    render(<Dashboard />);
+    await screen.findByText('Back from snooze');
+    expect(screen.getByText('Post a')).toBeTruthy();
+    await click(screen.getByText('Dismiss'));
+    await vi.waitFor(() => expect(screen.queryByText('Back from snooze')).toBeNull());
+  });
+});
