@@ -10,7 +10,7 @@ Spec: `specs/SPEC-v1.md`. Plan: `specs/PLAN-v1.md`.
   Depends: none
   Done: `bun run check`, `bun run build`, `bun run build:firefox`, `bun run zip`, `bun run zip:firefox` succeed; `GHOSTIFY_FLAVOR=newtab bun run zip` yields `*-newtab-*` zip names; workflow matches the Release section.
 
-- [ ] T02: Settings and sites storage, dev.to default site, view/profile resolution
+- [x] T02: Settings and sites storage, dev.to default site, view/profile resolution
   Refs: specs/SPEC-v1.md L10-12; specs/PLAN-v1.md L55-94; specs/PLAN-v1.md L111-115
   Files: src/sites/model.ts, src/sites/defaults.ts, src/sites/registry.ts, src/store/settings.ts, tests/sites.test.ts, tests/fixtures/devto.html
   Depends: T01
