@@ -9,6 +9,8 @@ export interface ItemCardProps {
   compact?: boolean;
   /** Extra action buttons, rendered before "Unghost". */
   actions?: ReactNode;
+  /** Extra line under the meta line (e.g. snooze time). */
+  note?: ReactNode;
   onUnghost?(item: GhostItem): void;
 }
 
@@ -26,7 +28,7 @@ export function IconButton(props: { label: string; onClick(): void; children: Re
   );
 }
 
-export function ItemCard({ item, compact, actions, onUnghost }: ItemCardProps) {
+export function ItemCard({ item, compact, actions, note, onUnghost }: ItemCardProps) {
   const thumb = compact ? 'size-12' : 'h-16 w-24';
   return (
     <article className="group flex gap-3 rounded-xl p-2 transition hover:bg-zinc-50 dark:hover:bg-zinc-900">
@@ -51,6 +53,7 @@ export function ItemCard({ item, compact, actions, onUnghost }: ItemCardProps) {
         <p className="mt-0.5 truncate text-xs text-zinc-500 dark:text-zinc-400">
           {[item.host, item.author, timeAgo(item.createdAt)].filter(Boolean).join(' · ')}
         </p>
+        {note && <p className="mt-0.5 text-ghost-600 text-xs dark:text-ghost-300">{note}</p>}
         {!compact && item.excerpt && (
           <p className="mt-1 line-clamp-2 text-xs text-zinc-600 dark:text-zinc-300">
             {item.excerpt}
