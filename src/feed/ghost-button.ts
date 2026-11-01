@@ -15,6 +15,7 @@ const CSS = `
 .btn:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 .btn svg { width: 100%; height: 100%; display: block; }
 .btn.poof { animation: poof .35s ease forwards; }
+@media (prefers-reduced-motion: reduce) { .btn, .btn.poof { animation: none; transition: none; } }
 @keyframes float { 0%, 100% { translate: 0 0; } 50% { translate: 0 -3px; } }
 @keyframes poof { to { opacity: 0; transform: scale(1.6); filter: blur(2px); } }
 .toast {
