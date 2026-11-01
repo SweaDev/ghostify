@@ -142,6 +142,51 @@ describe('feed runtime', () => {
     await vi.waitFor(() => expect(isHidden(fresh)).toBe(true));
     rt2.dispose();
   });
+
+  it('asks for a reload when the extension context is invalidated', async () => {
+    const { api } = fakeApi();
+    api.ghostify = async () => {
+      throw new Error('Extension context invalidated.');
+    };
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const rt = start(api);
+    const [first] = stories() as [HTMLElement];
+    const toast = () =>
+      document.querySelector('[data-ghostify]')?.shadowRoot?.querySelector('.toast');
+    await vi.waitFor(async () => {
+      await ghostViaButton(first);
+      expect(toast()?.textContent).toMatch(/Reload this page/);
+    });
+    expect(isHidden(first)).toBe(false);
+    expect(warn).not.toHaveBeenCalled();
+    first.querySelector('h2')?.dispatchEvent(new Event('pointerover', { bubbles: true }));
+    expect(button().classList.contains('on')).toBe(false);
+    warn.mockRestore();
+    rt.dispose();
+  });
+
+  it('hides the button and asks for a reload once the extension is gone', async () => {
+    let alive = true;
+    const rt = startFeedRuntime({
+      doc: document,
+      url: 'https://dev.to/',
+      sites: [DEVTO_SITE],
+      api: fakeApi().api,
+      alive: () => alive,
+    });
+    const h2 = (stories()[0] as HTMLElement).querySelector('h2') as Element;
+    const over = () => h2.dispatchEvent(new Event('pointerover', { bubbles: true }));
+    await vi.waitFor(() => {
+      over();
+      expect(button().classList.contains('on')).toBe(true);
+    });
+    alive = false;
+    over();
+    expect(button().classList.contains('on')).toBe(false);
+    const root = document.querySelector('[data-ghostify]')?.shadowRoot;
+    expect(root?.querySelector('.toast')?.textContent).toMatch(/Reload this page/);
+    rt.dispose();
+  });
 });
 
 describe('login views', () => {

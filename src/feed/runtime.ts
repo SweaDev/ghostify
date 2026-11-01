@@ -7,7 +7,7 @@ import {
   type SiteProfile,
 } from 'feedgrab';
 import { detectView, resolveProfile, type Site, type SiteRule, siteForUrl } from '../sites/model';
-import type { RuntimeApi } from './api';
+import { isContextInvalidated, type RuntimeApi } from './api';
 import { extractItem } from './extract';
 import { mountGhostButton } from './ghost-button';
 
@@ -26,6 +26,8 @@ export interface RuntimeOptions {
   onViewChange?(): void;
   /** LLM backend (proxy) for auto-ghostify rules; rules are skipped without one (AI off). */
   llm?: LlmBackend;
+  /** False once the extension reloaded or updated under this page (orphaned content script). */
+  alive?(): boolean;
 }
 
 /** Adds the site's enabled auto-ghostify rules to every feed as feedgrab `llm-text` exclusions. */
@@ -86,7 +88,7 @@ export function startFeedRuntime(opts: RuntimeOptions): FeedRuntime {
   };
 }
 
-function startFeed({ doc, url, sites, api, llm }: RuntimeOptions): FeedRuntime {
+function startFeed({ doc, url, sites, api, llm, alive }: RuntimeOptions): FeedRuntime {
   const resolved = resolveProfile(sites, url, doc);
   if (!resolved) return { active: false, dispose() {} };
 
@@ -98,6 +100,7 @@ function startFeed({ doc, url, sites, api, llm }: RuntimeOptions): FeedRuntime {
   const hidden = new Map<string, RemovalHandle>();
   let queue: FeedItem[] = [];
   let disposed = false;
+  let orphaned = false;
 
   const hide = (item: FeedItem) => {
     if (!hidden.has(item.id)) hidden.set(item.id, removeItem(item));
@@ -121,7 +124,7 @@ function startFeed({ doc, url, sites, api, llm }: RuntimeOptions): FeedRuntime {
 
   const track = (item: FeedItem) => {
     byElement.set(item.element, item);
-    if (queue.push(item) === 1) queueMicrotask(() => void flush().catch(console.warn));
+    if (queue.push(item) === 1) queueMicrotask(() => void flush().catch(warn));
   };
 
   // An auto-ghostify rule matched (feedgrab marks the item excluded by an llm-text rule).
@@ -139,7 +142,7 @@ function startFeed({ doc, url, sites, api, llm }: RuntimeOptions): FeedRuntime {
       .then((saved) => saved || restore(item.id))
       .catch((e) => {
         restore(item.id);
-        console.warn('[ghostify]', e);
+        warn(e);
       });
   };
 
@@ -158,8 +161,28 @@ function startFeed({ doc, url, sites, api, llm }: RuntimeOptions): FeedRuntime {
     } else track(item);
   });
 
+  const warn = (e: unknown) => {
+    if (!isContextInvalidated(e)) console.warn('[ghostify]', e);
+  };
+  // The background is gone: stop offering the button and ask for a reload once.
+  const orphan = () => {
+    if (orphaned) return;
+    orphaned = true;
+    button.hide();
+    button.toast(
+      'Ghostify was updated. Reload this page to keep using it.',
+      { label: 'Reload', run: () => doc.defaultView?.location.reload() },
+      15000,
+    );
+  };
+
   const button = mountGhostButton(doc, {
     resolve(el) {
+      if (orphaned) return undefined;
+      if (alive?.() === false) {
+        orphan();
+        return undefined;
+      }
       for (let n: Element | null = el; n; n = n.parentElement) {
         const item = byElement.get(n);
         if (item && item.element === n && !hidden.has(item.id)) return n;
@@ -182,6 +205,7 @@ function startFeed({ doc, url, sites, api, llm }: RuntimeOptions): FeedRuntime {
         });
       } catch (e) {
         restore(item.id);
+        if (isContextInvalidated(e) || alive?.() === false) return orphan();
         button.toast('Could not ghostify this item');
         console.warn('[ghostify]', e);
       }
