@@ -43,12 +43,21 @@ export interface Secret {
   value: string;
 }
 
+export interface DecisionRow {
+  /** sha256 of [model, criteria, item text] */
+  key: string;
+  at: number;
+  answer: { exclude: boolean; criteriaIndex?: number; confidence: number };
+}
+
 export const db = new Dexie('ghostify') as Dexie & {
   items: EntityTable<GhostItem, 'key'>;
   embeddings: EntityTable<Embedding, 'key'>;
   secrets: EntityTable<Secret, 'id'>;
   /** Items the user rescued from an auto-ghostify rule ("Not this"); rules skip them. */
   kept: EntityTable<{ key: string; at: number }, 'key'>;
+  /** Cached decision-model answers (see `src/ai/decision-cache.ts`). */
+  decisions: EntityTable<DecisionRow, 'key'>;
 };
 
 db.version(1).stores({
@@ -58,3 +67,4 @@ db.version(1).stores({
 db.version(2).stores({ secrets: 'id' });
 db.version(3).stores({ kept: 'key' });
 db.version(4).stores({ embeddings: 'key, model' });
+db.version(5).stores({ decisions: 'key, at' });
