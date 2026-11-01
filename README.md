@@ -2,7 +2,7 @@
 
 Ghostify is a browser extension (Chrome and Firefox) for feeds that keep showing you the same posts. Hover a post, click the ghost, and it disappears from the site's feed for good. Ghostify keeps a copy so you can find it again later.
 
-> **v1.2.0.** Ghostify works on the dev.to home feeds out of the box, and you can add any site. It has a full Ghostify page with snooze and search, and optional AI. By default the AI runs right in your browser with small downloadable models (no GPU, Ollama or API key needed). It can also use Ollama, or your own OpenRouter, Gemini or OpenAI key.
+> **v1.2.1.** Ghostify works on the dev.to home feeds out of the box, and you can add any site. It has a full Ghostify page with snooze and search, and optional AI. By default the AI runs right in your browser with small downloadable models (no GPU, Ollama or API key needed). It can also use Ollama, or your own OpenRouter, Gemini or OpenAI key.
 
 ## Features
 - **The dev.to logged-out home feeds** (Relevant `/`, Latest `/latest`, Top `/top/*`) are recognized automatically, through [feedgrab](https://github.com/SweaDev/feedgrab).
