@@ -212,4 +212,4 @@ And somewhere in an archived repo, myDEV is resting peacefully, knowing it start
 
 - **Best Use of Gemma**: Ghostify uses **Gemma 4 E2B** (`gemma4:e2b`) for summaries and tags, and **EmbeddingGemma 2** (`embeddinggemma-2`) for semantic search, both running locally through Ollama by default.
 
-Thanks for reading! And if a post of yours disappears from my feed, don't take it personally. It just means I've already read it. 👻
+Thanks for reading! And if a post of yours disappears from my feed, don't take it personally. It just means I've probably already read it, seen it, or will read it later. 👻
