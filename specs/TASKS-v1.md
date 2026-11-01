@@ -60,7 +60,7 @@ Spec: `specs/SPEC-v1.md`. Plan: `specs/PLAN-v1.md`.
   Depends: T08
   Done: snooze presets (later today, tomorrow, next week, custom date); snoozed items absent from Ghosted until expiry; alarm + startup check expires them; "Back from snooze" group appears; tests use fakeBrowser alarms.
 
-- [ ] T10: Search, site filter and item detail
+- [x] T10: Search, site filter and item detail
   Refs: specs/SPEC-v1.md L3; specs/PLAN-v1.md L95-109
   Files: src/store/items.ts, src/ui/Dashboard.tsx, src/ui/FilterBar.tsx, src/ui/ItemDetail.tsx, tests/items.test.ts, tests/dashboard.test.tsx
   Depends: T08

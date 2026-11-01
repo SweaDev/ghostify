@@ -112,3 +112,8 @@ export async function countByState(): Promise<Record<ItemState, number>> {
   ]);
   return { ghost, later, snoozed };
 }
+
+/** Distinct hosts that have items, sorted. */
+export async function listHosts(): Promise<string[]> {
+  return (await db.items.orderBy('host').uniqueKeys()) as string[];
+}

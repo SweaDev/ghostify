@@ -1,6 +1,6 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import type { GhostItem } from '../store/db';
-import { countByState, type ListQuery, listItems } from '../store/items';
+import { countByState, type ListQuery, listHosts, listItems } from '../store/items';
 
 /** Live list of items (updates when any context writes to the DB). `undefined` while loading. */
 export function useItems(q: ListQuery): GhostItem[] | undefined {
@@ -9,4 +9,8 @@ export function useItems(q: ListQuery): GhostItem[] | undefined {
 
 export function useCounts() {
   return useLiveQuery(countByState, []);
+}
+
+export function useHosts() {
+  return useLiveQuery(listHosts, []);
 }

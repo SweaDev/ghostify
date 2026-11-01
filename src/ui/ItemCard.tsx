@@ -12,6 +12,8 @@ export interface ItemCardProps {
   /** Extra line under the meta line (e.g. snooze time). */
   note?: ReactNode;
   onUnghost?(item: GhostItem): void;
+  /** Opens the detail view when the thumbnail or excerpt is clicked. */
+  onOpen?(item: GhostItem): void;
 }
 
 export function IconButton(props: { label: string; onClick(): void; children: ReactNode }) {
@@ -28,19 +30,23 @@ export function IconButton(props: { label: string; onClick(): void; children: Re
   );
 }
 
-export function ItemCard({ item, compact, actions, note, onUnghost }: ItemCardProps) {
+export function ItemCard({ item, compact, actions, note, onUnghost, onOpen }: ItemCardProps) {
   const thumb = compact ? 'size-12' : 'h-16 w-24';
   return (
     <article className="group flex gap-3 rounded-xl p-2 transition hover:bg-zinc-50 dark:hover:bg-zinc-900">
-      <div
-        className={`${thumb} shrink-0 overflow-hidden rounded-lg bg-gradient-to-br from-ghost-100 to-ghost-200 dark:from-ghost-900 dark:to-zinc-800`}
+      <button
+        type="button"
+        aria-label="Show details"
+        disabled={!onOpen}
+        onClick={() => onOpen?.(item)}
+        className={`${thumb} shrink-0 overflow-hidden rounded-lg bg-gradient-to-br from-ghost-100 to-ghost-200 enabled:cursor-zoom-in dark:from-ghost-900 dark:to-zinc-800`}
       >
         {item.image ? (
           <img src={item.image} alt="" loading="lazy" className="size-full object-cover" />
         ) : (
           <GhostIcon className="size-full p-3 text-white/80 dark:text-ghost-700" />
         )}
-      </div>
+      </button>
       <div className="min-w-0 flex-1">
         <a
           href={item.url}

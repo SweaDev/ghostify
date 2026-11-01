@@ -76,3 +76,13 @@ describe('items repository', () => {
     expect((await listItems({ limit: 1 })).map((i) => i.id)).toEqual(['c']);
   });
 });
+
+describe('listHosts', () => {
+  it('returns distinct sorted hosts', async () => {
+    const { listHosts } = await import('@/src/store/items');
+    await ghostify(draft('a', { host: 'x.test' }));
+    await ghostify(draft('b'));
+    await ghostify(draft('c'));
+    expect(await listHosts()).toEqual(['dev.to', 'x.test']);
+  });
+});

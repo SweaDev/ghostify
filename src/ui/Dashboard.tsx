@@ -1,14 +1,16 @@
 import { Bookmark, Ghost } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { GhostItem, ItemState } from '../store/db';
 import { expireSnoozes, setState, unghost, updateItem } from '../store/items';
+import { FilterBar, type Filters } from './FilterBar';
 import { timeAgo } from './format';
 import { GhostIcon } from './GhostIcon';
 import { IconButton } from './ItemCard';
+import { ItemDetail } from './ItemDetail';
 import { ItemList } from './ItemList';
 import { SnoozeMenu } from './SnoozeMenu';
 import { Tabs } from './Tabs';
-import { useCounts, useItems } from './useItems';
+import { useCounts, useHosts, useItems } from './useItems';
 
 const RETURNED_WINDOW = 7 * 86_400_000;
 const isReturned = (i: GhostItem, now: number) =>
@@ -43,7 +45,13 @@ const EMPTY: Record<ItemState, { title: string; hint: string }> = {
 export function Dashboard() {
   const [tab, setTab] = useState<ItemState>('ghost');
   const counts = useCounts();
-  const items = useItems({ state: tab });
+  const [filters, setFilters] = useState<Filters>({ text: '', host: '' });
+  const [openKey, setOpenKey] = useState<string>();
+  const items = useItems({ state: tab, text: filters.text, host: filters.host || undefined });
+  const hosts = useHosts();
+  const filtering = !!(filters.text || filters.host);
+  const opened = items?.find((i) => i.key === openKey);
+  const closeDetail = useCallback(() => setOpenKey(undefined), []);
 
   // Snoozes also expire while this page is open (the background checks every few minutes).
   useEffect(() => {
@@ -53,7 +61,7 @@ export function Dashboard() {
   }, []);
 
   const now = Date.now();
-  const returned = tab === 'ghost' ? items?.filter((i) => isReturned(i, now)) : [];
+  const returned = tab === 'ghost' && !filtering ? items?.filter((i) => isReturned(i, now)) : [];
   const rest = items?.filter((i) => !returned?.includes(i));
 
   const move = (item: GhostItem, state: ItemState) => void setState(item.key, state);
@@ -95,6 +103,9 @@ export function Dashboard() {
         </div>
       </header>
       <main className="mx-auto max-w-3xl px-4 py-6">
+        <div className="mb-6">
+          <FilterBar hosts={hosts ?? []} value={filters} onChange={setFilters} />
+        </div>
         {!!returned?.length && (
           <Section
             title="Back from snooze"
@@ -116,19 +127,28 @@ export function Dashboard() {
               actions={actions}
               note={(i) => `Back ${timeAgo(i.returnedAt ?? now, now)}`}
               onUnghost={(i) => void unghost(i.key)}
+              onOpen={(i) => setOpenKey(i.key)}
             />
           </Section>
         )}
         <ItemList
           items={returned?.length && !rest?.length ? [] : rest}
-          empty={returned?.length ? { title: 'That’s all', hint: '' } : EMPTY[tab]}
+          empty={
+            filtering
+              ? { title: 'No matches', hint: 'Try other words or another site.' }
+              : returned?.length
+                ? { title: 'That’s all', hint: '' }
+                : EMPTY[tab]
+          }
           actions={actions}
           note={(i) =>
             i.state === 'snoozed' && i.snoozeUntil ? `Back ${timeAgo(i.snoozeUntil, now)}` : null
           }
           onUnghost={(i) => void unghost(i.key)}
+          onOpen={(i) => setOpenKey(i.key)}
         />
       </main>
+      {opened && <ItemDetail item={opened} actions={actions(opened)} onClose={closeDetail} />}
     </div>
   );
 }

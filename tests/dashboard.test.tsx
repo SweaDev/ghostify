@@ -71,3 +71,27 @@ describe('dashboard snooze', () => {
     await vi.waitFor(() => expect(screen.queryByText('Back from snooze')).toBeNull());
   });
 });
+
+describe('dashboard search and detail', () => {
+  it('filters by keywords and site, and opens details', async () => {
+    await ghostify(draft('a', { title: 'Rust ownership explained', author: 'Ada' }), 1);
+    await ghostify(draft('b', { title: 'CSS grid tricks', host: 'css.test' }), 2);
+    render(<Dashboard />);
+    await screen.findByText('CSS grid tricks');
+
+    fireEvent.change(screen.getByLabelText('Search'), { target: { value: 'rust' } });
+    await vi.waitFor(() => expect(screen.queryByText('CSS grid tricks')).toBeNull());
+    expect(screen.getByText('Rust ownership explained')).toBeTruthy();
+
+    fireEvent.change(screen.getByLabelText('Search'), { target: { value: '' } });
+    await screen.findByText('CSS grid tricks');
+    fireEvent.change(screen.getByLabelText('Site'), { target: { value: 'css.test' } });
+    await vi.waitFor(() => expect(screen.queryByText('Rust ownership explained')).toBeNull());
+
+    await click(screen.getByLabelText('Show details'));
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByText('Open original')).toBeTruthy();
+    fireEvent.keyDown(document, { key: 'Escape' });
+    await vi.waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+  });
+});
