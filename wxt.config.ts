@@ -16,6 +16,10 @@ export default defineConfig({
     permissions: ['storage', 'alarms', 'scripting', 'activeTab'],
     optional_host_permissions: ['*://*/*'],
     action: { default_title: 'Ghostify' },
+    // No remote code; wasm is allowed for the in-browser models (ONNX Runtime Web).
+    content_security_policy: {
+      extension_pages: "script-src 'self' 'wasm-unsafe-eval'; object-src 'self';",
+    },
     ...(browser === 'firefox' && {
       browser_specific_settings: {
         gecko: {

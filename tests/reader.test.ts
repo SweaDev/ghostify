@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 // DOMPurify needs a spec-complete DOM; happy-dom mishandles attributes, jsdom is what DOMPurify tests with.
-import { grabContent, parseReadable } from '@/src/feed/reader';
+import { grabContent, MAX_PAGE_BYTES, parseReadable } from '@/src/feed/reader';
 import { db } from '@/src/store/db';
 
 const PAGE = `<html><head><title>Rust tips</title></head><body>
@@ -37,5 +37,20 @@ describe('reader', () => {
     expect(row).toMatchObject({ key: 'k', title: 'Rust tips', digest: 'old' });
     const bad = vi.fn(async () => new Response('', { status: 404 })) as unknown as typeof fetch;
     await expect(grabContent('k', 'https://blog.test/x', bad)).rejects.toThrow('404');
+  });
+
+  it('refuses non-web links, non-HTML and oversized pages', async () => {
+    const ok = vi.fn(async () => new Response(PAGE)) as unknown as typeof fetch;
+    await expect(grabContent('k', 'file:///etc/passwd', ok)).rejects.toThrow(/web pages/);
+    const pdf = vi.fn(
+      async () => new Response('%PDF', { headers: { 'content-type': 'application/pdf' } }),
+    ) as unknown as typeof fetch;
+    await expect(grabContent('k', 'https://blog.test/a.pdf', pdf)).rejects.toThrow(
+      /Not a web page/,
+    );
+    const huge = vi.fn(
+      async () => new Response('x'.repeat(MAX_PAGE_BYTES + 10)),
+    ) as unknown as typeof fetch;
+    await expect(grabContent('k', 'https://blog.test/big', huge)).rejects.toThrow(/too large/);
   });
 });

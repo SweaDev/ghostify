@@ -85,6 +85,9 @@ export const SUGGESTED: Record<
   },
 };
 
+/** How long listing models may take before the provider counts as unreachable. */
+export const LIST_TIMEOUT = 8_000;
+
 export interface OllamaStatus {
   ok: boolean;
   models: string[];
@@ -97,7 +100,9 @@ export async function ollamaStatus(
   fetcher: typeof fetch = fetch,
 ): Promise<OllamaStatus> {
   try {
-    const res = await fetcher(`${baseUrl.replace(/\/+$/, '')}/api/tags`);
+    const res = await fetcher(`${baseUrl.replace(/\/+$/, '')}/api/tags`, {
+      signal: AbortSignal.timeout(LIST_TIMEOUT),
+    });
     if (res.status === 403)
       return { ok: false, models: [], error: 'Ollama blocked this extension (set OLLAMA_ORIGINS)' };
     if (!res.ok) return { ok: false, models: [], error: `Ollama answered ${res.status}` };
