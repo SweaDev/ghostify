@@ -35,6 +35,25 @@ describe('ghost button', () => {
     expect(document.querySelector('[data-ghostify]')).toBeNull();
   });
 
+  it('stays visible when an overlay outside the item covers it (hover preview)', () => {
+    const { gb, btn } = setup();
+    const item = document.querySelector('.item') as Element;
+    item.getBoundingClientRect = () => new DOMRect(0, 0, 200, 100);
+    const preview = document.createElement('div');
+    document.body.append(preview);
+    const move = (x: number, y: number) =>
+      preview.dispatchEvent(
+        new MouseEvent('pointerover', { bubbles: true, clientX: x, clientY: y }),
+      );
+    over(item);
+    move(50, 50);
+    expect(gb.target).toBe(item);
+    expect(btn.classList.contains('on')).toBe(true);
+    move(300, 50);
+    expect(btn.classList.contains('on')).toBe(false);
+    gb.destroy();
+  });
+
   it('shows a toast with an action', () => {
     const { gb } = setup();
     const run = vi.fn();
