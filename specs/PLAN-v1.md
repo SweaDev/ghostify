@@ -182,3 +182,5 @@ The zip names come from `zip.artifactTemplate` and `zip.sourcesTemplate`, and in
 - D10: Content scripts only pass proxy backends to feedgrab. `build/feedgrab-proxy-only.ts` stubs feedgrab's lazy AI SDK model runner, which keeps `ai` out of the content-script bundle (380 KB → 71 KB).
 - D11: The runtime re-checks re-mounted items (feedgrab `item:updated` with a new element), so items ghosted in another tab stay hidden after re-renders.
 - D12: Newtab-flavor builds go to `.output/<browser>-mv3-newtab` (`outDirTemplate`), so they never overwrite the default flavor's build.
+- D13: `picker.content.ts` starts the picker without returning its promise. `scripting.executeScript` awaits a returned promise, and holding it open while the user works in the overlay tore the tab down in Chromium.
+- D14: For a new page, the picker pre-accepts feedgrab's best proposal by passing it as the overlay's `existing` profile. Saving with no feeds ticked shows a notice and saves nothing.
