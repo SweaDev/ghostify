@@ -120,3 +120,35 @@ describe('dashboard excerpt', () => {
     expect(await screen.findByRole('dialog')).toBeTruthy();
   });
 });
+
+describe('dashboard semantic search', () => {
+  it('ranks by meaning through the background when AI is on', async () => {
+    const models = await import('@/src/ai/models');
+    const { registerHandlers } = await import('@/src/background/handlers');
+    const { afterGhostify } = await import('@/src/background/jobs');
+    const { DEFAULT_SETTINGS, saveSettings, withDefaults } = await import('@/src/store/settings');
+    const { embedModel, textModel } = await import('./mock-model');
+    vi.spyOn(models, 'embeddingModel').mockReturnValue(
+      embedModel((t) => [/rust|memory/i.test(t) ? 1 : 0, /css/i.test(t) ? 1 : 0, 0.1]),
+    );
+    vi.spyOn(models, 'languageModel').mockReturnValue(textModel('{"summary":"s","tags":[]}'));
+    await saveSettings(withDefaults({ ai: { ...DEFAULT_SETTINGS.ai, enabled: true } }));
+    registerHandlers();
+    for (const [id, title] of [
+      ['a', 'Rust ownership'],
+      ['b', 'CSS grid'],
+    ]) {
+      await afterGhostify((await ghostify(draft(id as string, { title }))).key);
+    }
+    render(<Dashboard />);
+    await screen.findByText('CSS grid');
+    await click(await screen.findByRole('button', { name: /Semantic/ }));
+    fireEvent.change(screen.getByLabelText('Search'), { target: { value: 'memory safety' } });
+    // The search box is debounced; wait for the ranked list (Rust only).
+    await vi.waitFor(() => {
+      expect(screen.queryByText('CSS grid')).toBeNull();
+      expect(screen.getByText('Rust ownership')).toBeTruthy();
+    });
+    vi.restoreAllMocks();
+  });
+});

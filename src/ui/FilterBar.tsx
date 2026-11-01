@@ -1,13 +1,21 @@
-import { Search, X } from 'lucide-react';
+import { Search, Sparkles, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 export interface Filters {
   text: string;
   host: string;
   tag?: string;
+  /** Rank by meaning (embeddings) instead of matching keywords. */
+  semantic?: boolean;
 }
 
-export function FilterBar(props: { hosts: string[]; value: Filters; onChange(f: Filters): void }) {
+export function FilterBar(props: {
+  hosts: string[];
+  /** Show the semantic toggle (AI on). */
+  semanticAvailable?: boolean;
+  value: Filters;
+  onChange(f: Filters): void;
+}) {
   const [text, setText] = useState(props.value.text);
   const { value, onChange } = props;
 
@@ -22,7 +30,7 @@ export function FilterBar(props: { hosts: string[]; value: Filters; onChange(f: 
         <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-zinc-400" />
         <input
           type="search"
-          placeholder="Search ghosts…"
+          placeholder={value.semantic ? 'Describe what you are looking for…' : 'Search ghosts…'}
           aria-label="Search"
           value={text}
           onChange={(e) => setText(e.target.value)}
@@ -39,6 +47,21 @@ export function FilterBar(props: { hosts: string[]; value: Filters; onChange(f: 
           </button>
         )}
       </label>
+      {props.semanticAvailable && (
+        <button
+          type="button"
+          aria-pressed={!!value.semantic}
+          title="Search by meaning"
+          onClick={() => onChange({ ...value, semantic: !value.semantic })}
+          className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-2 text-sm transition ${
+            value.semantic
+              ? 'border-ghost-500 bg-ghost-500 text-white'
+              : 'border-zinc-200 bg-white text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300'
+          }`}
+        >
+          <Sparkles className="size-4" /> Semantic
+        </button>
+      )}
       {value.tag && (
         <button
           type="button"

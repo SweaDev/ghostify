@@ -49,16 +49,30 @@ export function Dashboard() {
   const counts = useCounts();
   const [filters, setFilters] = useState<Filters>({ text: '', host: '' });
   const [openKey, setOpenKey] = useState<string>();
-  const items = useItems({
+  const keywordItems = useItems({
     state: tab,
-    text: filters.text,
+    text: filters.semantic ? undefined : filters.text,
     host: filters.host || undefined,
     tag: filters.tag,
   });
   const [settings] = useSettings();
+  const semanticOn = !!(settings?.ai.enabled && filters.semantic && filters.text.trim());
+  const [semantic, setSemantic] = useState<{ items: GhostItem[]; fallback: boolean }>();
+  useEffect(() => {
+    if (!semanticOn) return setSemantic(undefined);
+    let live = true;
+    const q = { state: tab, host: filters.host || undefined, tag: filters.tag };
+    void sendMessage('searchSemantic', { query: filters.text, filters: q }).then((r) => {
+      if (live) setSemantic(r);
+    });
+    return () => {
+      live = false;
+    };
+  }, [semanticOn, filters.text, filters.host, filters.tag, tab]);
   const onTag = (tag: string) =>
     setFilters((f) => ({ ...f, tag: f.tag === tag ? undefined : tag }));
   const hosts = useHosts();
+  const items = semanticOn ? semantic?.items : keywordItems;
   const filtering = !!(filters.text || filters.host || filters.tag);
   const opened = items?.find((i) => i.key === openKey);
   const closeDetail = useCallback(() => setOpenKey(undefined), []);
@@ -114,8 +128,21 @@ export function Dashboard() {
       </header>
       <main className="mx-auto max-w-3xl px-4 py-6">
         <div className="mb-6">
-          <FilterBar hosts={hosts ?? []} value={filters} onChange={setFilters} />
+          <FilterBar
+            hosts={hosts ?? []}
+            semanticAvailable={settings?.ai.enabled}
+            value={filters}
+            onChange={setFilters}
+          />
+          {semantic?.fallback && (
+            <p className="mt-2 text-amber-600 text-xs">
+              Semantic search is unavailable (check Settings → AI); showing keyword matches.
+            </p>
+          )}
         </div>
+        {semanticOn && !semantic && (
+          <p className="px-2 py-6 text-center text-sm text-zinc-500">Searching…</p>
+        )}
         {!!returned?.length && (
           <Section
             title="Back from snooze"

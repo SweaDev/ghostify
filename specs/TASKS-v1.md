@@ -124,7 +124,7 @@ Spec: `specs/SPEC-v1.md`. Plan: `specs/PLAN-v1.md`.
   Depends: T18
   Done: after ghostify (AI on) background stores summary + tags; dashboard shows them and filters by tag; "Regenerate" action; tests with mocked model.
 
-- [ ] T20: Embeddings and semantic search
+- [x] T20: Embeddings and semantic search
   Refs: specs/SPEC-v1.md L3; specs/SPEC-v1.md L14; specs/PLAN-v1.md L125-129
   Files: src/ai/embed.ts, src/background/jobs.ts, src/store/items.ts, src/ui/FilterBar.tsx, tests/embed.test.ts
   Depends: T18
