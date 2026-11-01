@@ -118,7 +118,7 @@ Spec: `specs/SPEC-v1.md`. Plan: `specs/PLAN-v1.md`.
   Depends: T17
   Done: per-purpose provider + model, keys, Ollama URL, enable toggle, "Test connection" (Ollama /api/tags), OLLAMA_ORIGINS hint; factory returns language/embedding models per provider; tests pass.
 
-- [ ] T19: Summaries and tags on ghostify
+- [x] T19: Summaries and tags on ghostify
   Refs: specs/SPEC-v1.md L14; specs/PLAN-v1.md L125-129
   Files: src/ai/enrich.ts, src/background/jobs.ts, src/background/handlers.ts, src/ui/ItemCard.tsx, src/ui/ItemDetail.tsx, src/ui/FilterBar.tsx, tests/enrich.test.ts
   Depends: T18

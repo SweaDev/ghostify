@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 export interface Filters {
   text: string;
   host: string;
+  tag?: string;
 }
 
 export function FilterBar(props: { hosts: string[]; value: Filters; onChange(f: Filters): void }) {
@@ -38,6 +39,16 @@ export function FilterBar(props: { hosts: string[]; value: Filters; onChange(f: 
           </button>
         )}
       </label>
+      {value.tag && (
+        <button
+          type="button"
+          aria-label={`Remove tag filter ${value.tag}`}
+          onClick={() => onChange({ ...value, tag: undefined })}
+          className="inline-flex items-center gap-1 rounded-full bg-ghost-500 px-3 py-1.5 text-sm text-white"
+        >
+          #{value.tag} <X className="size-3.5" />
+        </button>
+      )}
       {props.hosts.length > 1 && (
         <select
           aria-label="Site"

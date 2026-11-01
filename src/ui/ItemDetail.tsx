@@ -1,9 +1,17 @@
-import { ExternalLink, X } from 'lucide-react';
+import { ExternalLink, RefreshCw, Sparkles, X } from 'lucide-react';
 import { type ReactNode, useEffect } from 'react';
 import type { GhostItem } from '../store/db';
 import { timeAgo } from './format';
+import { Tags } from './Tags';
 
-export function ItemDetail(props: { item: GhostItem; actions?: ReactNode; onClose(): void }) {
+export function ItemDetail(props: {
+  item: GhostItem;
+  actions?: ReactNode;
+  onClose(): void;
+  onTag?(tag: string): void;
+  /** Shown when AI is on: re-generates summary and tags. */
+  onRegenerate?(): void;
+}) {
   const { item, onClose } = props;
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
@@ -42,6 +50,24 @@ export function ItemDetail(props: { item: GhostItem; actions?: ReactNode; onClos
           <p className="text-sm text-zinc-500 dark:text-zinc-400">
             {[item.author, `ghosted ${timeAgo(item.createdAt)}`].filter(Boolean).join(' · ')}
           </p>
+          {(item.summary || props.onRegenerate) && (
+            <div className="rounded-xl bg-ghost-50 p-3 dark:bg-ghost-900/30">
+              <div className="mb-1 flex items-center gap-1.5 font-medium text-ghost-700 text-xs dark:text-ghost-200">
+                <Sparkles className="size-3.5" /> Summary
+                {props.onRegenerate && (
+                  <button
+                    type="button"
+                    onClick={props.onRegenerate}
+                    className="ml-auto inline-flex items-center gap-1 font-normal hover:underline"
+                  >
+                    <RefreshCw className="size-3" /> {item.summary ? 'Regenerate' : 'Generate'}
+                  </button>
+                )}
+              </div>
+              <p className="text-sm">{item.summary ?? 'No summary yet.'}</p>
+              <Tags tags={item.tags} onTag={props.onTag} />
+            </div>
+          )}
           {item.excerpt && (
             <p className="whitespace-pre-line text-sm text-zinc-700 leading-relaxed dark:text-zinc-300">
               {item.excerpt}

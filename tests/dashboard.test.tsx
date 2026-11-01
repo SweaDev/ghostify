@@ -95,3 +95,28 @@ describe('dashboard search and detail', () => {
     await vi.waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
   });
 });
+
+describe('dashboard tags', () => {
+  it('shows summaries and filters by tag', async () => {
+    const { updateItem } = await import('@/src/store/items');
+    await ghostify(draft('a', { title: 'Rust' }), 1);
+    await ghostify(draft('b', { title: 'CSS' }), 2);
+    await updateItem('dev.to:a', { summary: 'All about Rust.', tags: ['rust', 'systems'] });
+    await updateItem('dev.to:b', { tags: ['css'] });
+    render(<Dashboard />);
+    expect(await screen.findByText('All about Rust.')).toBeTruthy();
+    await click(screen.getByRole('button', { name: '#rust' }));
+    await vi.waitFor(() => expect(screen.queryByText('CSS')).toBeNull());
+    await click(screen.getByLabelText('Remove tag filter rust'));
+    await screen.findByText('CSS');
+  });
+});
+
+describe('dashboard excerpt', () => {
+  it('opens details from the excerpt', async () => {
+    await ghostify(draft('a', { excerpt: 'Click me' }));
+    render(<Dashboard />);
+    await click(await screen.findByText('Click me'));
+    expect(await screen.findByRole('dialog')).toBeTruthy();
+  });
+});

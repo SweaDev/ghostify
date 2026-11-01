@@ -3,6 +3,7 @@ import { checkPurpose } from '../ai/check';
 import type { ProtocolMap } from '../messaging';
 import { onMessage } from '../messaging';
 import { ghostedIds, ghostify, listItems, setState, unghost } from '../store/items';
+import { afterGhostify, enqueue, enrich } from './jobs';
 
 type Handlers = {
   [K in keyof ProtocolMap]: (
@@ -12,7 +13,11 @@ type Handlers = {
 
 export const handlers: Handlers = {
   isGhosted: ({ host, ids }) => ghostedIds(host, ids),
-  ghostify: (draft) => ghostify(draft),
+  ghostify: async (draft) => {
+    const item = await ghostify(draft);
+    void afterGhostify(item.key);
+    return item;
+  },
   unghost: ({ key }) => unghost(key),
   setState: ({ key, state, snoozeUntil }) => setState(key, state, snoozeUntil),
   listItems: (q) => listItems(q),
@@ -20,6 +25,7 @@ export const handlers: Handlers = {
     await browser.tabs.create({ url: browser.runtime.getURL('/dashboard.html') });
   },
   checkAi: ({ purpose }) => checkPurpose(purpose),
+  enrich: ({ key }) => enqueue(() => enrich(key, true)),
   addSite: async ({ tabId }) => {
     await browser.scripting.executeScript({
       target: { tabId },

@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import type { GhostItem } from '../store/db';
 import { timeAgo } from './format';
 import { GhostIcon } from './GhostIcon';
+import { Tags } from './Tags';
 
 export interface ItemCardProps {
   item: GhostItem;
@@ -14,6 +15,8 @@ export interface ItemCardProps {
   onUnghost?(item: GhostItem): void;
   /** Opens the detail view when the thumbnail or excerpt is clicked. */
   onOpen?(item: GhostItem): void;
+  onTag?(tag: string): void;
+  activeTag?: string;
 }
 
 export function IconButton(props: { label: string; onClick(): void; children: ReactNode }) {
@@ -30,7 +33,8 @@ export function IconButton(props: { label: string; onClick(): void; children: Re
   );
 }
 
-export function ItemCard({ item, compact, actions, note, onUnghost, onOpen }: ItemCardProps) {
+export function ItemCard(props: ItemCardProps) {
+  const { item, compact, actions, note, onUnghost, onOpen } = props;
   const thumb = compact ? 'size-12' : 'h-16 w-24';
   return (
     <article className="group flex gap-3 rounded-xl p-2 transition hover:bg-zinc-50 dark:hover:bg-zinc-900">
@@ -60,11 +64,16 @@ export function ItemCard({ item, compact, actions, note, onUnghost, onOpen }: It
           {[item.host, item.author, timeAgo(item.createdAt)].filter(Boolean).join(' · ')}
         </p>
         {note && <p className="mt-0.5 text-ghost-600 text-xs dark:text-ghost-300">{note}</p>}
-        {!compact && item.excerpt && (
-          <p className="mt-1 line-clamp-2 text-xs text-zinc-600 dark:text-zinc-300">
-            {item.excerpt}
-          </p>
+        {!compact && (item.summary || item.excerpt) && (
+          <button
+            type="button"
+            onClick={() => onOpen?.(item)}
+            className="mt-1 line-clamp-2 text-left text-xs text-zinc-600 dark:text-zinc-300"
+          >
+            {item.summary || item.excerpt}
+          </button>
         )}
+        {!compact && <Tags tags={item.tags} active={props.activeTag} onTag={props.onTag} />}
       </div>
       <div className="flex shrink-0 items-start gap-0.5">
         {actions}
