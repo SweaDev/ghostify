@@ -57,3 +57,4 @@ db.version(1).stores({
 });
 db.version(2).stores({ secrets: 'id' });
 db.version(3).stores({ kept: 'key' });
+db.version(4).stores({ embeddings: 'key, model' });

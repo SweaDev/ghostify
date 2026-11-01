@@ -75,7 +75,7 @@ Each purpose (embeddings, general model, decision model) can use its own provide
 3. In **Settings → AI**:
    1. Turn on **Use AI**.
    2. Click **Test** on each row.
-   3. Click **Reindex** to embed posts you ghosted before turning AI on.
+   3. Wait for **Search index** to fill. Ghosts saved before AI was on, or before you changed the embedding model, are embedded in the background, one at a time, whenever no other AI work is waiting. The card shows how many are done, the estimated time left, and why indexing paused (for example, Ollama isn't running). It retries every 5 minutes.
 
 ### Bring your own key
 1. Pick **OpenRouter**, **Gemini** or **OpenAI** for any purpose. The model box suggests models, and you can type any model id.
