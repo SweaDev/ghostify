@@ -1,12 +1,13 @@
 import { embed } from 'ai';
-import { askContent, contentText, digestContent } from '../ai/content';
+import { BROWSER_MAX_CONTENT, isReady, notDownloaded } from '../ai/browser/provider';
+import { askContent, contentText, digestContent, MAX_CONTENT } from '../ai/content';
 import { embedItem, modelTag, rank } from '../ai/embed';
 import { enrichItem, itemText } from '../ai/enrich';
 import { embeddingModel, languageModel } from '../ai/models';
 import { type ContentRow, db, type GhostItem, type QaEntry } from '../store/db';
 import { getItem, type ListQuery, listItems, updateItem } from '../store/items';
 import { getKeys } from '../store/secrets';
-import { getSettings, prompt } from '../store/settings';
+import { getSettings, prompt, type Settings } from '../store/settings';
 import { enqueue, JobStopped, runJob, stopJob } from './ai-queue';
 
 export { enqueue, runJob, whenIdle } from './ai-queue';
@@ -17,6 +18,11 @@ const env = () => Promise.all([getSettings(), getKeys()]);
 export async function enrich(key: string, force = false): Promise<void> {
   const [settings, item] = await Promise.all([getSettings(), getItem(key)]);
   if (!settings.ai.enabled || !item || (item.summary && !force)) return;
+  // In-browser model not downloaded: skip quietly (asked for explicitly: say why).
+  if (!(await isReady(settings, 'general'))) {
+    if (force) throw notDownloaded('general');
+    return;
+  }
   await runJob(
     {
       kind: 'enrich',
@@ -42,7 +48,7 @@ export async function enrich(key: string, force = false): Promise<void> {
 
 export async function embedKey(key: string): Promise<void> {
   const [settings, item] = await Promise.all([getSettings(), getItem(key)]);
-  if (!settings.ai.enabled || !item) return;
+  if (!settings.ai.enabled || !item || !(await isReady(settings, 'embedding'))) return;
   await runJob(
     { kind: 'embed', label: item.title, itemKey: key, model: modelTag(settings.ai.embedding) },
     async ({ signal, update }) => {
@@ -80,7 +86,8 @@ export async function searchSemantic(query: string, filters: ListQuery): Promise
     fallback: true,
   });
   const [settings, keys] = await env();
-  if (!settings.ai.enabled || !query.trim()) return keyword();
+  if (!settings.ai.enabled || !query.trim() || !(await isReady(settings, 'embedding')))
+    return keyword();
   const ref = settings.ai.embedding;
   try {
     const { embedding } = await runJob(
@@ -107,11 +114,18 @@ export async function searchSemantic(query: string, filters: ListQuery): Promise
   }
 }
 
+/** How much article text the general model reads (small in-browser models read less). */
+const maxContent = (s: Settings) =>
+  s.ai.general.provider === 'browser' ? BROWSER_MAX_CONTENT : MAX_CONTENT;
+
 /** The text AI reads for an item: its grabbed content, else what the feed showed. */
-async function sourceText(key: string): Promise<{ item: GhostItem; text: string } | undefined> {
+async function sourceText(
+  key: string,
+  max = MAX_CONTENT,
+): Promise<{ item: GhostItem; text: string } | undefined> {
   const [item, content] = await Promise.all([getItem(key), db.contents.get(key)]);
   if (!item) return undefined;
-  return { item, text: content?.text ? contentText(content) : itemText(item) };
+  return { item, text: content?.text ? contentText(content, max) : itemText(item) };
 }
 
 const emptyContent = (item: GhostItem): ContentRow => ({
@@ -133,9 +147,15 @@ export async function forget(key: string, qaId: string): Promise<void> {
 
 /** Streams a digest of the item's content into `contents.digest`. */
 export async function digest(key: string): Promise<void> {
-  const [settings, src] = await Promise.all([getSettings(), sourceText(key)]);
+  const settings = await getSettings();
   if (!settings.ai.enabled) throw new Error('Turn on AI in Settings → AI');
+  const src = await sourceText(key, maxContent(settings));
   if (!src) return;
+  if (!(await isReady(settings, 'general'))) {
+    const c = (await db.contents.get(key)) ?? emptyContent(src.item);
+    await db.contents.put({ ...c, digestError: notDownloaded('general').message });
+    return;
+  }
   const jobId = crypto.randomUUID();
   await db.transaction('rw', db.contents, async () => {
     const c = (await db.contents.get(key)) ?? emptyContent(src.item);
@@ -155,7 +175,7 @@ export async function digest(key: string): Promise<void> {
     async ({ signal, update }) => {
       try {
         const [s, keys] = await env();
-        const cur = await sourceText(key);
+        const cur = await sourceText(key, maxContent(s));
         if (!cur) return;
         let last = 0;
         const text = await digestContent(cur.text, {
@@ -190,20 +210,23 @@ const patchQa = (key: string, id: string, patch: Partial<QaEntry>) =>
 
 /** Adds a question to the item's thread and streams the answer into it. Returns the entry id. */
 export async function ask(key: string, question: string): Promise<string> {
-  const [settings, src] = await Promise.all([getSettings(), sourceText(key)]);
+  const settings = await getSettings();
   if (!settings.ai.enabled) throw new Error('Turn on AI in Settings → AI');
+  const src = await sourceText(key, maxContent(settings));
   if (!src) throw new Error('Unknown item');
+  const ready = await isReady(settings, 'general');
   const entry: QaEntry = {
     id: crypto.randomUUID(),
     q: question.trim(),
     a: '',
     at: Date.now(),
-    jobId: crypto.randomUUID(),
+    ...(ready ? { jobId: crypto.randomUUID() } : { error: notDownloaded('general').message }),
   };
   await db.transaction('rw', db.contents, async () => {
     const c = (await db.contents.get(key)) ?? emptyContent(src.item);
     await db.contents.put({ ...c, qa: [...(c.qa ?? []), entry] });
   });
+  if (!ready) return entry.id;
   void enqueue(
     {
       id: entry.jobId,
@@ -219,7 +242,7 @@ export async function ask(key: string, question: string): Promise<string> {
       await patchQa(key, entry.id, { error: undefined });
       try {
         const [s, keys] = await env();
-        const cur = await sourceText(key);
+        const cur = await sourceText(key, maxContent(s));
         const c = await db.contents.get(key);
         if (!cur) return;
         const history = (c?.qa ?? []).filter((x) => x.at < entry.at);

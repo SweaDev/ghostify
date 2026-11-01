@@ -1,4 +1,5 @@
 import { browser } from 'wxt/browser';
+import { isReady } from '../ai/browser/provider';
 import { checkPurpose } from '../ai/check';
 import { handleDecision } from '../ai/decision';
 import { modelTag } from '../ai/embed';
@@ -67,10 +68,19 @@ export const handlers: Handlers = {
   llm: async ({ req }) => {
     try {
       const d = describe(req);
+      const s = await getSettings();
+      // In-browser models not downloaded: answer at once instead of logging a failed job per page.
+      const ready =
+        (d.kind === 'decision' && (await isReady(s, 'decision'))) || (await isReady(s, 'general'));
+      if (s.ai.enabled && !ready)
+        return {
+          ok: false,
+          error: { code: 'LLM_UNAVAILABLE', message: 'Download the AI models in Settings → AI' },
+        };
       const res = await runJob(
         {
           ...d,
-          model: modelTag((await getSettings()).ai[d.kind === 'decision' ? 'decision' : 'general']),
+          model: modelTag(s.ai[d.kind === 'decision' ? 'decision' : 'general']),
           high: true,
           pausable: false,
           failIfPaused: true,

@@ -10,6 +10,7 @@ import { handlers } from '@/src/background/handlers';
 import { db } from '@/src/store/db';
 import { DEFAULT_SETTINGS, type Settings } from '@/src/store/settings';
 import { textModel } from './mock-model';
+import { OLLAMA_AI } from './ollama-ai';
 
 const req: ClassifyRequest = {
   task: 'classify',
@@ -19,7 +20,10 @@ const req: ClassifyRequest = {
     { id: '2', text: 'A deep dive into Rust lifetimes' },
   ],
 };
-const on: Settings = { ...DEFAULT_SETTINGS, ai: { ...DEFAULT_SETTINGS.ai, enabled: true } };
+const on: Settings = {
+  ...DEFAULT_SETTINGS,
+  ai: { ...DEFAULT_SETTINGS.ai, ...OLLAMA_AI, enabled: true },
+};
 
 /** Fake d3: says yes to "crypto hype" for texts mentioning coins. */
 const d3Fetch = vi.fn(async (_url: string, init?: RequestInit) => {

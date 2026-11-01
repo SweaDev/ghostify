@@ -1,4 +1,5 @@
 import type { Provider, Purpose } from '../store/settings';
+import { BROWSER_MODELS } from './browser/catalog';
 import { LIST_TIMEOUT, ollamaStatus } from './models';
 
 /** What a model can do. A purpose's dropdown lists the models of the matching kind. */
@@ -137,7 +138,13 @@ async function ollama(o: CatalogOptions, fetcher: typeof fetch): Promise<ModelIn
   );
 }
 
-const LISTERS = { gemini, openrouter, openai, ollama };
+/** In-browser models: the built-in catalog (any Hugging Face ONNX repo can also be typed). */
+async function browserList(): Promise<ModelInfo[]> {
+  const KIND = { embedding: 'embedding', general: 'chat', decision: 'decision' } as const;
+  return BROWSER_MODELS.map((m) => ({ id: m.id, kinds: [KIND[m.purpose]] }));
+}
+
+const LISTERS = { gemini, openrouter, openai, ollama, browser: browserList };
 
 /** Lists a provider's models with what each can do. Throws when the provider can't be reached. */
 export function listModels(provider: Provider, o: CatalogOptions): Promise<ModelInfo[]> {

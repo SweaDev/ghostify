@@ -5,6 +5,7 @@ import { db } from '@/src/store/db';
 import { ghostify } from '@/src/store/items';
 import { DEFAULT_PROMPTS, getSettings, saveSettings, withDefaults } from '@/src/store/settings';
 import { streamModel, textModel } from './mock-model';
+import { OLLAMA_AI } from './ollama-ai';
 
 const draft = {
   id: 'a',
@@ -19,7 +20,9 @@ const draft = {
 const aiOn = async (prompts = {}) => {
   const s = await getSettings();
   await saveSettings(
-    withDefaults({ ai: { ...s.ai, enabled: true, prompts: { ...s.ai.prompts, ...prompts } } }),
+    withDefaults({
+      ai: { ...s.ai, ...OLLAMA_AI, enabled: true, prompts: { ...s.ai.prompts, ...prompts } },
+    }),
   );
 };
 const until = (fn: () => Promise<unknown>) =>
