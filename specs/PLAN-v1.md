@@ -181,3 +181,4 @@ The zip names come from `zip.artifactTemplate` and `zip.sourcesTemplate`, and in
 - D9: feedgrab's happy-dom `parseHtml` truncates the full dev.to page. Tests use a trimmed fixture built with `document.body.innerHTML`.
 - D10: Content scripts only pass proxy backends to feedgrab. `build/feedgrab-proxy-only.ts` stubs feedgrab's lazy AI SDK model runner, which keeps `ai` out of the content-script bundle (380 KB → 71 KB).
 - D11: The runtime re-checks re-mounted items (feedgrab `item:updated` with a new element), so items ghosted in another tab stay hidden after re-renders.
+- D12: Newtab-flavor builds go to `.output/<browser>-mv3-newtab` (`outDirTemplate`), so they never overwrite the default flavor's build.

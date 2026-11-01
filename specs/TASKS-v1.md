@@ -66,7 +66,7 @@ Spec: `specs/SPEC-v1.md`. Plan: `specs/PLAN-v1.md`.
   Depends: T08
   Done: keyword search over title/excerpt/author, site filter, detail drawer with full excerpt/image/link; tests pass.
 
-- [ ] T11: New-tab flavor
+- [x] T11: New-tab flavor
   Refs: specs/SPEC-v1.md L9; specs/PLAN-v1.md L5-9; specs/PLAN-v1.md L157-165
   Files: entrypoints/newtab/{index.html,main.tsx}, wxt.config.ts, package.json, .github/workflows/release.yml
   Depends: T08
