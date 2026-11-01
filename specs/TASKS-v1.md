@@ -40,7 +40,7 @@ Spec: `specs/SPEC-v1.md`. Plan: `specs/PLAN-v1.md`.
   Depends: T02, T04, T05
   Done: runtime test on fixture doc: already-ghosted ids hidden on start; items added later (mutation) are checked; clicking ghost button calls ghostify and hides item; undo restores; dispose cleans up. Content script builds for both browsers.
 
-- [ ] T07: Popup with ghost list, README and version 0.1.0
+- [x] T07: Popup with ghost list, README and version 0.1.0
   Refs: specs/SPEC-v1.md L8; specs/PLAN-v1.md L22-54; specs/PLAN-v1.md L144-156
   Files: entrypoints/popup/App.tsx, src/ui/ItemCard.tsx, src/ui/useItems.ts, src/ui/EmptyState.tsx, tests/ui.test.tsx, README.md, package.json
   Depends: T06
