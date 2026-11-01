@@ -80,7 +80,7 @@ Spec: `specs/SPEC-v1.md`. Plan: `specs/PLAN-v1.md`.
 
 ## Phase 3: Sites and custom selectors
 
-- [ ] T13: Options page with Sites manager
+- [x] T13: Options page with Sites manager
   Refs: specs/SPEC-v1.md L10-12; specs/PLAN-v1.md L55-94
   Files: entrypoints/options/{index.html,main.tsx,App.tsx}, src/ui/SitesSettings.tsx, src/sites/registry.ts, tests/sites-settings.test.tsx
   Depends: T12

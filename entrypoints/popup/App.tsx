@@ -1,9 +1,9 @@
-import { ArrowUpRight } from 'lucide-react';
+import { ArrowUpRight, Settings } from 'lucide-react';
 import { browser } from 'wxt/browser';
 import { unghost } from '@/src/store/items';
 import { EmptyState } from '@/src/ui/EmptyState';
 import { GhostIcon } from '@/src/ui/GhostIcon';
-import { ItemCard } from '@/src/ui/ItemCard';
+import { IconButton, ItemCard } from '@/src/ui/ItemCard';
 import { useCounts, useItems } from '@/src/ui/useItems';
 
 export function App() {
@@ -19,6 +19,9 @@ export function App() {
             {counts.ghost} ghosted
           </span>
         )}
+        <IconButton label="Settings" onClick={() => void browser.runtime.openOptionsPage()}>
+          <Settings className="size-4" />
+        </IconButton>
       </header>
       <section className="flex-1 overflow-y-auto p-2">
         {items?.length === 0 && (
