@@ -104,7 +104,7 @@ Spec: `specs/SPEC-v1.md`. Plan: `specs/PLAN-v1.md`.
   Depends: T15
   Done: runtime re-resolves view when login indicator changes (body attribute mutation); picker can set login indicator by picking an element; tests cover switching views.
 
-- [ ] T17: README and version 0.3.0
+- [x] T17: README and version 0.3.0
   Refs: specs/PLAN-v1.md L144-171
   Files: README.md, package.json
   Depends: T16
