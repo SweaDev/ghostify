@@ -1,6 +1,7 @@
 import { embed, generateText } from 'ai';
 import { getKeys } from '../store/secrets';
 import { getSettings, type Purpose } from '../store/settings';
+import { systemOneClassify, systemOneTarget } from './decision';
 import { embeddingModel, hasModel, languageModel, ollamaStatus } from './models';
 
 export interface CheckResult {
@@ -18,8 +19,14 @@ export async function checkPurpose(purpose: Purpose): Promise<CheckResult> {
       if (!st.ok) return { ok: false, message: st.error ?? 'Ollama is not reachable' };
       if (!hasModel(st.models, ref.model))
         return { ok: false, message: `Model not pulled: run "ollama pull ${ref.model}"` };
-      if (purpose === 'decision' && ref.model.startsWith('d3'))
-        return { ok: true, message: `${ref.model} is installed` };
+    }
+    const target = purpose === 'decision' && (await systemOneTarget(ref, settings, keys));
+    if (target) {
+      const { results } = await systemOneClassify(
+        { task: 'classify', criteria: ['a greeting'], items: [{ id: 't', text: 'Hello there!' }] },
+        target,
+      );
+      return { ok: true, message: `Decision model answered (match: ${results[0]?.exclude})` };
     }
     if (purpose === 'embedding') {
       const { embedding } = await embed({

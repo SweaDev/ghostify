@@ -3,21 +3,47 @@ import type { ClassifyRequest, ClassifyResponse, LlmResponse } from 'feedgrab';
 import { handleLlmRequest } from 'feedgrab/llm';
 import { getKeys } from '../store/secrets';
 import { getSettings, type Keys, type ModelRef, type Settings } from '../store/settings';
-import { languageModel } from './models';
+import { isOpenRouterDecision, ollamaKinds } from './catalog';
+import { key, languageModel, OPENROUTER_URL } from './models';
 
-export const isD3 = (ref: ModelRef) => ref.provider === 'ollama' && /^d3(:|$)/.test(ref.model);
+export interface SystemOneTarget {
+  url: string;
+  model: string;
+  apiKey?: string;
+}
 
-interface D3Answer {
+/**
+ * Where to send a System One decision request (`model` + `state` + typed `questions`), or
+ * undefined for a chat model. Ollama decision models (d3, d1-omni, …) declare the `decision`
+ * capability; OpenRouter decision models (Jev, …) list `decisions` as an output modality.
+ */
+export async function systemOneTarget(
+  ref: ModelRef,
+  settings: Settings,
+  keys: Keys,
+  fetcher: typeof fetch = fetch,
+): Promise<SystemOneTarget | undefined> {
+  if (ref.provider === 'ollama') {
+    const base = settings.ai.ollamaBaseUrl;
+    if (!(await ollamaKinds(base, ref.model, fetcher)).includes('decision')) return undefined;
+    return { url: `${base.replace(/\/+$/, '')}/v1/systemone`, model: ref.model };
+  }
+  if (ref.provider === 'openrouter' && (await isOpenRouterDecision(ref.model, fetcher)))
+    return { url: `${OPENROUTER_URL}/systemone`, model: ref.model, apiKey: key(ref, keys) };
+  return undefined;
+}
+
+interface Answer {
   match: boolean;
   confidence: number;
 }
 
 /**
- * d3's `/v1/systemone` answer for a yes/no ("noul") question. The response shape is not fully
- * documented, so this accepts a boolean, a probability in 0..1, `{ value|answer, probability|confidence }`
+ * A System One answer to a yes/no ("noul") question, documented as `{ type: "noul", noul: 0.96 }`
+ * (a probability). To be lenient this also accepts a boolean, a probability in 0..1, `{ value|answer, probability|confidence }`
  * or "true"/"false"; anything else is undefined (treated as no match).
  */
-export function parseD3Answer(raw: unknown): D3Answer | undefined {
+export function parseNoul(raw: unknown): Answer | undefined {
   const v = raw && typeof raw === 'object' && 'noul' in raw ? (raw as { noul: unknown }).noul : raw;
   if (typeof v === 'boolean') return { match: v, confidence: 1 };
   if (typeof v === 'number' && v >= 0 && v <= 1)
@@ -29,12 +55,12 @@ export function parseD3Answer(raw: unknown): D3Answer | undefined {
     const p = o.probability ?? o.confidence ?? o.score;
     if (typeof match === 'boolean')
       return { match, confidence: typeof p === 'number' ? Math.max(0, Math.min(1, p)) : 1 };
-    if (typeof p === 'number') return parseD3Answer(p);
+    if (typeof p === 'number') return parseNoul(p);
   }
   return undefined;
 }
 
-export function d3Questions(criteria: string[]) {
+export function noulQuestions(criteria: string[]) {
   return Object.fromEntries(
     criteria.map((c, i) => [
       `c${i}`,
@@ -47,28 +73,30 @@ export function d3Questions(criteria: string[]) {
   );
 }
 
-/** Classifies each item with one d3 call (one yes/no question per criterion). */
-export async function d3Classify(
+/** Classifies each item with one System One call (one yes/no question per criterion). */
+export async function systemOneClassify(
   req: ClassifyRequest,
-  opts: { baseUrl: string; model: string; fetcher?: typeof fetch },
+  target: SystemOneTarget,
+  fetcher: typeof fetch = fetch,
 ): Promise<ClassifyResponse> {
-  const fetcher = opts.fetcher ?? fetch;
-  const url = `${opts.baseUrl.replace(/\/+$/, '')}/v1/systemone`;
-  const questions = d3Questions(req.criteria);
+  const headers: Record<string, string> = { 'content-type': 'application/json' };
+  if (target.apiKey) headers.authorization = `Bearer ${target.apiKey}`;
+  const questions = noulQuestions(req.criteria);
   const results: ClassifyResponse['results'] = [];
   for (const item of req.items) {
-    const res = await fetcher(url, {
+    const res = await fetcher(target.url, {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ model: opts.model, state: item.text, questions }),
+      headers,
+      body: JSON.stringify({ model: target.model, state: item.text, questions }),
     });
-    if (!res.ok) throw new Error(`d3 answered ${res.status}`);
+    if (!res.ok) throw new Error(`${target.model} answered ${res.status}`);
     const body = (await res.json()) as { answers?: Record<string, unknown> };
     const answers = body.answers ?? (body as Record<string, unknown>);
-    let best: { i: number; a: D3Answer } | undefined;
+    let best: { i: number; a: Answer } | undefined;
     req.criteria.forEach((_, i) => {
-      const a = parseD3Answer(answers[`c${i}`]);
-      if (a === undefined) console.warn('[ghostify:d3] unrecognized answer', answers[`c${i}`]);
+      const a = parseNoul(answers[`c${i}`]);
+      if (a === undefined)
+        console.warn('[ghostify:decision] unrecognized answer', answers[`c${i}`]);
       if (a?.match && (!best || a.confidence > best.a.confidence)) best = { i, a };
     });
     results.push(
@@ -88,8 +116,8 @@ export interface DecisionDeps {
 }
 
 /**
- * Answers feedgrab LLM requests from content scripts. `classify` uses the decision model (d3 via
- * Ollama, or any chat model) and falls back to the general model on error; `detect` uses the
+ * Answers feedgrab LLM requests from content scripts. `classify` uses the decision model (a System
+ * One model such as d3, d1-omni or Jev, or any chat model) and falls back to the general model on error; `detect` uses the
  * general model.
  */
 export async function handleDecision(req: unknown, deps?: DecisionDeps): Promise<LlmResponse> {
@@ -104,13 +132,8 @@ export async function handleDecision(req: unknown, deps?: DecisionDeps): Promise
   if (r.task !== 'classify') return general();
   const decision = settings.ai.decision;
   try {
-    if (isD3(decision)) {
-      return await d3Classify(req as ClassifyRequest, {
-        baseUrl: settings.ai.ollamaBaseUrl,
-        model: decision.model,
-        fetcher,
-      });
-    }
+    const target = await systemOneTarget(decision, settings, keys, fetcher);
+    if (target) return await systemOneClassify(req as ClassifyRequest, target, fetcher);
     return await handleLlmRequest(req, lm(decision));
   } catch (e) {
     console.warn('[ghostify:ai] decision model failed, using the general model', e);

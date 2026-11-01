@@ -24,8 +24,8 @@ const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models';
 const OPENROUTER_MODELS = 'https://openrouter.ai/api/v1/models?output_modalities=all';
 const OPENAI_MODELS = 'https://api.openai.com/v1/models';
 
-/** Names that mark a decision model (d3, or a future "...-decision-..." model). */
-const DECISION_NAME = /(^|\/)d3([:-]|$)|decision/i;
+/** Names that mark a decision model (d3, Jev, or a future "...-decision-..." model). */
+const DECISION_NAME = /(^|\/)(d3|jev)([:-]|$)|decision/i;
 
 const kinds = (...k: (Kind | false)[]) => k.filter((x): x is Kind => !!x);
 
@@ -101,37 +101,58 @@ async function openai(o: CatalogOptions, fetcher: typeof fetch): Promise<ModelIn
 }
 
 /** Ollama's `/api/show` declares `capabilities` (completion, embedding, decision, …). */
+export async function ollamaKinds(
+  baseUrl: string,
+  id: string,
+  fetcher: typeof fetch = fetch,
+): Promise<Kind[]> {
+  const caps = await getJson<{ capabilities?: string[] }>(
+    fetcher,
+    `${baseUrl.replace(/\/+$/, '')}/api/show`,
+    { method: 'POST', body: JSON.stringify({ model: id }) },
+  )
+    .then((r) => r.capabilities)
+    .catch(() => undefined);
+  // Older Ollama versions report no capabilities: guess from the name.
+  if (!caps?.length) {
+    const embedding = /embed/i.test(id);
+    return kinds(
+      embedding && 'embedding',
+      !embedding && 'chat',
+      DECISION_NAME.test(id) && 'decision',
+    );
+  }
+  return kinds(
+    caps.includes('embedding') && 'embedding',
+    caps.includes('completion') && 'chat',
+    (caps.includes('decision') || DECISION_NAME.test(id)) && 'decision',
+  );
+}
+
 async function ollama(o: CatalogOptions, fetcher: typeof fetch): Promise<ModelInfo[]> {
   const st = await ollamaStatus(o.ollamaBaseUrl, fetcher);
   if (!st.ok) throw new Error(st.error);
-  const base = o.ollamaBaseUrl.replace(/\/+$/, '');
   return Promise.all(
-    st.models.map(async (id) => {
-      const caps = await getJson<{ capabilities?: string[] }>(fetcher, `${base}/api/show`, {
-        method: 'POST',
-        body: JSON.stringify({ model: id }),
-      })
-        .then((r) => r.capabilities)
-        .catch(() => undefined);
-      // Older Ollama versions report no capabilities: guess from the name.
-      if (!caps?.length) {
-        const decision = DECISION_NAME.test(id);
-        const embedding = /embed/i.test(id);
-        return {
-          id,
-          kinds: kinds(embedding && 'embedding', !embedding && 'chat', decision && 'decision'),
-        };
-      }
-      return {
-        id,
-        kinds: kinds(
-          caps.includes('embedding') && 'embedding',
-          caps.includes('completion') && 'chat',
-          (caps.includes('decision') || DECISION_NAME.test(id)) && 'decision',
-        ),
-      };
-    }),
+    st.models.map(async (id) => ({ id, kinds: await ollamaKinds(o.ollamaBaseUrl, id, fetcher) })),
   );
+}
+
+let orDecisions: { at: number; ids: Promise<Set<string>> } | undefined;
+
+/** True when OpenRouter lists `id` as a decision model (list cached for an hour), or its name says so. */
+export async function isOpenRouterDecision(id: string, fetcher: typeof fetch = fetch) {
+  if (DECISION_NAME.test(id)) return true;
+  if (!orDecisions || Date.now() - orDecisions.at > 3_600_000) {
+    const ids = getJson<{ data?: { id: string }[] }>(
+      fetcher,
+      'https://openrouter.ai/api/v1/models?output_modalities=decisions',
+    ).then(({ data = [] }) => new Set(data.map((m) => m.id)));
+    orDecisions = { at: Date.now(), ids };
+    ids.catch(() => {
+      orDecisions = undefined;
+    });
+  }
+  return (await orDecisions.ids.catch(() => new Set<string>())).has(id);
 }
 
 const LISTERS = { gemini, openrouter, openai, ollama };

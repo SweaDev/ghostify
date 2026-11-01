@@ -46,6 +46,8 @@ Each purpose (embeddings, general model, decision model) can use its own provide
 | General (summaries, tags) | [`gemma4:e2b`](https://ollama.com/library/gemma4) |
 | Decision (auto-ghostify rules) | [`d3:2b`](https://ollama.com/library/d3) (needs Ollama 0.40.9 or later) |
 
+Any Ollama model with the `decision` capability (for example [`d1-omni`](https://ollama.com/library/d1-omni)) works as the decision model. So does an OpenRouter decision model such as [Jev](https://openrouter.ai/docs/guides/community/jev) (`typesafe/jev-1.14`). Ghostify sends these models System One requests (`/v1/systemone`); any other model gets a chat prompt.
+
 1. Pull the models:
    ```sh
    ollama pull embeddinggemma-2
@@ -160,7 +162,7 @@ git push origin v1.0.0
 ## Known limits
 - Ghostify isn't published to the Chrome Web Store or Firefox Add-ons. Install it from a release zip or a local build.
 - dev.to has only its logged-out home feeds built in.
-- The exact response format of d3's `/v1/systemone` endpoint isn't documented. Ghostify reads the answer shapes it knows (see `src/ai/decision.ts`), treats anything else as "no match", and logs it.
+- Decision models get one yes/no (`noul`) System One question per rule. Ghostify reads the documented `{ "noul": <probability> }` answer and a few lenient variants (see `src/ai/decision.ts`). It treats anything else as "no match" and logs it.
 - Data isn't synced between browsers. To move your sites, use export and import in **Settings → Sites**.
 
 ## Permissions

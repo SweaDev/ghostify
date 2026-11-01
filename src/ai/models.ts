@@ -10,7 +10,7 @@ export const OPENROUTER_URL = 'https://openrouter.ai/api/v1';
 
 export const ollamaV1 = (s: Settings) => `${s.ai.ollamaBaseUrl.replace(/\/+$/, '')}/v1`;
 
-function key(ref: ModelRef, keys: Keys): string | undefined {
+export function key(ref: ModelRef, keys: Keys): string | undefined {
   if (ref.provider === 'ollama') return undefined;
   const k = keys[ref.provider];
   if (!k) throw new Error(`Add an API key for ${ref.provider} in Settings → AI`);
@@ -66,7 +66,7 @@ export const SUGGESTED: Record<
   ollama: {
     embedding: ['embeddinggemma-2', 'embeddinggemma-2:270m'],
     general: ['gemma4:e2b', 'gemma4:e4b'],
-    decision: ['d3:2b', 'd3:4b', 'gemma4:e2b'],
+    decision: ['d3:2b', 'd3:4b', 'd1-omni', 'gemma4:e2b'],
   },
   openai: {
     embedding: ['text-embedding-3-small', 'text-embedding-3-large'],
@@ -76,7 +76,7 @@ export const SUGGESTED: Record<
   openrouter: {
     embedding: ['openai/text-embedding-3-small', 'google/gemini-embedding-001'],
     general: ['google/gemma-4-e4b-it', 'openai/gpt-5-mini'],
-    decision: ['openai/gpt-5-nano', 'google/gemma-4-e4b-it'],
+    decision: ['typesafe/jev-1.14', 'openai/gpt-5-nano', 'google/gemma-4-e4b-it'],
   },
   gemini: {
     embedding: ['gemini-embedding-001'],
