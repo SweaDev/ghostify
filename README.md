@@ -2,9 +2,9 @@
 
 Ghostify is a browser extension (Chrome and Firefox) for feeds that keep showing you the same posts. Hover a post, click the ghost, and it disappears from the site's feed for good. Ghostify keeps a copy so you can find it again later.
 
-> **Status: v0.3.0 (Phase 3 of 4).** Ghostify works on the dev.to home feeds out of the box, and you can add any site. It has a full Ghostify page with snooze and search. See [What's missing](#whats-missing).
+> **v1.0.0.** Ghostify works on the dev.to home feeds out of the box, and you can add any site. It has a full Ghostify page with snooze and search, and optional AI that runs locally with Ollama or with your own OpenRouter, Gemini or OpenAI key.
 
-## Features in this version
+## Features
 - **The dev.to logged-out home feeds** (Relevant `/`, Latest `/latest`, Top `/top/*`) are recognized automatically, through [feedgrab](https://github.com/SweaDev/feedgrab).
 - **The ghost button** shows on the post under your pointer. Clicking it hides the post and saves it, and an **Undo** toast lets you take it back.
 - **Ghosted posts stay hidden** when you reload, and also when they come back later through infinite scroll.
@@ -30,7 +30,44 @@ Ghostify is a browser extension (Chrome and Firefox) for feeds that keep showing
   dev.to is built in. Its login indicator is `body[data-user-status="logged-in"]`, and only its logged-out home feeds are set up. Add the logged-in view yourself with **Edit selectors** if you want it.
 - **The view switches** as soon as you log in or out, without a reload.
 - **The new-tab flavor** (`ghostify-newtab-*` zips) puts the Ghostify page on every new tab. Install either the regular flavor or the new-tab flavor, not both.
-- Everything stays local in your browser (IndexedDB), with no account and no sync.
+- **AI is optional and off by default.** Turn it on in **Settings → AI** to get:
+  - **summaries and tags** for each ghosted post, written by the general model. Click a tag to filter by it.
+  - **semantic search**: turn on **Semantic** next to the search box and describe what you remember.
+  - **auto-ghostify rules**: in **Settings → Sites**, write plain-language rules per site, such as "posts that are mostly self-promotion". The decision model checks new feed items against them and ghosts the matches. Auto-ghosted posts are labelled with their rule. **Not this** brings a post back, and that rule never hides it again.
+- Everything stays local in your browser (IndexedDB), with no account and no sync. With Ollama, AI stays on your machine too.
+
+## AI setup
+Each purpose (embeddings, general model, decision model) can use its own provider and model.
+
+### Local with Ollama (default)
+| Purpose | Default model |
+|---|---|
+| Embeddings (semantic search) | [`embeddinggemma-2`](https://ollama.com/library/embeddinggemma-2) |
+| General (summaries, tags) | [`gemma4:e2b`](https://ollama.com/library/gemma4) |
+| Decision (auto-ghostify rules) | [`d3:2b`](https://ollama.com/library/d3) (needs Ollama 0.40.9 or later) |
+
+1. Pull the models:
+   ```sh
+   ollama pull embeddinggemma-2
+   ollama pull gemma4:e2b
+   ollama pull d3:2b
+   ```
+2. Start Ollama so it accepts requests from browser extensions:
+   ```sh
+   OLLAMA_ORIGINS="chrome-extension://*,moz-extension://*" ollama serve
+   ```
+3. In **Settings → AI**:
+   1. Turn on **Use AI**.
+   2. Click **Test** on each row.
+   3. Click **Reindex** to embed posts you ghosted before turning AI on.
+
+### Bring your own key
+1. Pick **OpenRouter**, **Gemini** or **OpenAI** for any purpose. The model box suggests models, and you can type any model id.
+2. Paste the key into **API keys**.
+
+Keys are stored only in the extension's own storage and sent only to that provider. Content scripts on the sites you visit never see them.
+
+If the decision model fails (for example, Ollama isn't running), the general model handles the rule check instead. If embeddings fail, search falls back to keywords.
 
 ## Install a release
 1. Download a zip from [Releases](https://github.com/SweaDev/ghostify/releases):
@@ -69,6 +106,7 @@ Then:
 1. Open <https://dev.to/> while logged out, hover a post, and click the ghost.
 2. Click the Ghostify toolbar icon, then **Open Ghostify**. If you use the new-tab flavor, open a new tab instead.
 3. To try another site, open it, click the toolbar icon and choose **Add this site**.
+4. Optional: set up AI (see [AI setup](#ai-setup)).
 
 ### Development
 | Command | What it does |
@@ -85,12 +123,12 @@ Then:
 Pushing a `v*` tag runs `.github/workflows/release.yml`. It tests the extension, builds the Chrome, Firefox and Firefox sources zips for both flavors, and attaches them to a GitHub Release:
 
 ```sh
-git push origin v0.3.0
+git push origin v1.0.0
 ```
 
 ## Project docs
 - The spec is `specs/SPEC-v1.md`, the plan is `specs/PLAN-v1.md`, and the tasks are `specs/TASKS-v1.md`.
-- This version covers tasks **T01–T17** (Phases 1–3) and these parts of the spec:
+- This version covers every task, **T01–T23** (Phases 1–4), and all of the spec:
   - feedgrab feed reading;
   - the dev.to logged-out home feeds, plus adding more sites;
   - custom feed selectors through feedgrab;
@@ -100,12 +138,14 @@ git push origin v0.3.0
   - viewing later, snoozing, and the Ghostified tab until you remove an item;
   - keyword filtering;
   - the UI;
-  - the new-tab option (as a build flavor).
+  - the new-tab option (as a build flavor);
+  - local Ollama models (embeddinggemma-2, Gemma 4 E2B, d3:2b) and bring-your-own-key OpenRouter, Gemini and OpenAI, configurable per purpose.
 
-## What's missing
-| Coming in | What |
-|---|---|
-| Phase 4 | Local AI with Ollama (summaries, tags, semantic search, auto-ghostify rules) and bring-your-own-key OpenRouter, Gemini and OpenAI |
+## Known limits
+- Ghostify isn't published to the Chrome Web Store or Firefox Add-ons. Install it from a release zip or a local build.
+- dev.to has only its logged-out home feeds built in.
+- The exact response format of d3's `/v1/systemone` endpoint isn't documented. Ghostify reads the answer shapes it knows (see `src/ai/decision.ts`), treats anything else as "no match", and logs it.
+- Data isn't synced between browsers. To move your sites, use export and import in **Settings → Sites**.
 
 ## Permissions
 | Permission | Why |

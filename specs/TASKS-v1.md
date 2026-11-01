@@ -142,7 +142,7 @@ Spec: `specs/SPEC-v1.md`. Plan: `specs/PLAN-v1.md`.
   Depends: T21
   Done: per-site rules editor; runtime injects enabled rules as llm-text exclusions when AI on; excluded items auto-ghostified with `auto` and hidden; "Auto" badge + "Not this" (un-ghost) in UI; tests pass.
 
-- [ ] T23: README and version 1.0.0
+- [x] T23: README and version 1.0.0
   Refs: specs/PLAN-v1.md L144-171
   Files: README.md, package.json
   Depends: T19, T20, T22
