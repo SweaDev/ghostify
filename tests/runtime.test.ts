@@ -88,20 +88,30 @@ describe('feed runtime', () => {
     expect(document.querySelector('[data-ghostify]')).toBeNull();
   });
 
-  it('tracks stories that infinite scroll appends inside a paged-stories wrapper', async () => {
+  it('tracks stories that infinite scroll appends inside nested paged-stories wrappers', async () => {
     const { api, drafts } = fakeApi();
     const rt = start(api);
-    const page = document.createElement('div');
-    page.className = 'paged-stories';
-    const story = stories()[2]?.cloneNode(true) as HTMLElement;
-    for (const a of story.querySelectorAll('a')) a.href = 'https://dev.to/someone/paged-post-1';
-    page.append(story);
-    document.querySelector('#substories')?.append(page);
+    // dev.to appends each new page inside the previous page's wrapper.
+    let parent = document.querySelector('#substories') as Element;
+    let story: HTMLElement | undefined;
+    for (let depth = 1; depth <= 3; depth++) {
+      const page = document.createElement('div');
+      page.className = 'paged-stories';
+      story = document.createElement('article');
+      story.className = 'crayons-story';
+      story.innerHTML = (stories()[2] as HTMLElement).innerHTML;
+      for (const a of story.querySelectorAll('a'))
+        a.href = `https://dev.to/someone/paged-post-${depth}`;
+      page.append(story);
+      parent.append(page);
+      parent = page;
+    }
+    if (!story) throw new Error('no story');
     await vi.waitFor(async () => {
       await ghostViaButton(story);
       expect(drafts).toHaveLength(1);
     });
-    expect(drafts[0]?.url).toBe('https://dev.to/someone/paged-post-1');
+    expect(drafts[0]?.url).toBe('https://dev.to/someone/paged-post-3');
     await vi.waitFor(() => expect(isHidden(story)).toBe(true));
     rt.dispose();
   });
