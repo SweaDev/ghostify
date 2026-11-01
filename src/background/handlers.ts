@@ -3,7 +3,7 @@ import { checkPurpose } from '../ai/check';
 import { handleDecision } from '../ai/decision';
 import type { ProtocolMap } from '../messaging';
 import { onMessage } from '../messaging';
-import { ghostedIds, ghostify, listItems, setState, unghost } from '../store/items';
+import { autoGhostify, ghostedIds, ghostify, listItems, setState, unghost } from '../store/items';
 import { afterGhostify, embedKey, enqueue, enrich, reindex, searchSemantic } from './jobs';
 
 type Handlers = {
@@ -20,6 +20,11 @@ export const handlers: Handlers = {
     return item;
   },
   unghost: ({ key }) => unghost(key),
+  autoGhostify: async (draft) => {
+    const item = await autoGhostify(draft);
+    if (item) void afterGhostify(item.key);
+    return item;
+  },
   setState: ({ key, state, snoozeUntil }) => setState(key, state, snoozeUntil),
   listItems: (q) => listItems(q),
   openDashboard: async () => {

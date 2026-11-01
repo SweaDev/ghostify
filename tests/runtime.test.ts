@@ -9,6 +9,8 @@ function fakeApi(initial: string[] = []) {
   const ghosted = new Set(initial);
   const state = { ghostAll: false };
   const drafts: GhostDraft[] = [];
+  const autos: GhostDraft[] = [];
+  const kept = new Set<string>();
   const api: RuntimeApi = {
     isGhosted: async (_host, ids) => ids.filter((id) => state.ghostAll || ghosted.has(id)),
     ghostify: async (d) => {
@@ -25,8 +27,20 @@ function fakeApi(initial: string[] = []) {
     unghost: vi.fn(async (key: string) => {
       ghosted.delete(key.split(':')[1] as string);
     }),
+    autoGhostify: async (d) => {
+      if (kept.has(d.id)) return null;
+      autos.push(d);
+      ghosted.add(d.id);
+      return {
+        ...d,
+        key: `${d.host}:${d.id}`,
+        state: 'ghost',
+        createdAt: 0,
+        updatedAt: 0,
+      } as GhostItem;
+    },
   };
-  return { api, ghosted, drafts, state };
+  return { api, ghosted, drafts, state, autos, kept };
 }
 
 const stories = () => [...document.querySelectorAll<HTMLElement>('#substories > .crayons-story')];
@@ -155,6 +169,85 @@ describe('login views', () => {
       api: fakeApi().api,
     });
     expect(rt3.active).toBe(true);
+    rt3.dispose();
+  });
+});
+
+describe('auto-ghostify rules', () => {
+  const rules = [{ id: 'r1', criteria: 'posts about JavaScript', enabled: true }];
+  const site = { ...DEVTO_SITE, rules };
+  /** Fake decision backend: JavaScript stories match the first criterion. */
+  const llm = vi.fn(async (req: { task: string; items?: { id: string; text: string }[] }) => ({
+    results: (req.items ?? []).map((i) =>
+      /javascript/i.test(i.text)
+        ? { id: i.id, exclude: true, criteriaIndex: 0, confidence: 0.9 }
+        : { id: i.id, exclude: false, confidence: 0.9 },
+    ),
+  }));
+  const jsStory = () =>
+    stories().find((s) => /javascript/i.test(s.textContent ?? '')) as HTMLElement;
+
+  beforeEach(() => {
+    devtoDoc();
+    llm.mockClear();
+  });
+
+  it('auto-ghostifies matching items with the rule recorded', async () => {
+    expect(jsStory()).toBeTruthy();
+    const { api, autos } = fakeApi();
+    const rt = startFeedRuntime({ doc: document, url: 'https://dev.to/', sites: [site], api, llm });
+    await vi.waitFor(() => expect(autos.length).toBeGreaterThan(0), { timeout: 3000 });
+    expect(autos[0]?.auto).toEqual({
+      ruleId: 'r1',
+      criteria: 'posts about JavaScript',
+      confidence: 0.9,
+    });
+    await vi.waitFor(() => expect(isHidden(jsStory())).toBe(true));
+    const others = stories().filter((s) => !/javascript/i.test(s.textContent ?? ''));
+    expect(others.some((s) => !isHidden(s))).toBe(true);
+    rt.dispose();
+  });
+
+  it('keeps rescued items and ignores rules without an LLM', async () => {
+    const first = fakeApi();
+    const rt1 = startFeedRuntime({
+      doc: document,
+      url: 'https://dev.to/',
+      sites: [site],
+      api: first.api,
+      llm,
+    });
+    await vi.waitFor(() => expect(first.autos.length).toBeGreaterThan(0), { timeout: 3000 });
+    rt1.dispose();
+
+    devtoDoc();
+    const second = fakeApi();
+    for (const a of first.autos) second.kept.add(a.id);
+    const rt2 = startFeedRuntime({
+      doc: document,
+      url: 'https://dev.to/',
+      sites: [site],
+      api: second.api,
+      llm,
+    });
+    await vi.waitFor(() => expect(llm).toHaveBeenCalledTimes(2), { timeout: 3000 });
+    await new Promise((r) => setTimeout(r, 50));
+    expect(second.autos).toEqual([]);
+    expect(isHidden(jsStory())).toBe(false);
+    rt2.dispose();
+
+    devtoDoc();
+    llm.mockClear();
+    const third = fakeApi();
+    const rt3 = startFeedRuntime({
+      doc: document,
+      url: 'https://dev.to/',
+      sites: [site],
+      api: third.api,
+    });
+    await new Promise((r) => setTimeout(r, 300));
+    expect(llm).not.toHaveBeenCalled();
+    expect(third.autos).toEqual([]);
     rt3.dispose();
   });
 });

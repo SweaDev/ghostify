@@ -1,8 +1,8 @@
-import { Bookmark, Ghost } from 'lucide-react';
+import { Bookmark, Ghost, Undo2 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { sendMessage } from '../messaging';
 import type { GhostItem, ItemState } from '../store/db';
-import { expireSnoozes, setState, unghost, updateItem } from '../store/items';
+import { expireSnoozes, rescue, setState, unghost, updateItem } from '../store/items';
 import { FilterBar, type Filters } from './FilterBar';
 import { timeAgo } from './format';
 import { useSettings } from './GeneralSettings';
@@ -91,6 +91,11 @@ export function Dashboard() {
   const move = (item: GhostItem, state: ItemState) => void setState(item.key, state);
   const actions = (item: GhostItem) => (
     <>
+      {item.auto && (
+        <IconButton label="Not this (keep it on the site)" onClick={() => void rescue(item.key)}>
+          <Undo2 className="size-4" />
+        </IconButton>
+      )}
       {item.state !== 'later' && (
         <IconButton label="Read later" onClick={() => move(item, 'later')}>
           <Bookmark className="size-4" />
@@ -181,7 +186,11 @@ export function Dashboard() {
           }
           actions={actions}
           note={(i) =>
-            i.state === 'snoozed' && i.snoozeUntil ? `Back ${timeAgo(i.snoozeUntil, now)}` : null
+            i.state === 'snoozed' && i.snoozeUntil
+              ? `Back ${timeAgo(i.snoozeUntil, now)}`
+              : i.auto
+                ? `Auto-ghosted: ${i.auto.criteria}`
+                : null
           }
           onUnghost={(i) => void unghost(i.key)}
           onOpen={(i) => setOpenKey(i.key)}

@@ -47,6 +47,8 @@ export const db = new Dexie('ghostify') as Dexie & {
   items: EntityTable<GhostItem, 'key'>;
   embeddings: EntityTable<Embedding, 'key'>;
   secrets: EntityTable<Secret, 'id'>;
+  /** Items the user rescued from an auto-ghostify rule ("Not this"); rules skip them. */
+  kept: EntityTable<{ key: string; at: number }, 'key'>;
 };
 
 db.version(1).stores({
@@ -54,3 +56,4 @@ db.version(1).stores({
   embeddings: 'key',
 });
 db.version(2).stores({ secrets: 'id' });
+db.version(3).stores({ kept: 'key' });

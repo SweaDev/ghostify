@@ -1,4 +1,4 @@
-import { ChevronDown, Download, Trash2, Upload } from 'lucide-react';
+import { ChevronDown, Download, Plus, Trash2, Upload } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { mergeSites, parseSitesJson, serializeSites } from '../sites/io';
 import type { LoginIndicator, Site, View } from '../sites/model';
@@ -60,6 +60,63 @@ function IndicatorEditor({ site }: { site: Site }) {
   );
 }
 
+function RulesEditor({ site }: { site: Site }) {
+  const [draft, setDraft] = useState('');
+  const save = (rules: Site['rules']) => void saveSite({ ...site, rules });
+  const add = () => {
+    const criteria = draft.trim();
+    if (!criteria) return;
+    save([...site.rules, { id: `r_${Date.now().toString(36)}`, criteria, enabled: true }]);
+    setDraft('');
+  };
+  return (
+    <div className="flex flex-col gap-2 text-sm">
+      <div>
+        <span className="font-medium">Auto-ghostify rules</span>
+        <span className="ml-2 text-xs text-zinc-500">
+          Plain language, checked by the decision model when AI is on.
+        </span>
+      </div>
+      {site.rules.map((r) => (
+        <div key={r.id} className="flex items-center gap-2">
+          <Switch
+            checked={r.enabled}
+            label={`Enable rule ${r.criteria}`}
+            onChange={(enabled) =>
+              save(site.rules.map((x) => (x.id === r.id ? { ...x, enabled } : x)))
+            }
+          />
+          <span className="flex-1">{r.criteria}</span>
+          <IconButton
+            label={`Delete rule ${r.criteria}`}
+            onClick={() => save(site.rules.filter((x) => x.id !== r.id))}
+          >
+            <Trash2 className="size-3.5" />
+          </IconButton>
+        </div>
+      ))}
+      <form
+        className="flex gap-2"
+        onSubmit={(e) => {
+          e.preventDefault();
+          add();
+        }}
+      >
+        <input
+          aria-label="New rule"
+          placeholder="e.g. posts that are mostly self-promotion"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          className={`${input} flex-1`}
+        />
+        <button type="submit" className={`${input} inline-flex items-center gap-1`}>
+          <Plus className="size-4" /> Add rule
+        </button>
+      </form>
+    </div>
+  );
+}
+
 function SiteCard({ site }: { site: Site }) {
   const [open, setOpen] = useState(false);
   const removeProfile = (i: number) =>
@@ -99,6 +156,7 @@ function SiteCard({ site }: { site: Site }) {
       {open && (
         <div className="flex flex-col gap-3 border-zinc-100 border-t p-4 dark:border-zinc-800">
           <IndicatorEditor site={site} />
+          <RulesEditor site={site} />
           <ul className="flex flex-col gap-2">
             {site.profiles.map((e, i) => (
               <li
