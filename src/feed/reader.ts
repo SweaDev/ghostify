@@ -45,15 +45,54 @@ export function requestAccess(url: string): Promise<boolean> {
   return browser.permissions.request({ origins: [originOf(url)] }).catch(() => false);
 }
 
+export const MAX_PAGE_BYTES = 5 * 1024 * 1024;
+export const PAGE_TIMEOUT = 20_000;
+
+/** The body as text, failing once it passes `max` bytes (so a huge page never fills memory). */
+async function readCapped(res: Response, max: number): Promise<string> {
+  if (Number(res.headers.get('content-length')) > max) throw new Error('The page is too large');
+  if (!res.body) return '';
+  const reader = res.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    size += value.byteLength;
+    if (size > max) {
+      void reader.cancel();
+      throw new Error('The page is too large');
+    }
+    chunks.push(value);
+  }
+  const all = new Uint8Array(size);
+  let at = 0;
+  for (const c of chunks) {
+    all.set(c, at);
+    at += c.byteLength;
+  }
+  return new TextDecoder().decode(all);
+}
+
 /** Fetches an item's page, extracts its content and stores it (keeping AI notes made before). */
 export async function grabContent(
   key: string,
   url: string,
   fetcher: typeof fetch = fetch,
 ): Promise<ContentRow> {
-  const res = await fetcher(url, { credentials: 'include' });
+  if (!/^https?:$/.test(new URL(url).protocol)) throw new Error('Only web pages can be loaded');
+  // Cookies are sent so pages you are logged in to load; only origins you granted are reachable.
+  const res = await fetcher(url, {
+    credentials: 'include',
+    signal: AbortSignal.timeout(PAGE_TIMEOUT),
+  }).catch((e: Error) => {
+    throw new Error(e.name === 'TimeoutError' ? 'The site took too long to answer' : e.message);
+  });
   if (!res.ok) throw new Error(`The site answered ${res.status}`);
-  const readable = parseReadable(await res.text(), res.url || url);
+  const type = res.headers.get('content-type') ?? '';
+  if (type && !/^text\/|xhtml/i.test(type))
+    throw new Error(`Not a web page (${type.split(';')[0]})`);
+  const readable = parseReadable(await readCapped(res, MAX_PAGE_BYTES), res.url || url);
   if (!readable) throw new Error('No readable content found on the page');
   return db.transaction('rw', db.contents, async () => {
     const old = await db.contents.get(key);

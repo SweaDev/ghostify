@@ -156,7 +156,7 @@ Spec: `specs/SPEC-v1.md`. Plan: `specs/PLAN-v1.md`.
   Depends: T23
   Done: content-script senders reach only the 5 feed messages and only for their page's host; drafts clamped, non-http(s) links dropped; bad imported hostnames/rules rejected; tests pass.
 
-- [ ] T25: Network limits (reader, Ollama, model lists) and extension CSP
+- [x] T25: Network limits (reader, Ollama, model lists) and extension CSP
   Refs: specs/PLAN-v1.md L199-205
   Files: src/feed/reader.ts, src/ai/models.ts, src/ai/catalog.ts, wxt.config.ts, tests/reader.test.ts
   Depends: T24

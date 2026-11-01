@@ -1,5 +1,5 @@
 import type { Provider, Purpose } from '../store/settings';
-import { ollamaStatus } from './models';
+import { LIST_TIMEOUT, ollamaStatus } from './models';
 
 /** What a model can do. A purpose's dropdown lists the models of the matching kind. */
 export type Kind = 'embedding' | 'chat' | 'decision';
@@ -30,7 +30,7 @@ export const DECISION_NAME = /(^|\/)(d3|jev|tev1)([:-]|$)|decision/i;
 const kinds = (...k: (Kind | false)[]) => k.filter((x): x is Kind => !!x);
 
 async function getJson<T>(fetcher: typeof fetch, url: string, init?: RequestInit): Promise<T> {
-  const res = await fetcher(url, init);
+  const res = await fetcher(url, { ...init, signal: AbortSignal.timeout(LIST_TIMEOUT) });
   if (!res.ok) throw new Error(`${new URL(url).host} answered ${res.status}`);
   return (await res.json()) as T;
 }
