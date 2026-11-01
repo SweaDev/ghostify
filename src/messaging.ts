@@ -5,6 +5,10 @@ import type { GhostDraft, GhostItem, ItemState } from './store/db';
 import type { ListQuery } from './store/items';
 import type { Purpose } from './store/settings';
 
+export type LlmReply =
+  | { ok: true; res: unknown }
+  | { ok: false; error: { code: string; message: string } };
+
 export interface ProtocolMap {
   /** Ids (of `ids`) that are ghostified on `host` and must stay hidden. */
   isGhosted(data: { host: string; ids: string[] }): string[];
@@ -23,6 +27,8 @@ export interface ProtocolMap {
   searchSemantic(data: { query: string; filters: ListQuery }): SearchResult;
   /** Embeds items that have no embedding for the current model; returns how many. */
   reindex(): number;
+  /** feedgrab LLM proxy (createLlmProxy in content scripts); keys stay in the background. */
+  llm(data: { req: unknown }): LlmReply;
 }
 
 export const { sendMessage, onMessage } = defineExtensionMessaging<ProtocolMap>();
