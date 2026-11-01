@@ -7,6 +7,7 @@ import { onMessage } from '../messaging';
 import { autoGhostify, ghostedIds, ghostify, listItems, setState, unghost } from '../store/items';
 import { getSettings } from '../store/settings';
 import { pauseAll, pauseJob, resumeAll, resumeJob, runJob, stopAll, stopJob } from './ai-queue';
+import { guard } from './guard';
 import { reindex } from './indexer';
 import { afterGhostify, ask, digest, embedKey, enrich, forget, searchSemantic } from './jobs';
 
@@ -101,6 +102,6 @@ export function registerHandlers(): void {
   for (const type of Object.keys(handlers) as (keyof ProtocolMap)[]) {
     // biome-ignore lint/suspicious/noExplicitAny: handler/data types are tied by the map above
     const handler = handlers[type] as (data: any) => unknown;
-    onMessage(type, ({ data }) => handler(data) as never);
+    onMessage(type, ({ data, sender }) => handler(guard(type, data, sender)) as never);
   }
 }

@@ -2,6 +2,10 @@ import { parseProfile, serializeProfile } from 'feedgrab';
 import type { Site, View } from './model';
 
 const VIEWS: View[] = ['any', 'loggedIn', 'loggedOut'];
+/** A plain hostname (it becomes a match pattern for content scripts and permissions). */
+const HOSTNAME =
+  /^(?=.{1,253}$)([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)*[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/i;
+const ID = /^[\w-]{1,64}$/;
 
 function fail(msg: string): never {
   throw new Error(`Invalid sites file: ${msg}`);
@@ -14,6 +18,8 @@ export function parseSite(raw: unknown): Site {
   for (const k of ['id', 'hostname', 'label'] as const) {
     if (typeof s[k] !== 'string' || !s[k]) fail(`site.${k} must be a non-empty string`);
   }
+  if (!HOSTNAME.test(s.hostname as string)) fail('site.hostname must be a plain hostname');
+  if (!ID.test(s.id as string)) fail('site.id may only use letters, digits, _ and -');
   if (!Array.isArray(s.profiles)) fail('site.profiles must be an array');
   const ind = s.loginIndicator as Site['loginIndicator'];
   if (
@@ -32,8 +38,20 @@ export function parseSite(raw: unknown): Site {
       if (!VIEWS.includes(e?.view)) fail('profile.view must be any, loggedIn or loggedOut');
       return { view: e.view, profile: parseProfile(JSON.stringify(e.profile)) };
     }),
-    rules: Array.isArray(s.rules) ? (s.rules as Site['rules']) : [],
+    rules: parseRules(s.rules),
   };
+}
+
+function parseRules(raw: unknown): Site['rules'] {
+  if (raw === undefined) return [];
+  if (!Array.isArray(raw)) fail('site.rules must be an array');
+  return raw.map((r) => {
+    const o = (r ?? {}) as Record<string, unknown>;
+    if (typeof o.id !== 'string' || !ID.test(o.id)) fail('rule.id is malformed');
+    if (typeof o.criteria !== 'string' || !o.criteria.trim() || o.criteria.length > 500)
+      fail('rule.criteria must be 1-500 characters');
+    return { id: o.id, criteria: o.criteria.trim(), enabled: o.enabled !== false };
+  });
 }
 
 export function parseSitesJson(text: string): Site[] {

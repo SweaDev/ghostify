@@ -147,3 +147,53 @@ Spec: `specs/SPEC-v1.md`. Plan: `specs/PLAN-v1.md`.
   Files: README.md, package.json
   Depends: T19, T20, T22
   Done: README final (all features, AI setup with Ollama pulls and OLLAMA_ORIGINS, BYOK), version 1.0.0, `bun run check` passes.
+
+## Phase 5: Hardening, performance, UI and in-browser models
+
+- [x] T24: Message sender guard and input validation
+  Refs: specs/PLAN-v1.md L51-53; specs/PLAN-v1.md L198-205
+  Files: src/background/guard.ts, src/background/handlers.ts, src/sites/io.ts, tests/guard.test.ts, tests/sites-settings.test.tsx
+  Depends: T23
+  Done: content-script senders reach only the 5 feed messages and only for their page's host; drafts clamped, non-http(s) links dropped; bad imported hostnames/rules rejected; tests pass.
+
+- [ ] T25: Network limits (reader, Ollama, model lists) and extension CSP
+  Refs: specs/PLAN-v1.md L199-205
+  Files: src/feed/reader.ts, src/ai/models.ts, src/ai/catalog.ts, wxt.config.ts, tests/reader.test.ts
+  Depends: T24
+  Done: reader rejects non-http(s), non-HTML and >5 MB pages and times out at 20 s; Ollama status and model lists time out at 8 s; manifest CSP set; tests pass.
+
+- [ ] T26: Performance fixes
+  Refs: specs/PLAN-v1.md L206-214
+  Files: src/store/db.ts, src/store/items.ts, src/background/jobs.ts, src/background/indexer.ts, src/ai/catalog.ts, src/feed/content.ts, src/feed/runtime.ts, src/feed/ghost-button.ts, tests/items.test.ts, tests/runtime.test.ts
+  Depends: T24
+  Done: items indexed by [state+createdAt] with limit; search reads one model's vectors; backlog computed once per run; capability memo; selective content restarts; throttled view watcher; rAF button placement; tests pass.
+
+- [ ] T27: UI fixes
+  Refs: specs/PLAN-v1.md L215-223
+  Files: src/ui/GeneralSettings.tsx, src/ui/AiSettings.tsx, src/ui/Dashboard.tsx, src/ui/ItemList.tsx, src/ui/ItemDetail.tsx, src/ui/ItemCard.tsx, src/ui/SitesSettings.tsx, src/ui/AiActivity.tsx, src/ui/Toast.tsx, src/store/items.ts, tests/dashboard.test.tsx
+  Depends: T26
+  Done: live settings hook; Ollama URL saved on blur; dashboard unghost has Undo; "Show more" paging; viewer survives filter changes; focus moves into drawers and back; site delete confirms; tests pass.
+
+- [ ] T28: In-browser model host (offscreen page + Transformers.js worker)
+  Refs: specs/PLAN-v1.md L224-239
+  Files: package.json, bun.lock, wxt.config.ts, build/ort-assets.ts, entrypoints/offscreen/{index.html,main.ts}, src/ai/browser/{catalog.ts,protocol.ts,worker.ts,host.ts}, src/store/browser-models.ts, tests/browser-host.test.ts
+  Depends: T25
+  Done: builds ship `offscreen.html`, a worker chunk and `ort/*.wasm` (no model files); Chrome manifest has `offscreen`, Firefox doesn't; host relays load/embed/generate/classify/abort with progress; downloads recorded; fetch gate blocks undownloaded models; tests with a fake channel pass.
+
+- [ ] T29: Browser provider as the default (AI SDK adapters, NLI decisions, readiness)
+  Refs: specs/PLAN-v1.md L224-229; specs/PLAN-v1.md L240-244
+  Files: src/ai/browser/provider.ts, src/ai/models.ts, src/ai/decision.ts, src/ai/check.ts, src/ai/content.ts, src/store/settings.ts, src/background/jobs.ts, src/background/indexer.ts, src/background/handlers.ts, src/messaging.ts, tests/browser-provider.test.ts
+  Depends: T28
+  Done: `browser` provider is the default for all purposes; language/embedding adapters pass AI SDK generate/stream/embed/structured output against a fake host; decisions via zero-shot map to ClassifyResponse; jobs skip undownloaded models; tests pass.
+
+- [ ] T30: AI settings: browser model downloads
+  Refs: specs/PLAN-v1.md L224-239
+  Files: src/ui/BrowserModels.tsx, src/ui/AiSettings.tsx, src/ui/useBrowserModels.ts, src/background/handlers.ts, src/messaging.ts, tests/browser-models.test.tsx
+  Depends: T29
+  Done: "In your browser" provider listed first; per-purpose model card shows size, status, progress, Download / Delete, device choice (CPU / GPU); render test passes.
+
+- [ ] T31: README and version 1.2.0
+  Refs: specs/PLAN-v1.md L144-171; specs/PLAN-v1.md L198-244
+  Files: README.md, package.json
+  Depends: T27, T30
+  Done: README covers browser models (download, sizes, CPU/GPU, privacy), hardening notes, T24–T31; version 1.2.0; `bun run check` and all builds/zips pass.

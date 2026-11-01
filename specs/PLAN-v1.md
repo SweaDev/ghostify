@@ -195,3 +195,50 @@ The zip names come from `zip.artifactTemplate` and `zip.sourcesTemplate`, and in
 - D23: All AI calls go through one queue (`src/background/ai-queue.ts`) that logs each job in a Dexie `aiJobs` table (v6). Each entry records its kind, label, model, prompt, input, output, error and timings, and the log keeps the last 300 jobs. Jobs run one at a time. Searches, rule checks, model tests and viewer requests go ahead of background work. Pausing a running job aborts its request (`AbortSignal`), and resuming starts it over, because model calls can't be resumed partway. Rule checks, searches and tests can't be paused, because a page is waiting for them, so pausing them stops them. While AI is paused (`local:aiPaused`, kept across restarts), they fail at once: feedgrab gets an error and searches fall back to keywords. Log entries left open when the service worker stops are closed as "Interrupted" on its next start.
 - D24: Full content is fetched and parsed in the dashboard page, not the background, because MV3 service workers have no `DOMParser`. It is extracted with `@mozilla/readability`, sanitized with DOMPurify (no styles, forms or iframes, and links open in a new tab), and stored in a Dexie `contents` table with the item's digest and Q&A thread. The background reads only the text. Host access is requested per site (`permissions.request`) when the user clicks. The viewer doesn't embed the live page in an iframe, because most sites block framing (X-Frame-Options/CSP) and getting around that would mean stripping security headers. It offers the reader view, new tab or new window, and the viewer itself as a page (`dashboard.html#item=<key>`) instead. Reader tests run in jsdom, because happy-dom mishandles attributes and DOMPurify depends on them.
 - D25: Prompts are settings (`ai.prompts`), each with a default and **Reset**. They cover summary and tags, Summarize, Ask, and the System One rule question (`{rule}` placeholder). Chat decision models keep feedgrab's built-in classify prompt, which Ghostify can't change. A custom rule question is added to the decision cache key, so answers are fetched again after it changes. Summarize and Ask stream with `streamText` and write partial text to IndexedDB every 150 ms, so the viewer updates live. They cut content at 24k characters to fit small local models.
+- D26: Phase 5 (T24–T31, v1.2.0) comes from a full audit. Its fixes are D27–D30, and D31–D34 cover in-browser models.
+- D27: Security. The background checks each message's sender (`src/background/guard.ts`):
+  - Content scripts may call only `isGhosted`, `ghostify`, `autoGhostify`, `unghost` and `llm`, and only for their own page's host (`draft.host`, `key` prefix). Every other message must come from an extension page, so a page can't read the library, inject the picker or start AI jobs.
+  - Drafts are clamped (title 300, excerpt 2000, author 120 characters, 500 ids per `isGhosted`), and `url`/`image` keep only http(s).
+  - Imported sites need a plain hostname, and their rules must be `{ id, criteria, enabled }`.
+  - The reader fetch accepts only http(s) HTML, at most 5 MB, within 20 s. It keeps `credentials: 'include'`, because reading pages you are logged in to is the point, and it goes only to origins you granted.
+  - Ollama and provider model lists time out after 8 s.
+  - The extension page CSP is set explicitly to `script-src 'self' 'wasm-unsafe-eval'; object-src 'self'` (needed for ONNX wasm; no remote code).
+- D28: Performance:
+  - `listItems` walks a new `[state+createdAt]` index (Dexie v7) and stops at `limit`.
+  - Semantic search loads only the current model's vectors (`model` index).
+  - The backfill computes its backlog once per run, not once per item.
+  - Ollama capability lookups are memoized for 10 min.
+  - Content scripts restart only when their own site's config or AI on/off changes, not on every settings write.
+  - The login-view watcher throttles (one check per 300 ms) instead of debouncing, which never fired on pages that mutate all the time.
+  - The ghost button repositions at most once per animation frame.
+  - Dashboard lists render 50 cards at a time, with "Show more".
+- D29: UI:
+  - `useSettings` follows storage, so pages stop overwriting each other with stale copies.
+  - The Ollama URL saves on blur, not on every keystroke.
+  - Unghosting in the dashboard shows "Undo", which restores the item, its embedding and its content.
+  - The viewer keeps its item when it leaves the filtered list.
+  - Drawers move focus in and back out.
+  - Deleting a site asks for confirmation.
+  - Running jobs' durations tick.
+- D30: The popup's compact cards open the original only when there is a link.
+- D31: In-browser models are a new provider, `browser`. It runs Transformers.js (`@huggingface/transformers` 4.3.1, ONNX Runtime Web) on the CPU (WASM, 1 thread) or the GPU (WebGPU, chosen in Settings → AI). It is the default for all three purposes for new installs. Stored settings keep their provider. AI stays off until the user turns it on. Defaults:
+  - embeddings `Xenova/all-MiniLM-L6-v2` (q8, ~23 MB);
+  - general `HuggingFaceTB/SmolLM2-360M-Instruct` (q8, ~350 MB);
+  - decision `Xenova/nli-deberta-v3-xsmall` (q8, ~85 MB).
+
+  The alternatives are listed in `src/ai/browser/catalog.ts`. Any Hugging Face ONNX repo id can also be typed, and its task follows the purpose.
+- D32: Model files are never bundled or committed:
+  - The user downloads each model from Settings → AI. The files go to Cache Storage (`transformers-cache`, extension origin), and `local:browserModels` records `model@dtype` with its size.
+  - Inference never downloads. The worker's `env.fetch` rejects Hugging Face requests unless a download for that model is running, and the background skips browser jobs for models that aren't downloaded (so the log doesn't fill with failures).
+  - Delete removes the model's cached files and its records.
+  - Only ONNX Runtime's asyncify wasm (~27 MB, `ort/`) ships with the extension. It is copied from `node_modules` at build time, because MV3 forbids remote code and the CDN default would be blocked. `env.useWasmCache` is off, because its blob-URL import breaks the CSP.
+- D33: The runtime sits in a dedicated worker started by an unlisted `offscreen.html`:
+  - Chrome hosts it as an offscreen document (`offscreen` permission, Chrome only; reason `WORKERS`), since MV3 service workers can't start workers. The background talks to it over a `runtime.connect` port.
+  - Firefox's event page appends `offscreen.html` as an iframe and hands it a `MessageChannel` port.
+  - The page only relays messages. After 10 idle minutes it ends the worker to free model memory, and the next call starts a new one.
+  - Generation streams deltas and can be aborted (`InterruptableStoppingCriteria`). Downloads report `progress_total` into `session:browserDownloads`.
+- D34: How browser models plug in:
+  - They plug into the AI SDK as `LanguageModelV4` / `EmbeddingModelV4` adapters (`src/ai/browser/provider.ts`), so enrich, digest, Ask and feedgrab `detect` are unchanged.
+  - For JSON output the adapter adds the schema to the system prompt, primes the reply with `{` and cuts the reply to the outermost object.
+  - Browser decisions use zero-shot NLI (`zero-shot-classification`, `multi_label`, hypothesis "This item is about {}."). A rule matches at score ≥ 0.7, which maps to the same `ClassifyResponse` as System One, cached under its model tag.
+  - The text the AI reads is cut to 6k characters for browser models (vs 24k), to keep CPU prefill time reasonable.
