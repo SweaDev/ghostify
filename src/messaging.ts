@@ -31,6 +31,16 @@ export interface ProtocolMap {
   reindex(): number;
   /** feedgrab LLM proxy (createLlmProxy in content scripts); keys stay in the background. */
   llm(data: { req: unknown }): LlmReply;
+  /** Pause, resume or stop one AI job from the activity log. */
+  aiJob(data: { id: string; action: 'pause' | 'resume' | 'stop' }): void;
+  /** Pause, resume or stop all AI work. */
+  aiAll(data: { action: 'pause' | 'resume' | 'stop' }): void;
+  /** Streams a digest of an item's content (grabbed or feed text) into `contents`. */
+  digest(data: { key: string }): void;
+  /** Asks a question about an item's content; the answer streams into `contents.qa`. */
+  ask(data: { key: string; question: string }): string;
+  /** Removes a question from an item's thread. */
+  forget(data: { key: string; qaId: string }): void;
 }
 
 export const { sendMessage, onMessage } = defineExtensionMessaging<ProtocolMap>();

@@ -1,3 +1,4 @@
+import { initQueue } from '@/src/background/ai-queue';
 import { registerHandlers } from '@/src/background/handlers';
 import { initIndexer } from '@/src/background/indexer';
 import { initSnooze } from '@/src/background/snooze';
@@ -5,6 +6,7 @@ import { syncRegistrations } from '@/src/sites/registration';
 import { ensureDefaultSites, getSites, sitesItem } from '@/src/sites/registry';
 
 export default defineBackground(() => {
+  void initQueue();
   registerHandlers();
   void initSnooze();
   void initIndexer();

@@ -29,8 +29,9 @@ export async function embedItem(
   item: GhostItem,
   model: EmbeddingModel,
   tag: string,
+  signal?: AbortSignal,
 ): Promise<Embedding> {
-  const { embedding } = await embed({ model, value: embedText(item) });
+  const { embedding } = await embed({ model, value: embedText(item), abortSignal: signal });
   return { key: item.key, model: tag, dim: embedding.length, vector: embedding };
 }
 

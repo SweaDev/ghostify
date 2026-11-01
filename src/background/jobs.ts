@@ -1,56 +1,69 @@
 import { embed } from 'ai';
+import { askContent, contentText, digestContent } from '../ai/content';
 import { embedItem, modelTag, rank } from '../ai/embed';
-import { enrichItem } from '../ai/enrich';
+import { enrichItem, itemText } from '../ai/enrich';
 import { embeddingModel, languageModel } from '../ai/models';
-import { db, type GhostItem } from '../store/db';
+import { type ContentRow, db, type GhostItem, type QaEntry } from '../store/db';
 import { getItem, type ListQuery, listItems, updateItem } from '../store/items';
 import { getKeys } from '../store/secrets';
-import { getSettings } from '../store/settings';
+import { getSettings, prompt } from '../store/settings';
+import { enqueue, JobStopped, runJob, stopJob } from './ai-queue';
 
-let chain: Promise<unknown> = Promise.resolve();
-let pending = 0;
+export { enqueue, runJob, whenIdle } from './ai-queue';
 
-/** Runs AI jobs one at a time, so a local model is never flooded. Rejects with the task's error. */
-export function runJob<T>(task: () => Promise<T>): Promise<T> {
-  pending++;
-  const result = chain.then(task);
-  chain = result.catch(() => {}).finally(() => pending--);
-  return result;
-}
+const env = () => Promise.all([getSettings(), getKeys()]);
 
-/** Like `runJob`, but errors are logged instead of thrown. */
-export const enqueue = (task: () => Promise<void>): Promise<void> =>
-  runJob(task).catch((e) => console.warn('[ghostify:ai]', e));
-
-/** Resolves once no AI job is queued or running. */
-export async function whenIdle(): Promise<void> {
-  while (pending > 0) await chain;
-}
-
+/** Summary and tags for an item (general model). No-op while AI is off or when it has a summary. */
 export async function enrich(key: string, force = false): Promise<void> {
-  const [settings, keys, item] = await Promise.all([getSettings(), getKeys(), getItem(key)]);
+  const [settings, item] = await Promise.all([getSettings(), getItem(key)]);
   if (!settings.ai.enabled || !item || (item.summary && !force)) return;
-  const { summary, tags } = await enrichItem(
-    item,
-    languageModel(settings.ai.general, settings, keys),
+  await runJob(
+    {
+      kind: 'enrich',
+      label: item.title,
+      itemKey: key,
+      model: modelTag(settings.ai.general),
+      system: prompt(settings, 'enrich'),
+      input: itemText(item),
+    },
+    async ({ signal, update }) => {
+      const [s, keys] = await env();
+      const it = await getItem(key);
+      if (!s.ai.enabled || !it) return;
+      const r = await enrichItem(it, languageModel(s.ai.general, s, keys), {
+        system: prompt(s, 'enrich'),
+        signal,
+      });
+      await updateItem(key, r);
+      update({ output: `${r.summary}\n${r.tags.map((t) => `#${t}`).join(' ')}` });
+    },
   );
-  await updateItem(key, { summary, tags });
 }
 
 export async function embedKey(key: string): Promise<void> {
-  const [settings, keys, item] = await Promise.all([getSettings(), getKeys(), getItem(key)]);
+  const [settings, item] = await Promise.all([getSettings(), getItem(key)]);
   if (!settings.ai.enabled || !item) return;
-  const ref = settings.ai.embedding;
-  await db.embeddings.put(
-    await embedItem(item, embeddingModel(ref, settings, keys), modelTag(ref)),
+  await runJob(
+    { kind: 'embed', label: item.title, itemKey: key, model: modelTag(settings.ai.embedding) },
+    async ({ signal, update }) => {
+      const [s, keys] = await env();
+      const it = await getItem(key);
+      if (!s.ai.enabled || !it) return;
+      const ref = s.ai.embedding;
+      const e = await embedItem(it, embeddingModel(ref, s, keys), modelTag(ref), signal);
+      await db.embeddings.put(e);
+      update({ output: `${e.dim} dimensions` });
+    },
   );
 }
 
 /** AI work after an item is ghostified (no-op while AI is off). */
-export function afterGhostify(key: string): Promise<void> {
-  return enqueue(async () => {
-    await enrich(key).catch((e) => console.warn('[ghostify:ai] enrich', e));
-    await embedKey(key);
+export async function afterGhostify(key: string): Promise<void> {
+  await enrich(key).catch((e) => {
+    if (!(e instanceof JobStopped)) console.warn('[ghostify:ai] enrich', e);
+  });
+  await embedKey(key).catch((e) => {
+    if (!(e instanceof JobStopped)) console.warn('[ghostify:ai] embed', e);
   });
 }
 
@@ -60,17 +73,29 @@ export interface SearchResult {
   fallback: boolean;
 }
 
-/** Semantic search within the filters; falls back to keyword search when AI fails or is off. */
+/** Semantic search within the filters; falls back to keyword search when AI fails, is off or paused. */
 export async function searchSemantic(query: string, filters: ListQuery): Promise<SearchResult> {
   const keyword = async () => ({
     items: await listItems({ ...filters, text: query }),
     fallback: true,
   });
-  const [settings, keys] = await Promise.all([getSettings(), getKeys()]);
+  const [settings, keys] = await env();
   if (!settings.ai.enabled || !query.trim()) return keyword();
+  const ref = settings.ai.embedding;
   try {
-    const ref = settings.ai.embedding;
-    const { embedding } = await embed({ model: embeddingModel(ref, settings, keys), value: query });
+    const { embedding } = await runJob(
+      {
+        kind: 'search',
+        label: query,
+        model: modelTag(ref),
+        input: query,
+        high: true,
+        pausable: false,
+        failIfPaused: true,
+      },
+      ({ signal }) =>
+        embed({ model: embeddingModel(ref, settings, keys), value: query, abortSignal: signal }),
+    );
     const ranked = rank(embedding, await db.embeddings.toArray(), modelTag(ref));
     const pool = new Map((await listItems({ ...filters, text: undefined })).map((i) => [i.key, i]));
     const items = ranked.map((k) => pool.get(k)).filter((i): i is GhostItem => !!i);
@@ -79,4 +104,143 @@ export async function searchSemantic(query: string, filters: ListQuery): Promise
     console.warn('[ghostify:ai] search', e);
     return keyword();
   }
+}
+
+/** The text AI reads for an item: its grabbed content, else what the feed showed. */
+async function sourceText(key: string): Promise<{ item: GhostItem; text: string } | undefined> {
+  const [item, content] = await Promise.all([getItem(key), db.contents.get(key)]);
+  if (!item) return undefined;
+  return { item, text: content?.text ? contentText(content) : itemText(item) };
+}
+
+const emptyContent = (item: GhostItem): ContentRow => ({
+  key: item.key,
+  url: item.url ?? '',
+  title: item.title,
+  html: '',
+  text: '',
+  fetchedAt: 0,
+});
+
+/** Removes a question (and stops its answer if it is still coming). */
+export async function forget(key: string, qaId: string): Promise<void> {
+  const c = await db.contents.get(key);
+  const q = c?.qa?.find((x) => x.id === qaId);
+  if (q?.jobId) await stopJob(q.jobId);
+  if (c) await db.contents.update(key, { qa: c.qa?.filter((x) => x.id !== qaId) });
+}
+
+/** Streams a digest of the item's content into `contents.digest`. */
+export async function digest(key: string): Promise<void> {
+  const [settings, src] = await Promise.all([getSettings(), sourceText(key)]);
+  if (!settings.ai.enabled) throw new Error('Turn on AI in Settings → AI');
+  if (!src) return;
+  const jobId = crypto.randomUUID();
+  await db.transaction('rw', db.contents, async () => {
+    const c = (await db.contents.get(key)) ?? emptyContent(src.item);
+    await db.contents.put({ ...c, digestJob: jobId, digestError: undefined });
+  });
+  void enqueue(
+    {
+      id: jobId,
+      kind: 'digest',
+      label: src.item.title,
+      itemKey: key,
+      model: modelTag(settings.ai.general),
+      system: prompt(settings, 'digest'),
+      input: src.text,
+      high: true,
+    },
+    async ({ signal, update }) => {
+      try {
+        const [s, keys] = await env();
+        const cur = await sourceText(key);
+        if (!cur) return;
+        let last = 0;
+        const text = await digestContent(cur.text, {
+          model: languageModel(s.ai.general, s, keys),
+          system: prompt(s, 'digest'),
+          signal,
+          onText: (t) => {
+            update({ output: t });
+            if (Date.now() - last > 150) {
+              last = Date.now();
+              void db.contents.update(key, { digest: t });
+            }
+          },
+        });
+        await db.contents.update(key, { digest: text, digestAt: Date.now() });
+      } catch (e) {
+        if (!signal.aborted) await db.contents.update(key, { digestError: (e as Error).message });
+        throw e;
+      }
+    },
+  );
+}
+
+const patchQa = (key: string, id: string, patch: Partial<QaEntry>) =>
+  db.contents
+    .where('key')
+    .equals(key)
+    .modify((c) => {
+      const q = c.qa?.find((x) => x.id === id);
+      if (q) Object.assign(q, patch);
+    });
+
+/** Adds a question to the item's thread and streams the answer into it. Returns the entry id. */
+export async function ask(key: string, question: string): Promise<string> {
+  const [settings, src] = await Promise.all([getSettings(), sourceText(key)]);
+  if (!settings.ai.enabled) throw new Error('Turn on AI in Settings → AI');
+  if (!src) throw new Error('Unknown item');
+  const entry: QaEntry = {
+    id: crypto.randomUUID(),
+    q: question.trim(),
+    a: '',
+    at: Date.now(),
+    jobId: crypto.randomUUID(),
+  };
+  await db.transaction('rw', db.contents, async () => {
+    const c = (await db.contents.get(key)) ?? emptyContent(src.item);
+    await db.contents.put({ ...c, qa: [...(c.qa ?? []), entry] });
+  });
+  void enqueue(
+    {
+      id: entry.jobId,
+      kind: 'ask',
+      label: entry.q,
+      itemKey: key,
+      model: modelTag(settings.ai.general),
+      system: prompt(settings, 'ask'),
+      input: entry.q,
+      high: true,
+    },
+    async ({ signal, update }) => {
+      await patchQa(key, entry.id, { error: undefined });
+      try {
+        const [s, keys] = await env();
+        const cur = await sourceText(key);
+        const c = await db.contents.get(key);
+        if (!cur) return;
+        const history = (c?.qa ?? []).filter((x) => x.at < entry.at);
+        let last = 0;
+        const a = await askContent(cur.text, history, entry.q, {
+          model: languageModel(s.ai.general, s, keys),
+          system: prompt(s, 'ask'),
+          signal,
+          onText: (t) => {
+            update({ output: t });
+            if (Date.now() - last > 150) {
+              last = Date.now();
+              void patchQa(key, entry.id, { a: t });
+            }
+          },
+        });
+        await patchQa(key, entry.id, { a });
+      } catch (e) {
+        if (!signal.aborted) await patchQa(key, entry.id, { error: (e as Error).message });
+        throw e;
+      }
+    },
+  );
+  return entry.id;
 }

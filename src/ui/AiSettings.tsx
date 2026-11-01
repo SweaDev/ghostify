@@ -8,6 +8,7 @@ import { getKeys, saveKey } from '../store/secrets';
 import type { Keys, ModelRef, Provider, Purpose, Settings } from '../store/settings';
 import { useSettings } from './GeneralSettings';
 import { IndexProgress } from './IndexProgress';
+import { card, field } from './kit';
 import { ModelPicker } from './ModelPicker';
 import { Switch } from './Switch';
 import { useModelCatalog } from './useModelCatalog';
@@ -23,10 +24,6 @@ const PROVIDERS: { key: Provider; label: string }[] = [
   { key: 'gemini', label: 'Gemini' },
   { key: 'openai', label: 'OpenAI' },
 ];
-const field =
-  'rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900';
-const card =
-  'rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900/50';
 
 function Status(props: { state?: 'busy' | { ok: boolean; message: string } }) {
   const s = props.state;

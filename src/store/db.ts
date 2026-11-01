@@ -50,6 +50,66 @@ export interface DecisionRow {
   answer: { exclude: boolean; criteriaIndex?: number; confidence: number };
 }
 
+export type JobKind =
+  | 'enrich'
+  | 'embed'
+  | 'search'
+  | 'decision'
+  | 'detect'
+  | 'check'
+  | 'digest'
+  | 'ask';
+export type JobStatus = 'queued' | 'running' | 'paused' | 'done' | 'failed' | 'stopped';
+
+/** One AI call, as shown in the AI activity log (see `src/background/ai-queue.ts`). */
+export interface AiJob {
+  id: string;
+  kind: JobKind;
+  /** What it is about, e.g. an item title. */
+  label: string;
+  itemKey?: string;
+  /** `provider:model` */
+  model?: string;
+  status: JobStatus;
+  /** False for jobs a caller is waiting on (decision, search, test): pausing them stops them. */
+  pausable: boolean;
+  createdAt: number;
+  startedAt?: number;
+  finishedAt?: number;
+  /** System prompt and input (truncated). */
+  system?: string;
+  input?: string;
+  output?: string;
+  error?: string;
+}
+
+export interface QaEntry {
+  id: string;
+  q: string;
+  a: string;
+  at: number;
+  jobId?: string;
+  error?: string;
+}
+
+/** Full content grabbed from an item's page (reader view), plus AI notes on it. */
+export interface ContentRow {
+  key: string;
+  url: string;
+  title: string;
+  byline?: string;
+  siteName?: string;
+  /** Sanitized article HTML. */
+  html: string;
+  text: string;
+  fetchedAt: number;
+  digest?: string;
+  digestAt?: number;
+  digestJob?: string;
+  digestError?: string;
+  qa?: QaEntry[];
+}
+
 export const db = new Dexie('ghostify') as Dexie & {
   items: EntityTable<GhostItem, 'key'>;
   embeddings: EntityTable<Embedding, 'key'>;
@@ -58,6 +118,8 @@ export const db = new Dexie('ghostify') as Dexie & {
   kept: EntityTable<{ key: string; at: number }, 'key'>;
   /** Cached decision-model answers (see `src/ai/decision-cache.ts`). */
   decisions: EntityTable<DecisionRow, 'key'>;
+  aiJobs: EntityTable<AiJob, 'id'>;
+  contents: EntityTable<ContentRow, 'key'>;
 };
 
 db.version(1).stores({
@@ -68,3 +130,4 @@ db.version(2).stores({ secrets: 'id' });
 db.version(3).stores({ kept: 'key' });
 db.version(4).stores({ embeddings: 'key, model' });
 db.version(5).stores({ decisions: 'key, at' });
+db.version(6).stores({ aiJobs: 'id, createdAt, status', contents: 'key' });
