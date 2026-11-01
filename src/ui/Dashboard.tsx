@@ -1,9 +1,11 @@
 import { Bookmark, Ghost } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
+import { sendMessage } from '../messaging';
 import type { GhostItem, ItemState } from '../store/db';
 import { expireSnoozes, setState, unghost, updateItem } from '../store/items';
 import { FilterBar, type Filters } from './FilterBar';
 import { timeAgo } from './format';
+import { useSettings } from './GeneralSettings';
 import { GhostIcon } from './GhostIcon';
 import { IconButton } from './ItemCard';
 import { ItemDetail } from './ItemDetail';
@@ -47,9 +49,17 @@ export function Dashboard() {
   const counts = useCounts();
   const [filters, setFilters] = useState<Filters>({ text: '', host: '' });
   const [openKey, setOpenKey] = useState<string>();
-  const items = useItems({ state: tab, text: filters.text, host: filters.host || undefined });
+  const items = useItems({
+    state: tab,
+    text: filters.text,
+    host: filters.host || undefined,
+    tag: filters.tag,
+  });
+  const [settings] = useSettings();
+  const onTag = (tag: string) =>
+    setFilters((f) => ({ ...f, tag: f.tag === tag ? undefined : tag }));
   const hosts = useHosts();
-  const filtering = !!(filters.text || filters.host);
+  const filtering = !!(filters.text || filters.host || filters.tag);
   const opened = items?.find((i) => i.key === openKey);
   const closeDetail = useCallback(() => setOpenKey(undefined), []);
 
@@ -128,6 +138,8 @@ export function Dashboard() {
               note={(i) => `Back ${timeAgo(i.returnedAt ?? now, now)}`}
               onUnghost={(i) => void unghost(i.key)}
               onOpen={(i) => setOpenKey(i.key)}
+              onTag={onTag}
+              activeTag={filters.tag}
             />
           </Section>
         )}
@@ -146,9 +158,24 @@ export function Dashboard() {
           }
           onUnghost={(i) => void unghost(i.key)}
           onOpen={(i) => setOpenKey(i.key)}
+          onTag={onTag}
+          activeTag={filters.tag}
         />
       </main>
-      {opened && <ItemDetail item={opened} actions={actions(opened)} onClose={closeDetail} />}
+      {opened && (
+        <ItemDetail
+          item={opened}
+          actions={actions(opened)}
+          onClose={closeDetail}
+          onTag={(t) => {
+            onTag(t);
+            closeDetail();
+          }}
+          onRegenerate={
+            settings?.ai.enabled ? () => void sendMessage('enrich', { key: opened.key }) : undefined
+          }
+        />
+      )}
     </div>
   );
 }

@@ -10,6 +10,8 @@ export function ItemList(props: {
   note?(item: GhostItem): ReactNode;
   onUnghost?: ItemCardProps['onUnghost'];
   onOpen?: ItemCardProps['onOpen'];
+  onTag?: ItemCardProps['onTag'];
+  activeTag?: string;
 }) {
   if (!props.items) return null;
   if (!props.items.length)
@@ -24,6 +26,8 @@ export function ItemList(props: {
             note={props.note?.(item)}
             onUnghost={props.onUnghost}
             onOpen={props.onOpen}
+            onTag={props.onTag}
+            activeTag={props.activeTag}
           />
         </li>
       ))}

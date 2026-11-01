@@ -16,6 +16,8 @@ export interface ProtocolMap {
   addSite(data: { tabId: number }): void;
   /** Tries the model configured for a purpose (AI settings "Test"). */
   checkAi(data: { purpose: Purpose }): CheckResult;
+  /** Re-generates an item's summary and tags. */
+  enrich(data: { key: string }): void;
 }
 
 export const { sendMessage, onMessage } = defineExtensionMessaging<ProtocolMap>();
