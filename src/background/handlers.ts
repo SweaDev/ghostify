@@ -4,7 +4,8 @@ import { handleDecision } from '../ai/decision';
 import type { ProtocolMap } from '../messaging';
 import { onMessage } from '../messaging';
 import { autoGhostify, ghostedIds, ghostify, listItems, setState, unghost } from '../store/items';
-import { afterGhostify, embedKey, enqueue, enrich, reindex, searchSemantic } from './jobs';
+import { reindex } from './indexer';
+import { afterGhostify, embedKey, enqueue, enrich, searchSemantic } from './jobs';
 
 type Handlers = {
   [K in keyof ProtocolMap]: (

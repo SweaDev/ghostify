@@ -1,4 +1,5 @@
 import { registerHandlers } from '@/src/background/handlers';
+import { initIndexer } from '@/src/background/indexer';
 import { initSnooze } from '@/src/background/snooze';
 import { syncRegistrations } from '@/src/sites/registration';
 import { ensureDefaultSites, getSites, sitesItem } from '@/src/sites/registry';
@@ -6,6 +7,7 @@ import { ensureDefaultSites, getSites, sitesItem } from '@/src/sites/registry';
 export default defineBackground(() => {
   registerHandlers();
   void initSnooze();
+  void initIndexer();
 
   const sync = () => void getSites().then(syncRegistrations).catch(console.warn);
   const init = () => void ensureDefaultSites().then(sync);

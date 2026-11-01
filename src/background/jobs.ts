@@ -8,12 +8,23 @@ import { getKeys } from '../store/secrets';
 import { getSettings } from '../store/settings';
 
 let chain: Promise<unknown> = Promise.resolve();
+let pending = 0;
 
-/** Runs AI jobs one at a time, so a local model is never flooded. Errors are logged. */
-export function enqueue(task: () => Promise<void>): Promise<void> {
-  const next = chain.then(task).catch((e) => console.warn('[ghostify:ai]', e));
-  chain = next;
-  return next;
+/** Runs AI jobs one at a time, so a local model is never flooded. Rejects with the task's error. */
+export function runJob<T>(task: () => Promise<T>): Promise<T> {
+  pending++;
+  const result = chain.then(task);
+  chain = result.catch(() => {}).finally(() => pending--);
+  return result;
+}
+
+/** Like `runJob`, but errors are logged instead of thrown. */
+export const enqueue = (task: () => Promise<void>): Promise<void> =>
+  runJob(task).catch((e) => console.warn('[ghostify:ai]', e));
+
+/** Resolves once no AI job is queued or running. */
+export async function whenIdle(): Promise<void> {
+  while (pending > 0) await chain;
 }
 
 export async function enrich(key: string, force = false): Promise<void> {
@@ -41,19 +52,6 @@ export function afterGhostify(key: string): Promise<void> {
     await enrich(key).catch((e) => console.warn('[ghostify:ai] enrich', e));
     await embedKey(key);
   });
-}
-
-/** Embeds every item that has no embedding from the current model. Returns how many were queued. */
-export async function reindex(): Promise<number> {
-  const settings = await getSettings();
-  if (!settings.ai.enabled) return 0;
-  const tag = modelTag(settings.ai.embedding);
-  const have = new Set(
-    (await db.embeddings.toArray()).filter((e) => e.model === tag).map((e) => e.key),
-  );
-  const todo = (await db.items.toCollection().primaryKeys()).filter((k) => !have.has(k));
-  for (const key of todo) void enqueue(() => embedKey(key));
-  return todo.length;
 }
 
 export interface SearchResult {

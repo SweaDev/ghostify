@@ -1,9 +1,12 @@
 import { cosine, MIN_SCORE, modelTag, rank } from '@/src/ai/embed';
 import * as models from '@/src/ai/models';
-import { afterGhostify, reindex, searchSemantic } from '@/src/background/jobs';
+import { backfill, reindex } from '@/src/background/indexer';
+import { afterGhostify, runJob, searchSemantic } from '@/src/background/jobs';
 import { db } from '@/src/store/db';
+import { indexProgress, indexStatus } from '@/src/store/index-status';
 import { ghostify, setState } from '@/src/store/items';
 import { DEFAULT_SETTINGS, saveSettings, withDefaults } from '@/src/store/settings';
+import { eta } from '@/src/ui/IndexProgress';
 import { embedModel, textModel } from './mock-model';
 
 // Toy embedding: [mentions rust, mentions css, constant].
@@ -85,5 +88,45 @@ describe('semantic jobs', () => {
     expect(await reindex()).toBe(2);
     await vi.waitFor(async () => expect(await db.embeddings.count()).toBe(2));
     expect(await reindex()).toBe(0);
+  });
+
+  it('backfills in the background after queued jobs and reports progress', async () => {
+    await ghostify(draft('a', 'Rust'));
+    await ghostify(draft('b', 'CSS'));
+    await aiOn();
+    await db.embeddings.clear();
+    expect(await indexProgress(tag)).toEqual({ total: 2, indexed: 0 });
+    let release!: () => void;
+    const busy = runJob(() => new Promise<void>((r) => (release = r)));
+    const run = backfill();
+    await new Promise((r) => setTimeout(r, 20));
+    expect(await db.embeddings.count()).toBe(0); // waits for the queued job
+    expect(await indexStatus.getValue()).toMatchObject({ running: true, startIndexed: 0 });
+    release();
+    await busy;
+    await run;
+    expect(await indexProgress(tag)).toEqual({ total: 2, indexed: 2 });
+    expect(await indexStatus.getValue()).toEqual({ running: false });
+  });
+
+  it('stops with an error when embedding fails', async () => {
+    await ghostify(draft('a', 'Rust'));
+    await aiOn();
+    await db.embeddings.clear();
+    vi.spyOn(models, 'embeddingModel').mockImplementation(() => {
+      throw new Error('Ollama down');
+    });
+    await backfill();
+    expect(await indexStatus.getValue()).toEqual({ running: false, error: 'Ollama down' });
+  });
+});
+
+describe('eta', () => {
+  it('estimates the time left from progress since the run started', () => {
+    const s = { running: true, startedAt: 0, startIndexed: 10 };
+    expect(eta(s, 12, 100, 60_000)).toBeUndefined(); // too few done for a rate
+    expect(eta(s, 20, 100, 60_000)).toBe('about 8 min left');
+    expect(eta(s, 99, 100, 60_000)).toBe('less than a minute left');
+    expect(eta(s, 20, 2000, 60_000)).toBe('about 3 h left');
   });
 });
