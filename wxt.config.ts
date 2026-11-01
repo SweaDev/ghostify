@@ -8,6 +8,7 @@ const newtab = process.env.GHOSTIFY_FLAVOR === 'newtab';
 export default defineConfig({
   modules: ['@wxt-dev/module-react', '@wxt-dev/auto-icons'],
   manifestVersion: 3,
+  outDirTemplate: `{{browser}}-mv{{manifestVersion}}${newtab ? '-newtab' : ''}`,
   autoIcons: { baseIconPath: 'assets/icon.svg' },
   vite: () => ({ plugins: [tailwindcss(), feedgrabProxyOnly()] }),
   manifest: ({ browser }) => ({
