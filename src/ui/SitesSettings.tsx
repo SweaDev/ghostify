@@ -147,7 +147,13 @@ function SiteCard({ site }: { site: Site }) {
           {site.profiles.length} page{site.profiles.length === 1 ? '' : 's'}
         </span>
         {!site.builtin && (
-          <IconButton label={`Delete ${site.label}`} onClick={() => void deleteSite(site.id)}>
+          <IconButton
+            label={`Delete ${site.label}`}
+            onClick={() => {
+              if (confirm(`Delete ${site.label}? Its selectors and rules are removed.`))
+                void deleteSite(site.id);
+            }}
+          >
             <Trash2 className="size-4" />
           </IconButton>
         )}

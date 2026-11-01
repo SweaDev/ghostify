@@ -168,7 +168,7 @@ Spec: `specs/SPEC-v1.md`. Plan: `specs/PLAN-v1.md`.
   Depends: T24
   Done: items indexed by [state+createdAt] with limit; search reads one model's vectors; backlog computed once per run; capability memo; selective content restarts; throttled view watcher; rAF button placement; tests pass.
 
-- [ ] T27: UI fixes
+- [x] T27: UI fixes
   Refs: specs/PLAN-v1.md L215-223
   Files: src/ui/GeneralSettings.tsx, src/ui/AiSettings.tsx, src/ui/Dashboard.tsx, src/ui/ItemList.tsx, src/ui/ItemDetail.tsx, src/ui/ItemCard.tsx, src/ui/SitesSettings.tsx, src/ui/AiActivity.tsx, src/ui/Toast.tsx, src/store/items.ts, tests/dashboard.test.tsx
   Depends: T26

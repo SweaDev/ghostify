@@ -1,11 +1,19 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Activity, Bookmark, ExternalLink, Ghost, Pause, Settings, Undo2, X } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { browser } from 'wxt/browser';
 import { sendMessage } from '../messaging';
 import type { GhostItem, ItemState } from '../store/db';
 import { db } from '../store/db';
-import { expireSnoozes, rescue, setState, unghost, updateItem } from '../store/items';
+import {
+  expireSnoozes,
+  rescue,
+  restore,
+  setState,
+  snapshot,
+  unghost,
+  updateItem,
+} from '../store/items';
 import { AiActivity } from './AiActivity';
 import { FilterBar, type Filters } from './FilterBar';
 import { timeAgo } from './format';
@@ -17,7 +25,9 @@ import { ItemList } from './ItemList';
 import { openUrl, viewerHash } from './open';
 import { SnoozeMenu } from './SnoozeMenu';
 import { Tabs } from './Tabs';
+import { useToast } from './Toast';
 import { useActiveCount, useAiPaused } from './useAi';
+import { useDialogFocus } from './useDialogFocus';
 import { useCounts, useHosts, useItems } from './useItems';
 
 const RETURNED_WINDOW = 7 * 86_400_000;
@@ -91,6 +101,8 @@ function AiButton(props: { open: boolean; onClick(): void }) {
 }
 
 function ActivityDrawer(props: { onClose(): void }) {
+  const ref = useRef<HTMLElement>(null);
+  useDialogFocus(ref);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && props.onClose();
     document.addEventListener('keydown', onKey);
@@ -105,10 +117,12 @@ function ActivityDrawer(props: { onClose(): void }) {
         onClick={props.onClose}
       />
       <aside
+        ref={ref}
+        tabIndex={-1}
         role="dialog"
         aria-modal="true"
         aria-label="AI activity"
-        className="relative flex h-full w-full max-w-lg flex-col gap-3 bg-white p-4 shadow-2xl dark:bg-zinc-950"
+        className="relative flex outline-none h-full w-full max-w-lg flex-col gap-3 bg-white p-4 shadow-2xl dark:bg-zinc-950"
       >
         <div className="flex items-center gap-2">
           <Activity className="size-5 text-ghost-500" />
@@ -214,8 +228,21 @@ function Feed() {
   const hosts = useHosts();
   const items = semanticOn ? semantic?.items : keywordItems;
   const filtering = !!(filters.text || filters.host || filters.tag);
-  const opened = items?.find((i) => i.key === openKey);
+  // Read by key, so the viewer stays open when its item leaves the filtered list (e.g. moved to Later).
+  const listed = items?.find((i) => i.key === openKey);
+  const live = useLiveQuery(() => (openKey ? db.items.get(openKey) : undefined), [openKey]);
+  const opened = openKey && live?.key === openKey ? live : listed;
   const closeDetail = useCallback(() => setOpenKey(undefined), []);
+  const toast = useToast();
+  const remove = async (item: GhostItem) => {
+    const snap = await snapshot(item.key);
+    await unghost(item.key);
+    if (snap)
+      toast.show('Unghosted. It shows on the site again.', {
+        label: 'Undo',
+        run: () => void restore(snap),
+      });
+  };
 
   // Snoozes also expire while this page is open (the background checks every few minutes).
   useEffect(() => {
@@ -226,7 +253,8 @@ function Feed() {
 
   const now = Date.now();
   const returned = tab === 'ghost' && !filtering ? items?.filter((i) => isReturned(i, now)) : [];
-  const rest = items?.filter((i) => !returned?.includes(i));
+  const back = new Set(returned?.map((i) => i.key));
+  const rest = items?.filter((i) => !back.has(i.key));
 
   const move = (item: GhostItem, state: ItemState) => void setState(item.key, state);
   const actions = (item: GhostItem) => (
@@ -321,7 +349,7 @@ function Feed() {
               empty={EMPTY.ghost}
               actions={actions}
               note={(i) => `Back ${timeAgo(i.returnedAt ?? now, now)}`}
-              onUnghost={(i) => void unghost(i.key)}
+              onUnghost={(i) => void remove(i)}
               onOpen={(i) => setOpenKey(i.key)}
               onTag={onTag}
               activeTag={filters.tag}
@@ -345,7 +373,7 @@ function Feed() {
                 ? `Auto-ghosted: ${i.auto.criteria}`
                 : null
           }
-          onUnghost={(i) => void unghost(i.key)}
+          onUnghost={(i) => void remove(i)}
           onOpen={(i) => setOpenKey(i.key)}
           onTag={onTag}
           activeTag={filters.tag}
@@ -368,6 +396,7 @@ function Feed() {
         />
       )}
       {activity && <ActivityDrawer onClose={closeActivity} />}
+      {toast.view}
     </div>
   );
 }

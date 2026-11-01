@@ -1,5 +1,12 @@
 import { Dexie } from 'dexie';
-import { db, type GhostDraft, type GhostItem, type ItemState } from './db';
+import {
+  type ContentRow,
+  db,
+  type Embedding,
+  type GhostDraft,
+  type GhostItem,
+  type ItemState,
+} from './db';
 
 export interface ListQuery {
   state?: ItemState;
@@ -28,6 +35,30 @@ export async function unghost(key: string): Promise<void> {
     await db.items.delete(key);
     await db.embeddings.delete(key);
     await db.contents.delete(key);
+  });
+}
+
+/** Everything `unghost` deletes, so it can be undone. */
+export interface Snapshot {
+  item: GhostItem;
+  embedding?: Embedding;
+  content?: ContentRow;
+}
+
+export async function snapshot(key: string): Promise<Snapshot | undefined> {
+  const [item, embedding, content] = await Promise.all([
+    db.items.get(key),
+    db.embeddings.get(key),
+    db.contents.get(key),
+  ]);
+  return item && { item, embedding, content };
+}
+
+export async function restore(s: Snapshot): Promise<void> {
+  await db.transaction('rw', db.items, db.embeddings, db.contents, async () => {
+    await db.items.put(s.item);
+    if (s.embedding) await db.embeddings.put(s.embedding);
+    if (s.content) await db.contents.put(s.content);
   });
 }
 
