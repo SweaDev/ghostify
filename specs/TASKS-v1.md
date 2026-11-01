@@ -174,11 +174,11 @@ Spec: `specs/SPEC-v1.md`. Plan: `specs/PLAN-v1.md`.
   Depends: T26
   Done: live settings hook; Ollama URL saved on blur; dashboard unghost has Undo; "Show more" paging; viewer survives filter changes; focus moves into drawers and back; site delete confirms; tests pass.
 
-- [ ] T28: In-browser model host (offscreen page + Transformers.js worker)
+- [x] T28: In-browser model host (offscreen page + Transformers.js worker)
   Refs: specs/PLAN-v1.md L224-239
-  Files: package.json, bun.lock, wxt.config.ts, build/ort-assets.ts, entrypoints/offscreen/{index.html,main.ts}, src/ai/browser/{catalog.ts,protocol.ts,worker.ts,host.ts}, src/store/browser-models.ts, tests/browser-host.test.ts
+  Files: package.json, bun.lock, wxt.config.ts, entrypoints/offscreen/{index.html,main.ts}, src/ai/browser/{catalog.ts,protocol.ts,gate.ts,worker.ts,host.ts}, src/store/browser-models.ts, src/background/browser-models.ts, tests/browser-host.test.ts
   Depends: T25
-  Done: builds ship `offscreen.html`, a worker chunk and `ort/*.wasm` (no model files); Chrome manifest has `offscreen`, Firefox doesn't; host relays load/embed/generate/classify/abort with progress; downloads recorded; fetch gate blocks undownloaded models; tests with a fake channel pass.
+  Done: builds ship `offscreen.html`, a worker chunk and ORT's wasm (no model files); Chrome manifest has `offscreen`, Firefox doesn't; host relays load/embed/generate/classify/abort with progress; downloads recorded; fetch gate blocks undownloaded models; tests with a fake channel pass.
 
 - [ ] T29: Browser provider as the default (AI SDK adapters, NLI decisions, readiness)
   Refs: specs/PLAN-v1.md L224-229; specs/PLAN-v1.md L240-244
