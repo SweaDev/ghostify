@@ -72,7 +72,7 @@ Spec: `specs/SPEC-v1.md`. Plan: `specs/PLAN-v1.md`.
   Depends: T08
   Done: default build has no `chrome_url_overrides`; `bun run build:newtab` manifest has `chrome_url_overrides.newtab` and name "Ghostify (New Tab)"; zips for both flavors build.
 
-- [ ] T12: README and version 0.2.0
+- [x] T12: README and version 0.2.0
   Refs: specs/PLAN-v1.md L144-171
   Files: README.md, package.json
   Depends: T09, T10, T11
