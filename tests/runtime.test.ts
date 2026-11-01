@@ -54,6 +54,8 @@ const start = (api: RuntimeApi, url = 'https://dev.to/') =>
 async function ghostViaButton(el: Element) {
   el.querySelector('h2')?.dispatchEvent(new Event('pointerover', { bubbles: true }));
   button().click();
+  // Wait out the mist-and-lift animation before the next interaction.
+  await vi.waitFor(() => expect(button().classList.contains('poof')).toBe(false));
 }
 
 describe('feed runtime', () => {
