@@ -23,7 +23,7 @@ export function IconButton(props: { label: string; onClick(): void; children: Re
       title={props.label}
       aria-label={props.label}
       onClick={props.onClick}
-      className="rounded-lg p-1.5 text-zinc-500 transition hover:bg-ghost-50 hover:text-ghost-600 focus-visible:outline-2 focus-visible:outline-ghost-500 dark:text-zinc-400 dark:hover:bg-ghost-900/40 dark:hover:text-ghost-300"
+      className="rounded-lg p-1.5 text-zinc-400 transition group-hover:text-zinc-500 hover:bg-ghost-50 hover:text-ghost-600 focus-visible:outline-2 focus-visible:outline-ghost-500 dark:text-zinc-400 dark:hover:bg-ghost-900/40 dark:hover:text-ghost-300"
     >
       {props.children}
     </button>
@@ -66,7 +66,7 @@ export function ItemCard({ item, compact, actions, note, onUnghost, onOpen }: It
           </p>
         )}
       </div>
-      <div className="flex shrink-0 items-start gap-0.5 opacity-70 transition group-hover:opacity-100">
+      <div className="flex shrink-0 items-start gap-0.5">
         {actions}
         {onUnghost && (
           <IconButton label="Unghost (show on the site again)" onClick={() => onUnghost(item)}>

@@ -17,7 +17,12 @@ const AUTHOR = [
   '[class*="author"] a',
   '[class*="byline"]',
   '.crayons-story__secondary',
+  '[class*="author"]',
 ];
+const DESCRIPTION = 'p, [class*="excerpt"], [class*="description"], [class*="summary"]';
+/** Chrome around the content that should not end up in an excerpt. */
+const NOISE =
+  'h1, h2, h3, h4, [role="heading"], button, time, svg, img, [hidden], [aria-hidden="true"], [class*="dropdown"], [class*="preview"], [class*="author"], [class*="avatar"], [class*="reaction"], [class*="comment"], [class*="tag"], [class*="meta"], [class*="bottom"], [class*="footer"]';
 const NOT_CONTENT_IMG = /avatar|profile|icon|logo|emoji/i;
 const MAX_EXCERPT = 400;
 
@@ -65,6 +70,21 @@ function findAuthor(el: Element): string | undefined {
   return undefined;
 }
 
+/** Description-like paragraphs if there are any, else the item's text without its chrome. */
+function findExcerpt(el: Element, title: string): string {
+  const paras = [...el.querySelectorAll(DESCRIPTION)]
+    .filter((p) => !p.closest(HEADING) && !p.parentElement?.closest(DESCRIPTION))
+    .map((p) => clean(p.textContent))
+    .filter((t) => t && t !== title);
+  let text = [...new Set(paras)].join(' ');
+  if (!text) {
+    const copy = el.cloneNode(true) as Element;
+    for (const n of copy.querySelectorAll(NOISE)) n.remove();
+    text = clean(copy.textContent).replace(title, '').trim();
+  }
+  return text.length > MAX_EXCERPT ? `${text.slice(0, MAX_EXCERPT - 1)}…` : text;
+}
+
 /** Turns a feedgrab item into what Ghostify stores. */
 export function extractItem(
   item: Pick<FeedItem, 'id' | 'element' | 'text'>,
@@ -72,11 +92,8 @@ export function extractItem(
 ): GhostDraft {
   const el = item.element;
   const heading = el.querySelector(HEADING);
-  const text = clean(item.text());
-  const title = clean(heading?.textContent) || text.slice(0, 120) || 'Untitled';
-  let excerpt = text.startsWith(title) ? text.slice(title.length).trim() : text.replace(title, '');
-  excerpt = clean(excerpt);
-  if (excerpt.length > MAX_EXCERPT) excerpt = `${excerpt.slice(0, MAX_EXCERPT - 1)}…`;
+  const title = clean(heading?.textContent) || clean(item.text()).slice(0, 120) || 'Untitled';
+  const excerpt = findExcerpt(el, title);
   return {
     id: item.id,
     host: ctx.host,

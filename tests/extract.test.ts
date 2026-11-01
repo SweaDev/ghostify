@@ -20,7 +20,8 @@ describe('extractItem', () => {
     expect(d.image).toMatch(/^https:\/\/media2\.dev\.to\//);
     expect(d.image).not.toMatch(/profile_image/);
     expect(d.author?.length).toBeGreaterThan(1);
-    expect(d.excerpt.length).toBeLessThanOrEqual(400);
+    expect(d.excerpt).toBe(el.querySelector('p')?.textContent?.trim());
+    expect(d.excerpt).not.toContain('Follow');
     expect(d).toMatchObject({ id: 'x', host: 'dev.to', siteId: 'devto', view: 'loggedOut' });
   });
 
@@ -33,5 +34,16 @@ describe('extractItem', () => {
     expect(d.title).toBe('Hello world, this is a post');
     expect(d.url).toBe('https://dev.to/p/1');
     expect(d.image).toBeUndefined();
+    expect(d.excerpt).toBe('');
+  });
+
+  it('strips chrome from items without paragraphs', () => {
+    const doc = document.implementation.createHTMLDocument('t');
+    doc.body.innerHTML =
+      '<div><h3>Title</h3><span class="author">Ann</span><button>Follow</button><span>Real words here</span><time>Oct 1</time></div>';
+    const el = doc.querySelector('div') as Element;
+    const d = extractItem({ id: 'z', element: el, text: () => el.textContent ?? '' }, ctx);
+    expect(d.excerpt).toBe('Real words here');
+    expect(d.author).toBe('Ann');
   });
 });
