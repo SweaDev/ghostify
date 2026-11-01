@@ -8,7 +8,8 @@ function setup() {
     onGhost,
   });
   const btn = gb.host.shadowRoot?.querySelector('button') as HTMLButtonElement;
-  return { gb, btn, onGhost };
+  const aura = gb.host.shadowRoot?.querySelector('.aura') as HTMLElement;
+  return { gb, btn, aura, onGhost };
 }
 
 const over = (el: Element) => el.dispatchEvent(new Event('pointerover', { bubbles: true }));
@@ -22,8 +23,47 @@ describe('ghost button', () => {
     expect(btn.classList.contains('on')).toBe(true);
     btn.click();
     await vi.waitFor(() => expect(onGhost).toHaveBeenCalledWith(item));
-    expect(gb.target).toBeUndefined();
+    await vi.waitFor(() => expect(gb.target).toBeUndefined());
     gb.destroy();
+  });
+
+  it('haunts the item while the button is hovered', () => {
+    const { gb, btn, aura } = setup();
+    const item = document.querySelector('.item') as Element;
+    item.getBoundingClientRect = () => new DOMRect(10, 20, 200, 100);
+    over(item);
+    btn.dispatchEvent(new Event('pointerenter'));
+    expect(aura.classList.contains('haunt')).toBe(true);
+    expect(aura.style.width).toBe('200px');
+    expect(aura.style.top).toBe('20px');
+    btn.dispatchEvent(new Event('pointerleave'));
+    expect(aura.classList.contains('haunt')).toBe(false);
+    gb.destroy();
+  });
+
+  it('mists the item, ghostifies it, then lifts the mist', async () => {
+    vi.useFakeTimers();
+    try {
+      const { gb, btn, aura, onGhost } = setup();
+      const item = document.querySelector('.item') as Element;
+      over(item);
+      btn.dispatchEvent(new Event('pointerenter'));
+      btn.click();
+      expect(btn.classList.contains('poof')).toBe(true);
+      expect(aura.classList.contains('vanish')).toBe(true);
+      expect(onGhost).not.toHaveBeenCalled();
+      over(document.querySelector('footer') as Element);
+      expect(gb.target).toBe(item);
+      await vi.advanceTimersByTimeAsync(320);
+      expect(onGhost).toHaveBeenCalledWith(item);
+      expect(aura.classList.contains('lift')).toBe(true);
+      await vi.advanceTimersByTimeAsync(420);
+      expect(gb.target).toBeUndefined();
+      expect(aura.className).toBe('aura');
+      gb.destroy();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('hides outside items and unmounts cleanly', () => {
