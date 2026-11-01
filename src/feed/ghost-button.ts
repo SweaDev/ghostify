@@ -83,7 +83,15 @@ export function mountGhostButton(doc: Document, opts: GhostButtonOptions): Ghost
     if (e.composedPath().includes(host)) return;
     const el = e.target instanceof Element ? opts.resolve(e.target) : undefined;
     if (el) show(el);
-    else hide();
+    else if (!overTarget(e)) hide();
+  };
+  // Hover overlays outside the item (e.g. YouTube's inline preview player) keep the button.
+  const overTarget = (e: Event) => {
+    if (!target?.isConnected || !(e instanceof MouseEvent)) return false;
+    const r = target.getBoundingClientRect();
+    return (
+      e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom
+    );
   };
   const onScroll = () => target && place();
   const onClick = async (e: Event) => {
