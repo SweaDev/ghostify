@@ -124,6 +124,26 @@ function OllamaSetup(props: { baseUrl: string }) {
   );
 }
 
+/** The Ollama URL, saved on blur or Enter (not per keystroke, which re-lists models each time). */
+function UrlField(props: { value: string; onSave(v: string): void }) {
+  const [draft, setDraft] = useState(props.value);
+  useEffect(() => setDraft(props.value), [props.value]);
+  const save = () => {
+    const v = draft.trim() || 'http://localhost:11434';
+    if (v !== props.value) props.onSave(v);
+  };
+  return (
+    <input
+      aria-label="Ollama URL"
+      value={draft}
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={save}
+      onKeyDown={(e) => e.key === 'Enter' && save()}
+      className={`${field} w-64 font-mono text-xs`}
+    />
+  );
+}
+
 export function AiSettings() {
   const [settings, update] = useSettings();
   const [keys, setKeys] = useState<Keys>({});
@@ -259,11 +279,9 @@ export function AiSettings() {
       {usesOllama && (
         <div className={card}>
           <Row label="Ollama" hint="Runs models locally">
-            <input
-              aria-label="Ollama URL"
+            <UrlField
               value={settings.ai.ollamaBaseUrl}
-              onChange={(e) => setAi({ ollamaBaseUrl: e.target.value })}
-              className={`${field} w-64 font-mono text-xs`}
+              onSave={(ollamaBaseUrl) => setAi({ ollamaBaseUrl })}
             />
             <Status
               state={

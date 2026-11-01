@@ -1,5 +1,5 @@
 import { ChevronRight, Loader2, Pause, Play, Square, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { clearFinished, isActive, JOB_LABELS } from '../store/ai-log';
 import type { AiJob, JobStatus } from '../store/db';
 import { timeAgo } from './format';
@@ -145,11 +145,18 @@ export function AiActivity(props: { compact?: boolean }) {
   const jobs = useJobs();
   const paused = useAiPaused();
   const [filter, setFilter] = useState<Filter>('all');
-  const now = Date.now();
   const f = FILTERS.find((x) => x.key === filter) ?? FILTERS[0];
   const shown = jobs?.filter((j) => f?.match(j.status));
   const active = jobs?.filter(isActive) ?? [];
   const running = active.find((j) => j.status === 'running');
+  // Re-render every second while a job runs, so its duration ticks.
+  const [, tick] = useState(0);
+  useEffect(() => {
+    if (!running) return;
+    const t = setInterval(() => tick((n) => n + 1), 1000);
+    return () => clearInterval(t);
+  }, [running]);
+  const now = Date.now();
 
   return (
     <div className="flex min-h-0 flex-col gap-3">

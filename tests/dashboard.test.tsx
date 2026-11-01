@@ -45,6 +45,27 @@ describe('dashboard', () => {
     await screen.findByText('Post a');
     await click(screen.getByLabelText(/Unghost/));
     await screen.findByText('No ghosts here');
+    await click(screen.getByRole('button', { name: 'Undo' }));
+    expect(await screen.findByText('Post a')).toBeTruthy();
+  });
+
+  it('renders long lists a page at a time', async () => {
+    for (let i = 0; i < 55; i++) await ghostify(draft(`p${i}`), i);
+    render(<Dashboard />);
+    await screen.findByText('Post p54');
+    expect(screen.queryByText('Post p4')).toBeNull();
+    await click(screen.getByRole('button', { name: /Show more \(5 left\)/ }));
+    expect(screen.getByText('Post p4')).toBeTruthy();
+  });
+
+  it('keeps the viewer open when its item leaves the list', async () => {
+    await ghostify(draft('a'));
+    render(<Dashboard />);
+    await click(await screen.findByRole('button', { name: 'Post a' }));
+    const dialog = await screen.findByRole('dialog');
+    await click(within(dialog).getByLabelText('Read later'));
+    await screen.findByText('No ghosts here');
+    expect(screen.getByRole('dialog')).toBeTruthy();
   });
 });
 

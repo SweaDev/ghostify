@@ -11,7 +11,7 @@ import {
   Sparkles,
   X,
 } from 'lucide-react';
-import { type ReactNode, useEffect, useState } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 import type { GhostItem } from '../store/db';
 import { AskPanel } from './AskPanel';
 import { timeAgo } from './format';
@@ -20,6 +20,7 @@ import { openUrl, type Target, viewerUrl } from './open';
 import { ReaderView } from './ReaderView';
 import { Tags } from './Tags';
 import { useContent } from './useContent';
+import { useDialogFocus } from './useDialogFocus';
 
 export type ViewerTab = 'overview' | 'reader' | 'ask';
 const TABS: { key: ViewerTab; label: string; icon: typeof BookOpen }[] = [
@@ -121,6 +122,8 @@ export function ItemDetail(props: {
   const [tab, setTab] = useState<ViewerTab>(props.initialTab ?? 'overview');
   const [wide, setWide] = useState(false);
   const grab = useContent(item);
+  const dialog = useRef<HTMLElement>(null);
+  useDialogFocus(dialog, !page);
   useEffect(() => {
     if (page) return;
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
@@ -246,10 +249,12 @@ export function ItemDetail(props: {
         onClick={onClose}
       />
       <aside
+        ref={dialog}
+        tabIndex={-1}
         role="dialog"
         aria-modal="true"
         aria-label={item.title}
-        className={`relative flex h-full w-full flex-col overflow-y-auto bg-white shadow-2xl transition-[max-width] dark:bg-zinc-950 ${
+        className={`relative flex outline-none h-full w-full flex-col overflow-y-auto bg-white shadow-2xl transition-[max-width] dark:bg-zinc-950 ${
           wide ? 'max-w-4xl' : 'max-w-xl'
         }`}
       >

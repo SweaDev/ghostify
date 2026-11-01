@@ -64,10 +64,12 @@ export function ItemCard(props: ItemCardProps) {
           <button type="button" onClick={() => onOpen(item)} className={titleClass}>
             {item.title}
           </button>
-        ) : (
+        ) : item.url ? (
           <a href={item.url} target="_blank" rel="noreferrer" className={titleClass}>
             {item.title}
           </a>
+        ) : (
+          <span className="line-clamp-2 font-medium text-sm leading-snug">{item.title}</span>
         )}
         <p className="mt-0.5 truncate text-xs text-zinc-500 dark:text-zinc-400">
           {[item.host, item.author, timeAgo(item.createdAt)].filter(Boolean).join(' · ')}

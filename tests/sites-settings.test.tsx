@@ -68,6 +68,7 @@ describe('SitesSettings', () => {
     await vi.waitFor(async () => expect((await getSites())[1]?.profiles).toHaveLength(2));
 
     expect(screen.queryByLabelText('Delete DEV Community')).toBeNull();
+    window.confirm = () => true;
     await click(screen.getByLabelText('Delete Example'));
     await vi.waitFor(async () => expect((await getSites()).map((s) => s.id)).toEqual(['devto']));
   });
