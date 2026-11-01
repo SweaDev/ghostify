@@ -3,9 +3,6 @@ import type { ProtocolMap } from '../messaging';
 import { onMessage } from '../messaging';
 import { ghostedIds, ghostify, listItems, setState, unghost } from '../store/items';
 
-// Typed loosely until the dashboard entrypoint exists (WXT types public paths from entrypoints).
-const DASHBOARD = '/dashboard.html' as Parameters<typeof browser.runtime.getURL>[0];
-
 type Handlers = {
   [K in keyof ProtocolMap]: (
     data: Parameters<ProtocolMap[K]>[0],
@@ -19,7 +16,7 @@ export const handlers: Handlers = {
   setState: ({ key, state, snoozeUntil }) => setState(key, state, snoozeUntil),
   listItems: (q) => listItems(q),
   openDashboard: async () => {
-    await browser.tabs.create({ url: browser.runtime.getURL(DASHBOARD) });
+    await browser.tabs.create({ url: browser.runtime.getURL('/dashboard.html') });
   },
 };
 
