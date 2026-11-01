@@ -1,5 +1,12 @@
-import { type FeedItem, openFeed, type RemovalHandle, removeItem } from 'feedgrab';
-import { detectView, resolveProfile, type Site, siteForUrl } from '../sites/model';
+import {
+  type FeedItem,
+  type LlmBackend,
+  openFeed,
+  type RemovalHandle,
+  removeItem,
+  type SiteProfile,
+} from 'feedgrab';
+import { detectView, resolveProfile, type Site, type SiteRule, siteForUrl } from '../sites/model';
 import type { RuntimeApi } from './api';
 import { extractItem } from './extract';
 import { mountGhostButton } from './ghost-button';
@@ -17,12 +24,27 @@ export interface RuntimeOptions {
   api: RuntimeApi;
   /** Called once when the site's login view changes, so the caller can restart the runtime. */
   onViewChange?(): void;
+  /** LLM backend (proxy) for auto-ghostify rules; rules are skipped without one (AI off). */
+  llm?: LlmBackend;
 }
 
-/**
- * Runs Ghostify on a page: opens the matching feedgrab feed, hides ghosted items (now and as
- * new ones load) and lets the user ghostify items with the floating button.
- */
+/** Adds the site's enabled auto-ghostify rules to every feed as feedgrab `llm-text` exclusions. */
+export function withRules(profile: SiteProfile, rules: SiteRule[]): SiteProfile {
+  const extra = rules
+    .filter((r) => r.enabled && r.criteria.trim())
+    .map((r) => ({
+      kind: 'llm-text' as const,
+      criteria: r.criteria.trim(),
+      id: r.id,
+      origin: 'user' as const,
+    }));
+  if (!extra.length) return profile;
+  return {
+    ...profile,
+    feeds: profile.feeds.map((f) => ({ ...f, exclude: [...f.exclude, ...extra] })),
+  };
+}
+
 /** Watches the login indicator (debounced) and reports a view change once. */
 function watchView(doc: Document, site: Site, onChange: () => void): () => void {
   const initial = detectView(site, doc);
@@ -42,6 +64,11 @@ function watchView(doc: Document, site: Site, onChange: () => void): () => void 
   };
 }
 
+/**
+ * Runs Ghostify on a page: opens the matching feedgrab feed, hides ghosted items (now and as
+ * new ones load), lets the user ghostify items with the floating button and applies the site's
+ * auto-ghostify rules when an LLM backend is given.
+ */
 export function startFeedRuntime(opts: RuntimeOptions): FeedRuntime {
   const { doc, url, sites, onViewChange } = opts;
   const site = siteForUrl(sites, url);
@@ -57,13 +84,14 @@ export function startFeedRuntime(opts: RuntimeOptions): FeedRuntime {
   };
 }
 
-function startFeed({ doc, url, sites, api }: RuntimeOptions): FeedRuntime {
+function startFeed({ doc, url, sites, api, llm }: RuntimeOptions): FeedRuntime {
   const resolved = resolveProfile(sites, url, doc);
   if (!resolved) return { active: false, dispose() {} };
 
   const host = new URL(url).hostname;
   const ctx = { host, siteId: resolved.site.id, view: resolved.view, baseUrl: url };
-  const feed = openFeed(doc, resolved.profile, { builtinExclusions: false });
+  const profile = llm ? withRules(resolved.profile, resolved.site.rules) : resolved.profile;
+  const feed = openFeed(doc, profile, { builtinExclusions: false, llm });
   const byElement = new WeakMap<Element, FeedItem>();
   const hidden = new Map<string, RemovalHandle>();
   let queue: FeedItem[] = [];
@@ -94,9 +122,32 @@ function startFeed({ doc, url, sites, api }: RuntimeOptions): FeedRuntime {
     if (queue.push(item) === 1) queueMicrotask(() => void flush().catch(console.warn));
   };
 
-  const offAdded = feed.on('item:added', track);
+  // An auto-ghostify rule matched (feedgrab marks the item excluded by an llm-text rule).
+  const autoCheck = (item: FeedItem) => {
+    const reason = item.reasons.find((r) => r.kind === 'llm-text');
+    if (item.status !== 'excluded' || !reason || hidden.has(item.id)) return;
+    hide(item);
+    const auto = {
+      ruleId: reason.ruleId,
+      criteria: reason.criteria ?? '',
+      confidence: reason.confidence ?? 1,
+    };
+    api
+      .autoGhostify({ ...extractItem(item, ctx), auto })
+      .then((saved) => saved || restore(item.id))
+      .catch((e) => {
+        restore(item.id);
+        console.warn('[ghostify]', e);
+      });
+  };
+
+  const offAdded = feed.on('item:added', (item) => {
+    track(item);
+    autoCheck(item);
+  });
   // A known item re-mounted as a new node (re-render, infinite scroll): hide or re-check it.
   const offUpdated = feed.on('item:updated', (item) => {
+    autoCheck(item);
     if (byElement.get(item.element) === item) return;
     if (hidden.has(item.id)) {
       hidden.delete(item.id);

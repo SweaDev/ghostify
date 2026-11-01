@@ -14,6 +14,8 @@ export interface ProtocolMap {
   isGhosted(data: { host: string; ids: string[] }): string[];
   ghostify(data: GhostDraft): GhostItem;
   unghost(data: { key: string }): void;
+  /** Ghostify by an auto rule; null when the user rescued the item before. */
+  autoGhostify(data: GhostDraft): GhostItem | null;
   setState(data: { key: string; state: ItemState; snoozeUntil?: number }): GhostItem;
   listItems(data: ListQuery): GhostItem[];
   openDashboard(): void;

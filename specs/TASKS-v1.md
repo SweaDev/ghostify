@@ -136,7 +136,7 @@ Spec: `specs/SPEC-v1.md`. Plan: `specs/PLAN-v1.md`.
   Depends: T18
   Done: `fd:llm` handled in background; d3 systemone request built per criterion, parsed defensively; non-d3 uses handleLlmRequest; fallback on error; tests with mocked fetch/model.
 
-- [ ] T22: Auto-ghostify rules
+- [x] T22: Auto-ghostify rules
   Refs: specs/PLAN-v1.md L125-129; specs/PLAN-v1.md L111-115
   Files: src/ui/SitesSettings.tsx, src/feed/runtime.ts, src/store/items.ts, src/ui/ItemCard.tsx, tests/runtime.test.ts
   Depends: T21

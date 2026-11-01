@@ -86,3 +86,17 @@ describe('listHosts', () => {
     expect(await listHosts()).toEqual(['dev.to', 'x.test']);
   });
 });
+
+describe('auto-ghostify and rescue', () => {
+  it('skips items rescued with "Not this"', async () => {
+    const { autoGhostify, rescue } = await import('@/src/store/items');
+    await db.kept.clear();
+    const auto = { ruleId: 'r', criteria: 'c', confidence: 1 };
+    const item = await autoGhostify(draft('a', { auto }));
+    expect(item?.auto).toEqual(auto);
+    await rescue('dev.to:a');
+    expect(await db.items.get('dev.to:a')).toBeUndefined();
+    expect(await autoGhostify(draft('a', { auto }))).toBeNull();
+    expect((await ghostify(draft('a'))).state).toBe('ghost'); // manual ghostify still works
+  });
+});

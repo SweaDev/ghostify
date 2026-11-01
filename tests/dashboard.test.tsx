@@ -152,3 +152,15 @@ describe('dashboard semantic search', () => {
     vi.restoreAllMocks();
   });
 });
+
+describe('dashboard auto items', () => {
+  it('labels auto-ghosted items and rescues them', async () => {
+    const { db: database } = await import('@/src/store/db');
+    await ghostify(draft('a', { auto: { ruleId: 'r', criteria: 'crypto hype', confidence: 1 } }));
+    render(<Dashboard />);
+    expect(await screen.findByText('Auto-ghosted: crypto hype')).toBeTruthy();
+    await click(screen.getByLabelText(/Not this/));
+    await screen.findByText('No ghosts here');
+    expect(await database.kept.get('dev.to:a')).toBeTruthy();
+  });
+});

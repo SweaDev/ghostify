@@ -29,6 +29,18 @@ export async function unghost(key: string): Promise<void> {
   });
 }
 
+/** Auto-ghostifies an item unless the user rescued it before. Returns null when skipped. */
+export async function autoGhostify(draft: GhostDraft, now = Date.now()): Promise<GhostItem | null> {
+  if (await db.kept.get(itemKey(draft.host, draft.id))) return null;
+  return ghostify(draft, now);
+}
+
+/** "Not this": unghosts an auto-ghostified item and stops rules from ghostifying it again. */
+export async function rescue(key: string): Promise<void> {
+  await unghost(key);
+  await db.kept.put({ key, at: Date.now() });
+}
+
 export async function getItem(key: string): Promise<GhostItem | undefined> {
   return db.items.get(key);
 }

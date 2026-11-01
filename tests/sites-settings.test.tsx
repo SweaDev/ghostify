@@ -84,3 +84,22 @@ describe('SitesSettings', () => {
     await screen.findByText('Example');
   });
 });
+
+describe('rules editor', () => {
+  it('adds, toggles and deletes auto-ghostify rules', async () => {
+    render(<SitesSettings />);
+    await click(await screen.findByText('DEV Community'));
+    fireEvent.change(screen.getByLabelText('New rule'), { target: { value: 'crypto hype' } });
+    await click(screen.getByText('Add rule'));
+    await vi.waitFor(async () =>
+      expect((await getSites())[0]?.rules[0]).toMatchObject({
+        criteria: 'crypto hype',
+        enabled: true,
+      }),
+    );
+    await click(await screen.findByRole('switch', { name: 'Enable rule crypto hype' }));
+    await vi.waitFor(async () => expect((await getSites())[0]?.rules[0]?.enabled).toBe(false));
+    await click(screen.getByLabelText('Delete rule crypto hype'));
+    await vi.waitFor(async () => expect((await getSites())[0]?.rules).toEqual([]));
+  });
+});
