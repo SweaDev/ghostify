@@ -34,7 +34,7 @@ Spec: `specs/SPEC-v1.md`. Plan: `specs/PLAN-v1.md`.
   Depends: T01
   Done: extract returns title/url/excerpt/image/author for fixture dev.to stories; button mounts in a shadow host, shows over a hovered target, invokes callback on click, unmounts cleanly.
 
-- [ ] T06: Feed runtime and dev.to content script
+- [x] T06: Feed runtime and dev.to content script
   Refs: specs/SPEC-v1.md L3; specs/PLAN-v1.md L111-116; specs/PLAN-v1.md L95-109
   Files: src/feed/runtime.ts, src/feed/api.ts, entrypoints/devto.content.ts, tests/runtime.test.ts
   Depends: T02, T04, T05

@@ -179,3 +179,5 @@ The zip names come from `zip.artifactTemplate` and `zip.sourcesTemplate`, and in
 - D7: Publishing to browser stores is out of scope.
 - D8: React + Tailwind was picked for the UI. It is the best-supported WXT module, and Tailwind keeps the styling consistent across the popup, dashboard, options and new tab.
 - D9: feedgrab's happy-dom `parseHtml` truncates the full dev.to page. Tests use a trimmed fixture built with `document.body.innerHTML`.
+- D10: Content scripts only pass proxy backends to feedgrab. `build/feedgrab-proxy-only.ts` stubs feedgrab's lazy AI SDK model runner, which keeps `ai` out of the content-script bundle (380 KB → 71 KB).
+- D11: The runtime re-checks re-mounted items (feedgrab `item:updated` with a new element), so items ghosted in another tab stay hidden after re-renders.

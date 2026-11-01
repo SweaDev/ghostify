@@ -1,5 +1,6 @@
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'wxt';
+import { feedgrabProxyOnly } from './build/feedgrab-proxy-only';
 
 const newtab = process.env.GHOSTIFY_FLAVOR === 'newtab';
 
@@ -8,7 +9,7 @@ export default defineConfig({
   modules: ['@wxt-dev/module-react', '@wxt-dev/auto-icons'],
   manifestVersion: 3,
   autoIcons: { baseIconPath: 'assets/icon.svg' },
-  vite: () => ({ plugins: [tailwindcss()] }),
+  vite: () => ({ plugins: [tailwindcss(), feedgrabProxyOnly()] }),
   manifest: ({ browser }) => ({
     name: newtab ? 'Ghostify (New Tab)' : 'Ghostify',
     permissions: ['storage', 'alarms'],
