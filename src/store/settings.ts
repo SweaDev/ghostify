@@ -1,6 +1,8 @@
 import { storage } from 'wxt/utils/storage';
 
 export type Provider = 'ollama' | 'openai' | 'openrouter' | 'gemini';
+export type Purpose = 'embedding' | 'general' | 'decision';
+export type Keys = Partial<Record<Exclude<Provider, 'ollama'>, string>>;
 
 export interface ModelRef {
   provider: Provider;
@@ -14,7 +16,6 @@ export interface Settings {
     embedding: ModelRef;
     general: ModelRef;
     decision: ModelRef;
-    keys: { openai?: string; openrouter?: string; gemini?: string };
   };
   ui: { theme: 'system' | 'light' | 'dark' };
 }
@@ -26,7 +27,6 @@ export const DEFAULT_SETTINGS: Settings = {
     embedding: { provider: 'ollama', model: 'embeddinggemma-2' },
     general: { provider: 'ollama', model: 'gemma4:e2b' },
     decision: { provider: 'ollama', model: 'd3:2b' },
-    keys: {},
   },
   ui: { theme: 'system' },
 };
@@ -36,7 +36,7 @@ const settingsItem = storage.defineItem<Partial<Settings>>('local:settings', { f
 /** Stored settings over the defaults (so new fields get their defaults). */
 export function withDefaults(s: Partial<Settings>): Settings {
   return {
-    ai: { ...DEFAULT_SETTINGS.ai, ...s.ai, keys: { ...s.ai?.keys } },
+    ai: { ...DEFAULT_SETTINGS.ai, ...s.ai },
     ui: { ...DEFAULT_SETTINGS.ui, ...s.ui },
   };
 }
