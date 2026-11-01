@@ -22,7 +22,7 @@ Spec: `specs/SPEC-v1.md`. Plan: `specs/PLAN-v1.md`.
   Depends: T01
   Done: tests for ghostify (idempotent by key), unghost, setState, snooze, expireSnoozes (sets ghost + returnedAt), list by state/host/text, ghostedIds.
 
-- [ ] T04: Messaging protocol and background router
+- [x] T04: Messaging protocol and background router
   Refs: specs/PLAN-v1.md L95-109; specs/PLAN-v1.md L22-54
   Files: src/messaging.ts, entrypoints/background.ts, src/background/handlers.ts, tests/handlers.test.ts
   Depends: T02, T03
