@@ -24,6 +24,8 @@
     "postinstall": "wxt prepare"
   },
   "dependencies": {
+    "@webext-core/messaging": "^4.0.1",
+    "dexie": "^4.4.7",
     "feedgrab": "https://github.com/SweaDev/feedgrab/releases/download/v0.1.0/feedgrab-0.1.0.tgz",
     "lucide-react": "^1.66.0",
     "react": "^19.3.1",

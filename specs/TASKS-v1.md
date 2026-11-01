@@ -16,7 +16,7 @@ Spec: `specs/SPEC-v1.md`. Plan: `specs/PLAN-v1.md`.
   Depends: T01
   Done: tests cover detectView (logged-in/out), resolveProfile matches `/`, `/latest`, `/top/week` for logged-out dev.to and nothing for `/some-article` or logged-in view; default sites seeded when storage empty.
 
-- [ ] T03: Dexie DB and items repository
+- [x] T03: Dexie DB and items repository
   Refs: specs/PLAN-v1.md L55-94; specs/PLAN-v1.md L117-120
   Files: src/store/db.ts, src/store/items.ts, tests/items.test.ts
   Depends: T01
