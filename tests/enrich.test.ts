@@ -4,7 +4,7 @@ import { afterGhostify } from '@/src/background/jobs';
 import { db } from '@/src/store/db';
 import { getItem, ghostify } from '@/src/store/items';
 import { saveSettings, withDefaults } from '@/src/store/settings';
-import { textModel } from './mock-model';
+import { embedModel, textModel } from './mock-model';
 
 const draft = {
   id: 'a',
@@ -44,6 +44,7 @@ describe('enrich', () => {
 
   it('runs after ghostify only when AI is on', async () => {
     const spy = vi.spyOn(models, 'languageModel').mockReturnValue(textModel(answer));
+    vi.spyOn(models, 'embeddingModel').mockReturnValue(embedModel(() => [1, 0]));
     const item = await ghostify(draft);
     await afterGhostify(item.key);
     expect(spy).not.toHaveBeenCalled();

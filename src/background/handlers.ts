@@ -3,7 +3,7 @@ import { checkPurpose } from '../ai/check';
 import type { ProtocolMap } from '../messaging';
 import { onMessage } from '../messaging';
 import { ghostedIds, ghostify, listItems, setState, unghost } from '../store/items';
-import { afterGhostify, enqueue, enrich } from './jobs';
+import { afterGhostify, embedKey, enqueue, enrich, reindex, searchSemantic } from './jobs';
 
 type Handlers = {
   [K in keyof ProtocolMap]: (
@@ -25,7 +25,13 @@ export const handlers: Handlers = {
     await browser.tabs.create({ url: browser.runtime.getURL('/dashboard.html') });
   },
   checkAi: ({ purpose }) => checkPurpose(purpose),
-  enrich: ({ key }) => enqueue(() => enrich(key, true)),
+  enrich: ({ key }) =>
+    enqueue(async () => {
+      await enrich(key, true);
+      await embedKey(key);
+    }),
+  searchSemantic: ({ query, filters }) => searchSemantic(query, filters),
+  reindex: () => reindex(),
   addSite: async ({ tabId }) => {
     await browser.scripting.executeScript({
       target: { tabId },

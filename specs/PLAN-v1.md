@@ -185,3 +185,4 @@ The zip names come from `zip.artifactTemplate` and `zip.sourcesTemplate`, and in
 - D13: `picker.content.ts` starts the picker without returning its promise. `scripting.executeScript` awaits a returned promise, and holding it open while the user works in the overlay tore the tab down in Chromium.
 - D14: For a new page, the picker pre-accepts feedgrab's best proposal by passing it as the overlay's `existing` profile. Saving with no feeds ticked shows a notice and saves nothing.
 - D15: API keys live in a Dexie `secrets` table (extension origin), not in `storage.local`, because content scripts can read `storage.local`. `Settings.ai` holds no keys; `getKeys()` is used only by the background and the options page.
+- D16: Embeddings use no task prefixes. The embeddinggemma-2 page doesn't document the prefix syntax. Each stored embedding is tagged `provider:model`; ranking ignores other models' vectors, and Settings → AI → Reindex fills the gaps.

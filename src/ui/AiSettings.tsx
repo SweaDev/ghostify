@@ -58,6 +58,7 @@ export function AiSettings() {
     Partial<Record<Purpose, 'busy' | { ok: boolean; message: string }>>
   >({});
 
+  const [reindexed, setReindexed] = useState<string>();
   useEffect(() => void getKeys().then(setKeys), []);
   const url = settings?.ai.ollamaBaseUrl;
   useEffect(() => {
@@ -79,6 +80,12 @@ export function AiSettings() {
       message: e.message,
     }));
     setChecks((c) => ({ ...c, [p]: r }));
+  };
+  const reindex = async () => {
+    const n = await sendMessage('reindex', undefined);
+    setReindexed(
+      n ? `Embedding ${n} item${n === 1 ? '' : 's'} in the background…` : 'All items are indexed.',
+    );
   };
   const usesOllama = PURPOSES.some((p) => settings.ai[p.key].provider === 'ollama');
   const cloud = [...new Set(PURPOSES.map((p) => settings.ai[p.key].provider))].filter(
@@ -153,6 +160,21 @@ export function AiSettings() {
           );
         })}
       </div>
+
+      {settings.ai.enabled && (
+        <div className={`${card} flex flex-wrap items-center gap-3`}>
+          <div className="flex-1">
+            <div className="font-medium text-sm">Search index</div>
+            <div className="text-xs text-zinc-500">
+              Embeds ghosts saved before AI was on, or after changing the embedding model.
+            </div>
+          </div>
+          {reindexed && <span className="text-xs text-zinc-500">{reindexed}</span>}
+          <button type="button" className={field} onClick={() => void reindex()}>
+            Reindex
+          </button>
+        </div>
+      )}
 
       {usesOllama && (
         <div className={card}>

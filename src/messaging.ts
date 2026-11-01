@@ -1,5 +1,6 @@
 import { defineExtensionMessaging } from '@webext-core/messaging';
 import type { CheckResult } from './ai/check';
+import type { SearchResult } from './background/jobs';
 import type { GhostDraft, GhostItem, ItemState } from './store/db';
 import type { ListQuery } from './store/items';
 import type { Purpose } from './store/settings';
@@ -18,6 +19,10 @@ export interface ProtocolMap {
   checkAi(data: { purpose: Purpose }): CheckResult;
   /** Re-generates an item's summary and tags. */
   enrich(data: { key: string }): void;
+  /** Ranks items by meaning; keyword fallback when AI is off or fails. */
+  searchSemantic(data: { query: string; filters: ListQuery }): SearchResult;
+  /** Embeds items that have no embedding for the current model; returns how many. */
+  reindex(): number;
 }
 
 export const { sendMessage, onMessage } = defineExtensionMessaging<ProtocolMap>();
