@@ -96,7 +96,8 @@ export async function searchSemantic(query: string, filters: ListQuery): Promise
       ({ signal }) =>
         embed({ model: embeddingModel(ref, settings, keys), value: query, abortSignal: signal }),
     );
-    const ranked = rank(embedding, await db.embeddings.toArray(), modelTag(ref));
+    const tag = modelTag(ref);
+    const ranked = rank(embedding, await db.embeddings.where('model').equals(tag).toArray(), tag);
     const pool = new Map((await listItems({ ...filters, text: undefined })).map((i) => [i.key, i]));
     const items = ranked.map((k) => pool.get(k)).filter((i): i is GhostItem => !!i);
     return { items, fallback: false };

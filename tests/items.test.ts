@@ -25,6 +25,15 @@ beforeEach(async () => {
 });
 
 describe('items repository', () => {
+  it('lists one state newest first through its index and stops at the limit', async () => {
+    for (let i = 0; i < 6; i++) await ghostify(draft(`p${i}`), 100 + i);
+    await setState('dev.to:p5', 'later', undefined, 200);
+    const ghosts = await listItems({ state: 'ghost', limit: 3 });
+    expect(ghosts.map((i) => i.id)).toEqual(['p4', 'p3', 'p2']);
+    expect((await listItems({ state: 'later' })).map((i) => i.id)).toEqual(['p5']);
+    expect((await listItems({ state: 'ghost', text: 'post p1' })).map((i) => i.id)).toEqual(['p1']);
+  });
+
   it('ghostifies idempotently by key', async () => {
     const a = await ghostify(draft('a'), 1);
     const again = await ghostify(draft('a', { title: 'changed' }), 2);

@@ -49,9 +49,11 @@ export function withRules(profile: SiteProfile, rules: SiteRule[]): SiteProfile 
 function watchView(doc: Document, site: Site, onChange: () => void): () => void {
   const initial = detectView(site, doc);
   let timer: ReturnType<typeof setTimeout> | undefined;
+  // Throttled, not debounced: on pages that mutate all the time a debounce would never fire.
   const mo = new MutationObserver(() => {
-    clearTimeout(timer);
+    if (timer) return;
     timer = setTimeout(() => {
+      timer = undefined;
       if (detectView(site, doc) === initial) return;
       mo.disconnect();
       onChange();

@@ -10,7 +10,7 @@ import {
   prompt,
   type Settings,
 } from '../store/settings';
-import { DECISION_NAME, ollamaKinds } from './catalog';
+import { DECISION_NAME, type Kind, ollamaKinds } from './catalog';
 import { cachedClassify } from './decision-cache';
 import { modelTag } from './embed';
 import { key, languageModel, OPENROUTER_URL } from './models';
@@ -27,6 +27,20 @@ export interface SystemOneTarget {
  * capability (checked locally). OpenRouter decision models (Jev, …) are flagged `systemOne` when
  * picked from its model list; a typed id falls back to its name.
  */
+const KINDS_TTL = 10 * 60_000;
+const kindsMemo = new Map<string, { at: number; kinds: Promise<Kind[]> }>();
+
+/** Ollama capabilities, remembered for a while (asked before every uncached rule check). */
+function memoKinds(base: string, model: string, fetcher: typeof fetch): Promise<Kind[]> {
+  if (fetcher !== fetch) return ollamaKinds(base, model, fetcher);
+  const k = `${base}|${model}`;
+  const hit = kindsMemo.get(k);
+  if (hit && Date.now() - hit.at < KINDS_TTL) return hit.kinds;
+  const kinds = ollamaKinds(base, model, fetcher);
+  kindsMemo.set(k, { at: Date.now(), kinds });
+  return kinds;
+}
+
 export async function systemOneTarget(
   ref: ModelRef,
   settings: Settings,
@@ -35,7 +49,7 @@ export async function systemOneTarget(
 ): Promise<SystemOneTarget | undefined> {
   if (ref.provider === 'ollama') {
     const base = settings.ai.ollamaBaseUrl;
-    if (!(await ollamaKinds(base, ref.model, fetcher)).includes('decision')) return undefined;
+    if (!(await memoKinds(base, ref.model, fetcher)).includes('decision')) return undefined;
     return { url: `${base.replace(/\/+$/, '')}/v1/systemone`, model: ref.model };
   }
   if (ref.provider === 'openrouter' && (ref.systemOne ?? DECISION_NAME.test(ref.model)))

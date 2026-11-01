@@ -23,24 +23,32 @@ export function backfill(): Promise<void> {
 
 async function run(): Promise<void> {
   let tag: string | undefined;
+  let backlog: string[] = [];
+  const tried = new Set<string>();
   try {
-    // Re-read settings and the backlog every item: model changes, new and deleted items are
-    // picked up, and the storage calls keep the MV3 service worker awake.
+    // Settings are re-read every item (model changes are picked up, and the storage calls keep
+    // the MV3 service worker awake). The backlog is listed once, and again when it runs out, so
+    // items ghosted meanwhile are included; each key is tried once per run.
     for (;;) {
       const settings = await getSettings();
       if (!settings.ai.enabled) break;
       const t = modelTag(settings.ai.embedding);
-      const [next, ...rest] = await missingKeys(t);
-      if (!next) break;
-      if (t !== tag) {
-        tag = t;
-        const total = await db.items.count();
-        await indexStatus.setValue({
-          running: true,
-          startedAt: Date.now(),
-          startIndexed: total - rest.length - 1,
-        });
+      if (t !== tag || !backlog.length) {
+        if (t !== tag) tried.clear();
+        backlog = (await missingKeys(t)).filter((k) => !tried.has(k));
+        if (!backlog.length) break;
+        if (t !== tag) {
+          tag = t;
+          const total = await db.items.count();
+          await indexStatus.setValue({
+            running: true,
+            startedAt: Date.now(),
+            startIndexed: total - backlog.length,
+          });
+        }
       }
+      const next = backlog.shift() as string;
+      tried.add(next);
       await whenIdle();
       await embedKey(next);
     }
