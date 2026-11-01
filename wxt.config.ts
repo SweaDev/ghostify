@@ -10,10 +10,21 @@ export default defineConfig({
   manifestVersion: 3,
   outDirTemplate: `{{browser}}-mv{{manifestVersion}}${newtab ? '-newtab' : ''}`,
   autoIcons: { baseIconPath: 'assets/icon.svg' },
-  vite: () => ({ plugins: [tailwindcss(), feedgrabProxyOnly()] }),
+  vite: () => ({
+    plugins: [tailwindcss(), feedgrabProxyOnly()],
+    // The model worker imports ONNX Runtime's module glue at runtime.
+    worker: { format: 'es' },
+  }),
   manifest: ({ browser }) => ({
     name: newtab ? 'Ghostify (New Tab)' : 'Ghostify',
-    permissions: ['storage', 'alarms', 'scripting', 'activeTab'],
+    // `offscreen` hosts the in-browser model worker on Chrome (Firefox uses an iframe instead).
+    permissions: [
+      'storage',
+      'alarms',
+      'scripting',
+      'activeTab',
+      ...(browser === 'firefox' ? [] : ['offscreen']),
+    ],
     optional_host_permissions: ['*://*/*'],
     action: { default_title: 'Ghostify' },
     // No remote code; wasm is allowed for the in-browser models (ONNX Runtime Web).

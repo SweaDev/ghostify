@@ -231,7 +231,7 @@ The zip names come from `zip.artifactTemplate` and `zip.sourcesTemplate`, and in
   - The user downloads each model from Settings → AI. The files go to Cache Storage (`transformers-cache`, extension origin), and `local:browserModels` records `model@dtype` with its size.
   - Inference never downloads. The worker's `env.fetch` rejects Hugging Face requests unless a download for that model is running, and the background skips browser jobs for models that aren't downloaded (so the log doesn't fill with failures).
   - Delete removes the model's cached files and its records.
-  - Only ONNX Runtime's asyncify wasm (~27 MB, `ort/`) ships with the extension. It is copied from `node_modules` at build time, because MV3 forbids remote code and the CDN default would be blocked. `env.useWasmCache` is off, because its blob-URL import breaks the CSP.
+  - Only ONNX Runtime's asyncify wasm (~27 MB) ships with the extension. Vite bundles ORT's glue into the worker and emits the wasm as an asset; Transformers.js's CDN `wasmPaths` is cleared, because MV3 forbids remote code. `env.useWasmCache` is off, because its blob-URL import breaks the CSP. Loading a model takes roughly 10–15× its file size in RAM while it runs (wasm memory doesn't shrink), so the worker is ended when idle.
 - D33: The runtime sits in a dedicated worker started by an unlisted `offscreen.html`:
   - Chrome hosts it as an offscreen document (`offscreen` permission, Chrome only; reason `WORKERS`), since MV3 service workers can't start workers. The background talks to it over a `runtime.connect` port.
   - Firefox's event page appends `offscreen.html` as an iframe and hands it a `MessageChannel` port.
