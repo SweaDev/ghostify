@@ -2,7 +2,7 @@
 
 Ghostify is a browser extension (Chrome and Firefox) for feeds that keep showing you the same posts. Hover a post, click the ghost, and it disappears from the site's feed for good. Ghostify keeps a copy so you can find it again later.
 
-> **Status: v0.2.0 (Phase 2 of 4).** Ghostify works on the dev.to home feeds (logged out) and has a full Ghostify page with snooze and search. See [What's missing](#whats-missing).
+> **Status: v0.3.0 (Phase 3 of 4).** Ghostify works on the dev.to home feeds out of the box, and you can add any site. It has a full Ghostify page with snooze and search. See [What's missing](#whats-missing).
 
 ## Features in this version
 - **The dev.to logged-out home feeds** (Relevant `/`, Latest `/latest`, Top `/top/*`) are recognized automatically, through [feedgrab](https://github.com/SweaDev/feedgrab).
@@ -15,6 +15,20 @@ Ghostify is a browser extension (Chrome and Firefox) for feeds that keep showing
   - **Snoozed** holds posts that come back later.
 - **Snooze** a post until later today, tomorrow, the weekend, next week, or a date you choose. The post stays hidden on the site, and when the time is up it shows in **Back from snooze** at the top of Ghosted.
 - **Search** your ghosts by keyword, **filter** them by site, and click a thumbnail or excerpt to see the post's details.
+- **Add any site.** On a page with a feed, open the popup and click **Add this site**. Ghostify asks for access to that site only, and then:
+  1. [feedgrab](https://github.com/SweaDev/feedgrab) proposes the feeds on the page, and its overlay lets you confirm them, pick containers and items, or type CSS/XPath selectors.
+  2. You choose which page paths the feeds apply to.
+  3. You choose whether they're for the **logged-in**, the **logged-out** or **any** view. For a specific view, you can pick an element that only shows in it (for example your avatar), so Ghostify can tell the views apart.
+
+  **Edit selectors** in the popup reopens the overlay on a site you already added.
+- **Settings → Sites** lets you:
+  - turn sites on or off and delete the ones you added;
+  - see each page pattern, its view and its selectors;
+  - edit the login indicator;
+  - export and import your sites as JSON.
+
+  dev.to is built in. Its login indicator is `body[data-user-status="logged-in"]`, and only its logged-out home feeds are set up. Add the logged-in view yourself with **Edit selectors** if you want it.
+- **The view switches** as soon as you log in or out, without a reload.
 - **The new-tab flavor** (`ghostify-newtab-*` zips) puts the Ghostify page on every new tab. Install either the regular flavor or the new-tab flavor, not both.
 - Everything stays local in your browser (IndexedDB), with no account and no sync.
 
@@ -54,6 +68,7 @@ For the new-tab flavor, load `.output/chrome-mv3-newtab` or `.output/firefox-mv3
 Then:
 1. Open <https://dev.to/> while logged out, hover a post, and click the ghost.
 2. Click the Ghostify toolbar icon, then **Open Ghostify**. If you use the new-tab flavor, open a new tab instead.
+3. To try another site, open it, click the toolbar icon and choose **Add this site**.
 
 ### Development
 | Command | What it does |
@@ -70,14 +85,16 @@ Then:
 Pushing a `v*` tag runs `.github/workflows/release.yml`. It tests the extension, builds the Chrome, Firefox and Firefox sources zips for both flavors, and attaches them to a GitHub Release:
 
 ```sh
-git push origin v0.2.0
+git push origin v0.3.0
 ```
 
 ## Project docs
 - The spec is `specs/SPEC-v1.md`, the plan is `specs/PLAN-v1.md`, and the tasks are `specs/TASKS-v1.md`.
-- This version covers tasks **T01–T12** (Phases 1–2) and these parts of the spec:
+- This version covers tasks **T01–T17** (Phases 1–3) and these parts of the spec:
   - feedgrab feed reading;
-  - the dev.to logged-out home feeds;
+  - the dev.to logged-out home feeds, plus adding more sites;
+  - custom feed selectors through feedgrab;
+  - separate logged-in and logged-out views with their own selectors;
   - the ghost icon on recognized items;
   - removing ghosted items from the feed and keeping them in the extension;
   - viewing later, snoozing, and the Ghostified tab until you remove an item;
@@ -88,8 +105,17 @@ git push origin v0.2.0
 ## What's missing
 | Coming in | What |
 |---|---|
-| Phase 3 | Adding sites and custom selectors through the feedgrab overlay, and separate logged-in and logged-out views |
 | Phase 4 | Local AI with Ollama (summaries, tags, semantic search, auto-ghostify rules) and bring-your-own-key OpenRouter, Gemini and OpenAI |
+
+## Permissions
+| Permission | Why |
+|---|---|
+| `storage` | Settings and sites |
+| `alarms` | Waking snoozed posts |
+| `scripting` | Running Ghostify on sites you add |
+| `activeTab` | Reading the current tab's address in the popup, and opening the site picker |
+| dev.to | The built-in site |
+| Other sites (optional) | Requested for one site at a time when you add it |
 
 ## License
 MIT
