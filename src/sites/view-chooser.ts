@@ -46,7 +46,7 @@ export function chooseView(doc: Document, opts: ChooserOptions = {}): Promise<Vi
   <div class="ind" hidden>
     <div>Login indicator: <code class="sel"></code></div>
     <div class="row" style="justify-content:flex-start;margin-top:6px">
-      <button type="button" class="pick">Pick an element shown only when logged in</button>
+      <button type="button" class="pick">Pick an element shown only in this view</button>
     </div>
   </div>
   <div class="row">
@@ -65,7 +65,9 @@ export function chooseView(doc: Document, opts: ChooserOptions = {}): Promise<Vi
     $<HTMLElement>('.sel').textContent = indicator
       ? `${indicator.selector} (present = ${indicator.whenPresent === 'loggedIn' ? 'logged in' : 'logged out'})`
       : 'none, so both views will match';
-    $<HTMLElement>('.pick').hidden = !opts.pickIndicator;
+    const pick = $<HTMLElement>('.pick');
+    pick.hidden = !opts.pickIndicator;
+    pick.textContent = `Pick an element shown only when ${view() === 'loggedIn' ? 'logged in' : 'logged out'}`;
   };
   render();
   for (const r of root.querySelectorAll('input[name=view]')) r.addEventListener('change', render);
@@ -79,7 +81,8 @@ export function chooseView(doc: Document, opts: ChooserOptions = {}): Promise<Vi
       host.style.display = 'none';
       const selector = await opts.pickIndicator?.().catch(() => undefined);
       host.style.display = '';
-      if (selector) indicator = { selector, whenPresent: 'loggedIn' };
+      const v = view();
+      if (selector && v !== 'any') indicator = { selector, whenPresent: v };
       render();
     });
     $('.cancel').addEventListener('click', () => done(null));

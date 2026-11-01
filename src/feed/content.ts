@@ -14,6 +14,7 @@ export async function runFeedContent(ctx: ContentScriptContext): Promise<void> {
       url: location.href,
       sites: await getSites(),
       api: messagingApi,
+      onViewChange: () => void restart(),
     });
   };
   ctx.addEventListener(window, 'wxt:locationchange', () => void restart());

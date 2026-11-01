@@ -98,7 +98,7 @@ Spec: `specs/SPEC-v1.md`. Plan: `specs/PLAN-v1.md`.
   Depends: T14
   Done: popup "Add this site / Edit selectors" requests origin permission, injects picker; picker runs detectFeeds + openOverlay (existing profile passed when editing), then view chooser; saved profile merges into site; unit tests cover merge logic.
 
-- [ ] T16: Logged-in vs logged-out views end-to-end
+- [x] T16: Logged-in vs logged-out views end-to-end
   Refs: specs/SPEC-v1.md L12; specs/PLAN-v1.md L111-115
   Files: src/sites/model.ts, src/feed/runtime.ts, src/sites/picker.ts, tests/runtime.test.ts, tests/sites.test.ts
   Depends: T15

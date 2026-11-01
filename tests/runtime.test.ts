@@ -1,3 +1,4 @@
+import type { SiteProfile } from 'feedgrab';
 import type { RuntimeApi } from '@/src/feed/api';
 import { startFeedRuntime } from '@/src/feed/runtime';
 import { DEVTO_SITE } from '@/src/sites/defaults';
@@ -106,5 +107,54 @@ describe('feed runtime', () => {
     document.querySelector('#substories')?.append(fresh);
     await vi.waitFor(() => expect(isHidden(fresh)).toBe(true));
     rt2.dispose();
+  });
+});
+
+describe('login views', () => {
+  const loggedOutHome = DEVTO_SITE.profiles[0]?.profile as SiteProfile;
+  const both = {
+    ...DEVTO_SITE,
+    profiles: [...DEVTO_SITE.profiles, { view: 'loggedIn' as const, profile: loggedOutHome }],
+  };
+
+  it('picks the profile for the current view and reports view changes', async () => {
+    devtoDoc();
+    const onViewChange = vi.fn();
+    const rt = startFeedRuntime({
+      doc: document,
+      url: 'https://dev.to/',
+      sites: [DEVTO_SITE],
+      api: fakeApi().api,
+      onViewChange,
+    });
+    expect(rt.active).toBe(true);
+    document.body.dataset.userStatus = 'logged-in';
+    await vi.waitFor(() => expect(onViewChange).toHaveBeenCalledTimes(1));
+    rt.dispose();
+
+    // Logged in: the built-in site has no logged-in profile, but still watches for a change back.
+    const onBack = vi.fn();
+    const rt2 = startFeedRuntime({
+      doc: document,
+      url: 'https://dev.to/',
+      sites: [DEVTO_SITE],
+      api: fakeApi().api,
+      onViewChange: onBack,
+    });
+    expect(rt2.active).toBe(false);
+    document.body.dataset.userStatus = 'logged-out';
+    await vi.waitFor(() => expect(onBack).toHaveBeenCalled());
+    rt2.dispose();
+
+    // With a logged-in profile the runtime is active in that view too.
+    document.body.dataset.userStatus = 'logged-in';
+    const rt3 = startFeedRuntime({
+      doc: document,
+      url: 'https://dev.to/',
+      sites: [both],
+      api: fakeApi().api,
+    });
+    expect(rt3.active).toBe(true);
+    rt3.dispose();
   });
 });

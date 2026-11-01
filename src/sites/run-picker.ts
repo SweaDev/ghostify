@@ -1,8 +1,9 @@
 import { detectFeeds } from 'feedgrab';
-import { openOverlay } from 'feedgrab/overlay';
+import { openOverlay, pickElement } from 'feedgrab/overlay';
 import { detectView } from './model';
 import { existingProfile, findSite, mergePicked } from './picker';
 import { getSites, saveSite } from './registry';
+import { selectorFor } from './selector';
 import { chooseView } from './view-chooser';
 
 const THEME = { colors: { accent: '#7c5cff', feed: '#7c5cff', item: '#3b82f6' } };
@@ -22,7 +23,10 @@ export async function runPicker(): Promise<void> {
   } catch {
     return; // cancelled
   }
-  const choice = await chooseView(document, { indicator: site?.loginIndicator });
+  const choice = await chooseView(document, {
+    indicator: site?.loginIndicator,
+    pickIndicator: async () => selectorFor(await pickElement(document)),
+  });
   if (!choice) return;
   const title =
     document.title
