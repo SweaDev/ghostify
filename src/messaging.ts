@@ -41,6 +41,8 @@ export interface ProtocolMap {
   ask(data: { key: string; question: string }): string;
   /** Removes a question from an item's thread. */
   forget(data: { key: string; qaId: string }): void;
+  /** Starts downloading (progress in `session:browserDownloads`) or deletes an in-browser model. */
+  browserModel(data: { action: 'download' | 'delete'; purpose: Purpose; model: string }): void;
 }
 
 export const { sendMessage, onMessage } = defineExtensionMessaging<ProtocolMap>();

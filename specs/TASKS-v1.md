@@ -186,7 +186,7 @@ Spec: `specs/SPEC-v1.md`. Plan: `specs/PLAN-v1.md`.
   Depends: T28
   Done: `browser` provider is the default for all purposes; language/embedding adapters pass AI SDK generate/stream/embed/structured output against a fake host; decisions via zero-shot map to ClassifyResponse; jobs skip undownloaded models; tests pass.
 
-- [ ] T30: AI settings: browser model downloads
+- [x] T30: AI settings: browser model downloads
   Refs: specs/PLAN-v1.md L224-239
   Files: src/ui/BrowserModels.tsx, src/ui/AiSettings.tsx, src/ui/useBrowserModels.ts, src/background/handlers.ts, src/messaging.ts, tests/browser-models.test.tsx
   Depends: T29

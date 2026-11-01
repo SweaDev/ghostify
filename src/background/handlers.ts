@@ -1,4 +1,5 @@
 import { browser } from 'wxt/browser';
+import { specFor } from '../ai/browser/catalog';
 import { isReady } from '../ai/browser/provider';
 import { checkPurpose } from '../ai/check';
 import { handleDecision } from '../ai/decision';
@@ -8,8 +9,9 @@ import { onMessage } from '../messaging';
 import { autoGhostify, ghostedIds, ghostify, listItems, setState, unghost } from '../store/items';
 import { getSettings } from '../store/settings';
 import { pauseAll, pauseJob, resumeAll, resumeJob, runJob, stopAll, stopJob } from './ai-queue';
+import { deleteModel, downloadModel } from './browser-models';
 import { guard } from './guard';
-import { reindex } from './indexer';
+import { backfill, reindex } from './indexer';
 import { afterGhostify, ask, digest, embedKey, enrich, forget, searchSemantic } from './jobs';
 
 const JOB = { pause: pauseJob, resume: resumeJob, stop: stopJob };
@@ -65,6 +67,14 @@ export const handlers: Handlers = {
   forget: ({ key, qaId }) => forget(key, qaId),
   searchSemantic: ({ query, filters }) => searchSemantic(query, filters),
   reindex: () => reindex(),
+  browserModel: async ({ action, purpose, model }) => {
+    if (action === 'delete') return deleteModel(model);
+    const spec = specFor(model, purpose, (await getSettings()).ai.device);
+    // Runs on after the settings page closes; progress and errors go to session storage.
+    void downloadModel(spec)
+      .then(() => (purpose === 'embedding' ? backfill() : undefined))
+      .catch((e) => console.warn('[ghostify:ai] download', e));
+  },
   llm: async ({ req }) => {
     try {
       const d = describe(req);

@@ -61,6 +61,14 @@ export const BROWSER_MODELS: BrowserModel[] = [
     hint: 'Summaries and tags on most laptops',
   },
   {
+    id: 'HuggingFaceTB/SmolLM2-135M-Instruct',
+    label: 'SmolLM2 135M',
+    purpose: 'general',
+    dtype: { wasm: 'q8', webgpu: 'q4f16' },
+    mb: { wasm: 135, webgpu: 115 },
+    hint: 'For low-memory computers; plainer summaries',
+  },
+  {
     id: 'onnx-community/gemma-3-270m-it-ONNX',
     label: 'Gemma 3 270M',
     purpose: 'general',
