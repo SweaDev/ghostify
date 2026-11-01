@@ -2,6 +2,7 @@ import { act, cleanup, fireEvent, render, screen, within } from '@testing-librar
 import { db } from '@/src/store/db';
 import { ghostify } from '@/src/store/items';
 import { Dashboard } from '@/src/ui/Dashboard';
+import { OLLAMA_AI } from './ollama-ai';
 
 const draft = (id: string, extra = {}) => ({
   id,
@@ -154,7 +155,9 @@ describe('dashboard semantic search', () => {
       embedModel((t) => [/rust|memory/i.test(t) ? 1 : 0, /css/i.test(t) ? 1 : 0, 0.1]),
     );
     vi.spyOn(models, 'languageModel').mockReturnValue(textModel('{"summary":"s","tags":[]}'));
-    await saveSettings(withDefaults({ ai: { ...DEFAULT_SETTINGS.ai, enabled: true } }));
+    await saveSettings(
+      withDefaults({ ai: { ...DEFAULT_SETTINGS.ai, ...OLLAMA_AI, enabled: true } }),
+    );
     registerHandlers();
     for (const [id, title] of [
       ['a', 'Rust ownership'],

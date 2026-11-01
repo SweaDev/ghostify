@@ -17,6 +17,8 @@ export type HostRequest =
       messages: ChatMessage[];
       maxNewTokens: number;
       temperature?: number;
+      /** Start of the reply to continue from (e.g. `{"summary":` to keep small models on JSON). */
+      prefix?: string;
     }
   | { op: 'classify'; spec: Spec; text: string; labels: string[]; template: string }
   | { op: 'abort'; target: string }

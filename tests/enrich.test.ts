@@ -5,6 +5,7 @@ import { db } from '@/src/store/db';
 import { getItem, ghostify } from '@/src/store/items';
 import { saveSettings, withDefaults } from '@/src/store/settings';
 import { embedModel, textModel } from './mock-model';
+import { OLLAMA_AI } from './ollama-ai';
 
 const draft = {
   id: 'a',
@@ -49,7 +50,9 @@ describe('enrich', () => {
     await afterGhostify(item.key);
     expect(spy).not.toHaveBeenCalled();
 
-    await saveSettings(withDefaults({ ai: { ...withDefaults({}).ai, enabled: true } }));
+    await saveSettings(
+      withDefaults({ ai: { ...withDefaults({}).ai, ...OLLAMA_AI, enabled: true } }),
+    );
     await afterGhostify(item.key);
     expect(await getItem(item.key)).toMatchObject({
       summary: 'Tips about Rust ownership.',

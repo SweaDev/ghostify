@@ -10,6 +10,13 @@ import {
   prompt,
   type Settings,
 } from '../store/settings';
+import {
+  browserClassify,
+  browserSpec,
+  HYPOTHESIS,
+  isReady,
+  notDownloaded,
+} from './browser/provider';
 import { DECISION_NAME, type Kind, ollamaKinds } from './catalog';
 import { cachedClassify } from './decision-cache';
 import { modelTag } from './embed';
@@ -166,9 +173,17 @@ export async function handleDecision(req: unknown, deps?: DecisionDeps): Promise
     handleLlmRequest(r, lm(ref), { signal }) as Promise<ClassifyResponse>;
   // The rule question is part of the System One request, so it is part of the cache key.
   const template = prompt(settings, 'rule');
-  const tag =
-    template === DEFAULT_PROMPTS.rule ? modelTag(decision) : `${modelTag(decision)}|${template}`;
   try {
+    // In-browser decision models are zero-shot (NLI) classifiers, not System One or chat models.
+    if (decision.provider === 'browser') {
+      if (!(await isReady(settings, 'decision'))) throw notDownloaded('decision');
+      const spec = browserSpec(decision, 'decision', settings);
+      return await cachedClassify(`${modelTag(decision)}|${HYPOTHESIS}`, classify, (r) =>
+        browserClassify(r, spec, { signal }),
+      );
+    }
+    const tag =
+      template === DEFAULT_PROMPTS.rule ? modelTag(decision) : `${modelTag(decision)}|${template}`;
     return await cachedClassify(tag, classify, async (r) => {
       const target = await systemOneTarget(decision, settings, keys, fetcher);
       return target
@@ -178,6 +193,7 @@ export async function handleDecision(req: unknown, deps?: DecisionDeps): Promise
   } catch (e) {
     if (signal?.aborted) throw e;
     console.warn('[ghostify:ai] decision model failed, using the general model', e);
+    if (!(await isReady(settings, 'general'))) throw e;
     return cachedClassify(modelTag(settings.ai.general), classify, chat(settings.ai.general));
   }
 }

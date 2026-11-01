@@ -5,7 +5,7 @@ import { modelTag } from '../ai/embed';
 import { hasModel, type OllamaStatus, ollamaStatus, SUGGESTED } from '../ai/models';
 import { sendMessage } from '../messaging';
 import { getKeys, saveKey } from '../store/secrets';
-import type { Keys, ModelRef, Provider, Purpose, Settings } from '../store/settings';
+import type { KeyProvider, Keys, ModelRef, Provider, Purpose, Settings } from '../store/settings';
 import { useSettings } from './GeneralSettings';
 import { IndexProgress } from './IndexProgress';
 import { card, field } from './kit';
@@ -194,7 +194,7 @@ export function AiSettings() {
   };
   const usesOllama = PURPOSES.some((p) => settings.ai[p.key].provider === 'ollama');
   const cloud = [...new Set(PURPOSES.map((p) => settings.ai[p.key].provider))].filter(
-    (p): p is Exclude<Provider, 'ollama'> => p !== 'ollama',
+    (p): p is KeyProvider => p !== 'ollama' && p !== 'browser',
   );
 
   return (

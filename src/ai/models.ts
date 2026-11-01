@@ -5,13 +5,15 @@ import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import type { EmbeddingModel, LanguageModel } from 'ai';
 import { createModel } from 'feedgrab/llm';
 import type { Keys, ModelRef, Settings } from '../store/settings';
+import { browserModels } from './browser/catalog';
+import { browserEmbeddingModel, browserLanguageModel, browserSpec } from './browser/provider';
 
 export const OPENROUTER_URL = 'https://openrouter.ai/api/v1';
 
 export const ollamaV1 = (s: Settings) => `${s.ai.ollamaBaseUrl.replace(/\/+$/, '')}/v1`;
 
 export function key(ref: ModelRef, keys: Keys): string | undefined {
-  if (ref.provider === 'ollama') return undefined;
+  if (ref.provider === 'ollama' || ref.provider === 'browser') return undefined;
   const k = keys[ref.provider];
   if (!k) throw new Error(`Add an API key for ${ref.provider} in Settings → AI`);
   return k;
@@ -26,6 +28,8 @@ const factories = {
 
 /** A chat model for a purpose's provider + model (via feedgrab's provider wiring). */
 export function languageModel(ref: ModelRef, settings: Settings, keys: Keys): LanguageModel {
+  if (ref.provider === 'browser')
+    return browserLanguageModel(browserSpec(ref, 'general', settings));
   return createModel(
     {
       provider: ref.provider,
@@ -41,6 +45,8 @@ export function languageModel(ref: ModelRef, settings: Settings, keys: Keys): La
 export function embeddingModel(ref: ModelRef, settings: Settings, keys: Keys): EmbeddingModel {
   const apiKey = key(ref, keys);
   switch (ref.provider) {
+    case 'browser':
+      return browserEmbeddingModel(browserSpec(ref, 'embedding', settings));
     case 'ollama':
       return createOpenAICompatible({ name: 'ollama', baseURL: ollamaV1(settings) }).embeddingModel(
         ref.model,
@@ -63,6 +69,11 @@ export const SUGGESTED: Record<
   ModelRef['provider'],
   Record<'embedding' | 'general' | 'decision', string[]>
 > = {
+  browser: {
+    embedding: browserModels('embedding').map((m) => m.id),
+    general: browserModels('general').map((m) => m.id),
+    decision: browserModels('decision').map((m) => m.id),
+  },
   ollama: {
     embedding: ['embeddinggemma-2', 'embeddinggemma-2:270m'],
     general: ['gemma4:e2b', 'gemma4:e4b'],

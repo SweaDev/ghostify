@@ -180,7 +180,7 @@ Spec: `specs/SPEC-v1.md`. Plan: `specs/PLAN-v1.md`.
   Depends: T25
   Done: builds ship `offscreen.html`, a worker chunk and ORT's wasm (no model files); Chrome manifest has `offscreen`, Firefox doesn't; host relays load/embed/generate/classify/abort with progress; downloads recorded; fetch gate blocks undownloaded models; tests with a fake channel pass.
 
-- [ ] T29: Browser provider as the default (AI SDK adapters, NLI decisions, readiness)
+- [x] T29: Browser provider as the default (AI SDK adapters, NLI decisions, readiness)
   Refs: specs/PLAN-v1.md L224-229; specs/PLAN-v1.md L240-244
   Files: src/ai/browser/provider.ts, src/ai/models.ts, src/ai/decision.ts, src/ai/check.ts, src/ai/content.ts, src/store/settings.ts, src/background/jobs.ts, src/background/indexer.ts, src/background/handlers.ts, src/messaging.ts, tests/browser-provider.test.ts
   Depends: T28

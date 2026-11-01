@@ -1,6 +1,7 @@
 import { embed, generateText } from 'ai';
 import { getKeys } from '../store/secrets';
 import { getSettings, type Purpose } from '../store/settings';
+import { browserClassify, browserSpec, isReady } from './browser/provider';
 import { systemOneClassify, systemOneTarget } from './decision';
 import { embeddingModel, hasModel, languageModel, ollamaStatus } from './models';
 
@@ -14,6 +15,21 @@ export async function checkPurpose(purpose: Purpose): Promise<CheckResult> {
   const [settings, keys] = await Promise.all([getSettings(), getKeys()]);
   const ref = settings.ai[purpose];
   try {
+    if (ref.provider === 'browser') {
+      if (!(await isReady(settings, purpose)))
+        return { ok: false, message: 'Not downloaded yet: click Download first' };
+      if (purpose === 'decision') {
+        const { results } = await browserClassify(
+          {
+            task: 'classify',
+            criteria: ['a greeting'],
+            items: [{ id: 't', text: 'Hello there, nice to meet you!' }],
+          },
+          browserSpec(ref, purpose, settings),
+        );
+        return { ok: true, message: `Rule check works (match: ${results[0]?.exclude})` };
+      }
+    }
     if (ref.provider === 'ollama') {
       const st = await ollamaStatus(settings.ai.ollamaBaseUrl);
       if (!st.ok) return { ok: false, message: st.error ?? 'Ollama is not reachable' };

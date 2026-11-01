@@ -11,6 +11,7 @@ import { AiActivity } from '@/src/ui/AiActivity';
 import { Dashboard } from '@/src/ui/Dashboard';
 import { PromptSettings } from '@/src/ui/PromptSettings';
 import { streamModel } from './mock-model';
+import { OLLAMA_AI } from './ollama-ai';
 
 const draft = {
   id: 'a',
@@ -23,7 +24,7 @@ const draft = {
 };
 const click = (el: HTMLElement) => act(async () => void fireEvent.click(el));
 const aiOn = async () =>
-  saveSettings(withDefaults({ ai: { ...(await getSettings()).ai, enabled: true } }));
+  saveSettings(withDefaults({ ai: { ...(await getSettings()).ai, ...OLLAMA_AI, enabled: true } }));
 
 beforeEach(async () => {
   await Promise.all([db.items.clear(), db.contents.clear(), db.aiJobs.clear()]);

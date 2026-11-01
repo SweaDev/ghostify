@@ -1,4 +1,5 @@
 import { browser } from 'wxt/browser';
+import { isReady } from '../ai/browser/provider';
 import { modelTag } from '../ai/embed';
 import { db } from '../store/db';
 import { indexStatus, missingKeys } from '../store/index-status';
@@ -32,6 +33,13 @@ async function run(): Promise<void> {
     for (;;) {
       const settings = await getSettings();
       if (!settings.ai.enabled) break;
+      if (!(await isReady(settings, 'embedding'))) {
+        await indexStatus.setValue({
+          running: false,
+          error: 'Download the embedding model in Settings → AI',
+        });
+        return;
+      }
       const t = modelTag(settings.ai.embedding);
       if (t !== tag || !backlog.length) {
         if (t !== tag) tried.clear();

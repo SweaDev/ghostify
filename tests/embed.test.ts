@@ -8,6 +8,7 @@ import { ghostify, setState } from '@/src/store/items';
 import { DEFAULT_SETTINGS, saveSettings, withDefaults } from '@/src/store/settings';
 import { eta } from '@/src/ui/IndexProgress';
 import { embedModel, textModel } from './mock-model';
+import { OLLAMA_AI } from './ollama-ai';
 
 // Toy embedding: [mentions rust, mentions css, constant].
 const vec = (t: string) => [/rust/i.test(t) ? 1 : 0, /css|style/i.test(t) ? 1 : 0, 0.1];
@@ -19,7 +20,7 @@ const draft = (id: string, title: string) => ({
   title,
   excerpt: '',
 });
-const tag = modelTag(DEFAULT_SETTINGS.ai.embedding);
+const tag = modelTag(OLLAMA_AI.embedding);
 
 beforeEach(async () => {
   await db.items.clear();
@@ -28,7 +29,8 @@ beforeEach(async () => {
   vi.spyOn(models, 'languageModel').mockReturnValue(textModel('{"summary":"s","tags":[]}'));
 });
 afterEach(() => vi.restoreAllMocks());
-const aiOn = () => saveSettings(withDefaults({ ai: { ...DEFAULT_SETTINGS.ai, enabled: true } }));
+const aiOn = () =>
+  saveSettings(withDefaults({ ai: { ...DEFAULT_SETTINGS.ai, ...OLLAMA_AI, enabled: true } }));
 
 describe('ranking', () => {
   it('computes cosine and ranks by model and score', () => {

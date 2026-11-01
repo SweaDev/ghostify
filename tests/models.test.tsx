@@ -4,8 +4,9 @@ import { db } from '@/src/store/db';
 import { getKeys, saveKey } from '@/src/store/secrets';
 import { DEFAULT_SETTINGS, getSettings } from '@/src/store/settings';
 import { AiSettings } from '@/src/ui/AiSettings';
+import { OLLAMA_AI } from './ollama-ai';
 
-const s = DEFAULT_SETTINGS;
+const s = { ...DEFAULT_SETTINGS, ai: { ...DEFAULT_SETTINGS.ai, ...OLLAMA_AI } };
 const modelId = (m: unknown) => (m as { modelId: string }).modelId;
 const providerOf = (m: unknown) => (m as { provider: string }).provider;
 
@@ -78,7 +79,6 @@ describe('AiSettings', () => {
       expect(ai.enabled).toBe(true);
       expect(ai.general).toEqual({ provider: 'gemini', model: 'gemini-2.5-flash-lite' });
     });
-    expect(screen.getAllByText(/Not pulled yet/).length).toBeGreaterThan(0);
     vi.unstubAllGlobals();
   });
 

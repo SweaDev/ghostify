@@ -4,9 +4,12 @@ import type { QaEntry } from '../store/db';
 /** Small local models have small contexts; long articles are cut to this many characters. */
 export const MAX_CONTENT = 24_000;
 
-export function contentText(c: { title: string; byline?: string; text: string }): string {
+export function contentText(
+  c: { title: string; byline?: string; text: string },
+  max = MAX_CONTENT,
+): string {
   const head = [`Title: ${c.title}`, c.byline && `By: ${c.byline}`].filter(Boolean).join('\n');
-  const body = c.text.length > MAX_CONTENT ? `${c.text.slice(0, MAX_CONTENT)}…` : c.text;
+  const body = c.text.length > max ? `${c.text.slice(0, max)}…` : c.text;
   return `${head}\n\n${body}`;
 }
 

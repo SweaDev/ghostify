@@ -1,8 +1,11 @@
 import { storage } from 'wxt/utils/storage';
+import { DEFAULT_BROWSER, type Device } from '../ai/browser/catalog';
 
-export type Provider = 'ollama' | 'openai' | 'openrouter' | 'gemini';
+/** `browser` runs downloaded models in the browser itself (no GPU, server or key needed). */
+export type Provider = 'browser' | 'ollama' | 'openai' | 'openrouter' | 'gemini';
 export type Purpose = 'embedding' | 'general' | 'decision';
-export type Keys = Partial<Record<Exclude<Provider, 'ollama'>, string>>;
+export type KeyProvider = Exclude<Provider, 'ollama' | 'browser'>;
+export type Keys = Partial<Record<KeyProvider, string>>;
 
 export interface ModelRef {
   provider: Provider;
@@ -29,6 +32,8 @@ export interface Settings {
     /** System prompts (and the System One rule question, with `{rule}`). */
     prompts: Prompts;
     ollamaBaseUrl: string;
+    /** Where in-browser models run: CPU (WebAssembly) or GPU (WebGPU). */
+    device: Device;
     embedding: ModelRef;
     general: ModelRef;
     decision: ModelRef;
@@ -40,9 +45,10 @@ export const DEFAULT_SETTINGS: Settings = {
   ai: {
     enabled: false,
     ollamaBaseUrl: 'http://localhost:11434',
-    embedding: { provider: 'ollama', model: 'embeddinggemma-2' },
-    general: { provider: 'ollama', model: 'gemma4:e2b' },
-    decision: { provider: 'ollama', model: 'd3:2b' },
+    device: 'wasm',
+    embedding: { provider: 'browser', model: DEFAULT_BROWSER.embedding },
+    general: { provider: 'browser', model: DEFAULT_BROWSER.general },
+    decision: { provider: 'browser', model: DEFAULT_BROWSER.decision },
     prompts: DEFAULT_PROMPTS,
   },
   ui: { theme: 'system' },

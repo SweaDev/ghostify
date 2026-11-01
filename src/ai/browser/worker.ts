@@ -68,16 +68,28 @@ async function generate(id: string, req: Extract<HostRequest, { op: 'generate' }
       tokens++;
     },
   });
+  // With a prefix the chat template is applied here and the reply continues from the prefix.
+  const input =
+    req.prefix === undefined
+      ? (req.messages satisfies ChatMessage[])
+      : `${pipe.tokenizer.apply_chat_template(req.messages, { tokenize: false, add_generation_prompt: true })}${req.prefix}`;
+  if (req.prefix) post({ id, type: 'delta', text: req.prefix });
   try {
-    const out = await pipe(req.messages satisfies ChatMessage[], {
+    const out = await pipe(input, {
       max_new_tokens: req.maxNewTokens,
       do_sample: (req.temperature ?? 0) > 0,
       temperature: req.temperature || undefined,
+      // Tiny models loop without it.
+      repetition_penalty: 1.15,
+      add_special_tokens: false,
+      return_full_text: false,
       streamer,
       stopping_criteria: stop,
     });
     const msgs = out?.[0]?.generated_text;
-    const text = Array.isArray(msgs) ? String(msgs.at(-1)?.content ?? '') : String(msgs ?? '');
+    const text = Array.isArray(msgs)
+      ? String(msgs.at(-1)?.content ?? '')
+      : `${req.prefix ?? ''}${msgs ?? ''}`;
     const finish = stop.interrupted
       ? 'interrupted'
       : tokens >= req.maxNewTokens
