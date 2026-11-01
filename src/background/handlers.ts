@@ -1,4 +1,5 @@
 import { browser } from 'wxt/browser';
+import { checkPurpose } from '../ai/check';
 import type { ProtocolMap } from '../messaging';
 import { onMessage } from '../messaging';
 import { ghostedIds, ghostify, listItems, setState, unghost } from '../store/items';
@@ -18,6 +19,7 @@ export const handlers: Handlers = {
   openDashboard: async () => {
     await browser.tabs.create({ url: browser.runtime.getURL('/dashboard.html') });
   },
+  checkAi: ({ purpose }) => checkPurpose(purpose),
   addSite: async ({ tabId }) => {
     await browser.scripting.executeScript({
       target: { tabId },

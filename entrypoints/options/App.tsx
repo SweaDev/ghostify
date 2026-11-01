@@ -1,10 +1,13 @@
 import { useState } from 'react';
+import { AiSettings } from '@/src/ui/AiSettings';
 import { GeneralSettings } from '@/src/ui/GeneralSettings';
 import { GhostIcon } from '@/src/ui/GhostIcon';
 import { SitesSettings } from '@/src/ui/SitesSettings';
 import { Tabs } from '@/src/ui/Tabs';
 
-type Section = 'sites' | 'general';
+type Section = 'sites' | 'ai' | 'general';
+
+const SECTIONS = { sites: SitesSettings, ai: AiSettings, general: GeneralSettings };
 
 export function App() {
   const [section, setSection] = useState<Section>('sites');
@@ -20,12 +23,16 @@ export function App() {
               onChange={setSection}
               tabs={[
                 { key: 'sites', label: 'Sites' },
+                { key: 'ai', label: 'AI' },
                 { key: 'general', label: 'General' },
               ]}
             />
           </nav>
         </header>
-        {section === 'sites' ? <SitesSettings /> : <GeneralSettings />}
+        {(() => {
+          const Section = SECTIONS[section];
+          return <Section />;
+        })()}
       </div>
     </div>
   );

@@ -24,7 +24,12 @@
     "postinstall": "wxt prepare"
   },
   "dependencies": {
+    "@ai-sdk/google": "^4.0.109",
+    "@ai-sdk/openai": "^4.0.106",
+    "@ai-sdk/openai-compatible": "^3.0.82",
+    "@openrouter/ai-sdk-provider": "^3.1.0",
     "@webext-core/messaging": "^4.0.1",
+    "ai": "^7.0.159",
     "dexie": "^4.4.7",
     "dexie-react-hooks": "^4.4.0",
     "feedgrab": "https://github.com/SweaDev/feedgrab/releases/download/v0.1.0/feedgrab-0.1.0.tgz",

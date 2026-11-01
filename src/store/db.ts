@@ -37,12 +37,20 @@ export interface Embedding {
   vector: number[];
 }
 
+/** API keys live here (extension origin only), never in storage.local, which content scripts can read. */
+export interface Secret {
+  id: 'openai' | 'openrouter' | 'gemini';
+  value: string;
+}
+
 export const db = new Dexie('ghostify') as Dexie & {
   items: EntityTable<GhostItem, 'key'>;
   embeddings: EntityTable<Embedding, 'key'>;
+  secrets: EntityTable<Secret, 'id'>;
 };
 
 db.version(1).stores({
   items: 'key, state, host, createdAt, snoozeUntil, *tags',
   embeddings: 'key',
 });
+db.version(2).stores({ secrets: 'id' });

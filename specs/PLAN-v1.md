@@ -184,3 +184,4 @@ The zip names come from `zip.artifactTemplate` and `zip.sourcesTemplate`, and in
 - D12: Newtab-flavor builds go to `.output/<browser>-mv3-newtab` (`outDirTemplate`), so they never overwrite the default flavor's build.
 - D13: `picker.content.ts` starts the picker without returning its promise. `scripting.executeScript` awaits a returned promise, and holding it open while the user works in the overlay tore the tab down in Chromium.
 - D14: For a new page, the picker pre-accepts feedgrab's best proposal by passing it as the overlay's `existing` profile. Saving with no feeds ticked shows a notice and saves nothing.
+- D15: API keys live in a Dexie `secrets` table (extension origin), not in `storage.local`, because content scripts can read `storage.local`. `Settings.ai` holds no keys; `getKeys()` is used only by the background and the options page.

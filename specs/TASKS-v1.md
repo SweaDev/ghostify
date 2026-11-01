@@ -112,9 +112,9 @@ Spec: `specs/SPEC-v1.md`. Plan: `specs/PLAN-v1.md`.
 
 ## Phase 4: AI (Ollama + BYOK)
 
-- [ ] T18: AI settings and model factory
+- [x] T18: AI settings and model factory
   Refs: specs/SPEC-v1.md L14-15; specs/PLAN-v1.md L55-94; specs/PLAN-v1.md L172-181
-  Files: src/store/settings.ts, src/ai/models.ts, src/ui/AiSettings.tsx, entrypoints/options/App.tsx, src/background/handlers.ts, tests/models.test.ts
+  Files: src/store/settings.ts, src/ai/models.ts, src/ui/AiSettings.tsx, entrypoints/options/App.tsx, src/background/handlers.ts, tests/models.test.tsx
   Depends: T17
   Done: per-purpose provider + model, keys, Ollama URL, enable toggle, "Test connection" (Ollama /api/tags), OLLAMA_ORIGINS hint; factory returns language/embedding models per provider; tests pass.
 
