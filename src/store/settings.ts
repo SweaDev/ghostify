@@ -7,6 +7,8 @@ export type Keys = Partial<Record<Exclude<Provider, 'ollama'>, string>>;
 export interface ModelRef {
   provider: Provider;
   model: string;
+  /** OpenRouter only: the provider lists this as a decision model (saved when it is picked). */
+  systemOne?: boolean;
 }
 
 export interface Settings {

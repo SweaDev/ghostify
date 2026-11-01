@@ -76,12 +76,10 @@ describe('systemOneTarget', () => {
       model: 'typesafe/jev-1.14',
       apiKey: 'k',
     });
-    const list = (async () =>
-      Response.json({ data: [{ id: 'acme/decider' }] })) as unknown as typeof fetch;
-    const acme = { provider: 'openrouter' as const, model: 'acme/decider' };
-    expect(await systemOneTarget(acme, on, { openrouter: 'k' }, list)).toBeDefined();
+    const acme = { provider: 'openrouter' as const, model: 'acme/decider', systemOne: true };
+    expect(await systemOneTarget(acme, on, { openrouter: 'k' })).toBeDefined();
     const chat = { provider: 'openrouter' as const, model: 'openai/gpt-5-mini' };
-    expect(await systemOneTarget(chat, on, { openrouter: 'k' }, list)).toBeUndefined();
+    expect(await systemOneTarget(chat, on, { openrouter: 'k' })).toBeUndefined();
   });
 });
 

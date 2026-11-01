@@ -117,4 +117,41 @@ describe('AiSettings', () => {
     vi.unstubAllGlobals();
     await saveKey('gemini', '');
   });
+
+  it('remembers whether a picked OpenRouter model is a decision model', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) =>
+        url.includes('openrouter')
+          ? Response.json({
+              data: [
+                { id: 'acme/decider', architecture: { output_modalities: ['decisions'] } },
+                { id: 'acme/chat', architecture: { output_modalities: ['text'] } },
+              ],
+            })
+          : Response.json({ models: [] }),
+      ),
+    );
+    render(<AiSettings />);
+    fireEvent.change(await screen.findByLabelText('Decision model provider'), {
+      target: { value: 'openrouter' },
+    });
+    await screen.findByRole('option', { name: 'acme/decider' });
+    const select = screen.getByLabelText('Decision model model');
+    fireEvent.change(select, { target: { value: 'acme/decider' } });
+    await vi.waitFor(async () =>
+      expect((await getSettings()).ai.decision).toMatchObject({
+        model: 'acme/decider',
+        systemOne: true,
+      }),
+    );
+    fireEvent.change(select, { target: { value: 'acme/chat' } });
+    await vi.waitFor(async () =>
+      expect((await getSettings()).ai.decision).toMatchObject({
+        model: 'acme/chat',
+        systemOne: false,
+      }),
+    );
+    vi.unstubAllGlobals();
+  });
 });

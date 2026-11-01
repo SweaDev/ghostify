@@ -160,6 +160,11 @@ export function AiSettings() {
   const setRef = (p: Purpose, ref: Partial<ModelRef>) => {
     const next = { ...settings.ai[p], ...ref };
     if (ref.provider) next.model = SUGGESTED[ref.provider][p][0] ?? '';
+    // OpenRouter's list says which models are decision models; remember it for the background.
+    const listed = catalog(next.provider);
+    const info = listed && 'models' in listed && listed.models.find((m) => m.id === next.model);
+    next.systemOne =
+      next.provider === 'openrouter' && info ? info.kinds.includes('decision') : undefined;
     setAi({ [p]: next });
   };
   const check = async (p: Purpose) => {

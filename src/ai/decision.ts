@@ -3,7 +3,7 @@ import type { ClassifyRequest, ClassifyResponse, LlmResponse } from 'feedgrab';
 import { handleLlmRequest } from 'feedgrab/llm';
 import { getKeys } from '../store/secrets';
 import { getSettings, type Keys, type ModelRef, type Settings } from '../store/settings';
-import { isOpenRouterDecision, ollamaKinds } from './catalog';
+import { DECISION_NAME, ollamaKinds } from './catalog';
 import { key, languageModel, OPENROUTER_URL } from './models';
 
 export interface SystemOneTarget {
@@ -15,7 +15,8 @@ export interface SystemOneTarget {
 /**
  * Where to send a System One decision request (`model` + `state` + typed `questions`), or
  * undefined for a chat model. Ollama decision models (d3, d1-omni, …) declare the `decision`
- * capability; OpenRouter decision models (Jev, …) list `decisions` as an output modality.
+ * capability (checked locally). OpenRouter decision models (Jev, …) are flagged `systemOne` when
+ * picked from its model list; a typed id falls back to its name.
  */
 export async function systemOneTarget(
   ref: ModelRef,
@@ -28,7 +29,7 @@ export async function systemOneTarget(
     if (!(await ollamaKinds(base, ref.model, fetcher)).includes('decision')) return undefined;
     return { url: `${base.replace(/\/+$/, '')}/v1/systemone`, model: ref.model };
   }
-  if (ref.provider === 'openrouter' && (await isOpenRouterDecision(ref.model, fetcher)))
+  if (ref.provider === 'openrouter' && (ref.systemOne ?? DECISION_NAME.test(ref.model)))
     return { url: `${OPENROUTER_URL}/systemone`, model: ref.model, apiKey: key(ref, keys) };
   return undefined;
 }
