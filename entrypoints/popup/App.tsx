@@ -1,6 +1,7 @@
 import { ArrowUpRight, Settings } from 'lucide-react';
 import { browser } from 'wxt/browser';
 import { unghost } from '@/src/store/items';
+import { CurrentSite } from '@/src/ui/CurrentSite';
 import { EmptyState } from '@/src/ui/EmptyState';
 import { GhostIcon } from '@/src/ui/GhostIcon';
 import { IconButton, ItemCard } from '@/src/ui/ItemCard';
@@ -23,6 +24,7 @@ export function App() {
           <Settings className="size-4" />
         </IconButton>
       </header>
+      <CurrentSite />
       <section className="flex-1 overflow-y-auto p-2">
         {items?.length === 0 && (
           <EmptyState title="Nothing ghosted yet">
