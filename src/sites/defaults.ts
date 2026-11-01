@@ -5,7 +5,11 @@ const DEVTO_FEEDS: FeedDescriptor[] = [
   {
     id: 'devto-stories',
     container: { type: 'css', value: '#substories' },
-    item: { type: 'css', value: ':scope > .crayons-story' },
+    // Infinite scroll appends each page as a `div.paged-stories` inside #substories.
+    item: {
+      type: 'css',
+      value: ':scope > .crayons-story, :scope > .paged-stories > .crayons-story',
+    },
     exclude: [],
     include: [],
     source: 'manual',

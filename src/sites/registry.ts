@@ -6,12 +6,36 @@ export const sitesItem = storage.defineItem<Site[]>('local:sites', { fallback: D
 
 export const getSites = () => sitesItem.getValue();
 
-/** Adds built-in sites that are missing from storage; never overwrites user edits. */
+const BUILTIN_FEEDS = new Map(
+  DEFAULT_SITES.flatMap((s) => s.profiles.flatMap((e) => e.profile.feeds)).map((f) => [f.id, f]),
+);
+
+/** Updates the selectors of built-in feeds to the shipped ones (sites change their markup). */
+function refreshBuiltin(site: Site): Site {
+  if (!site.builtin) return site;
+  const profiles = site.profiles.map((e) => ({
+    ...e,
+    profile: {
+      ...e.profile,
+      feeds: e.profile.feeds.map((f) => {
+        const d = BUILTIN_FEEDS.get(f.id);
+        return d ? { ...f, container: d.container, item: d.item } : f;
+      }),
+    },
+  }));
+  return { ...site, profiles };
+}
+
+/**
+ * Adds built-in sites that are missing from storage and refreshes built-in feed selectors.
+ * Other user edits (enabled, rules, removed or picked pages) are kept.
+ */
 export async function ensureDefaultSites(): Promise<void> {
   const stored = await storage.getItem<Site[]>('local:sites');
-  const sites = stored ?? [];
+  const sites = (stored ?? []).map(refreshBuiltin);
   const missing = DEFAULT_SITES.filter((d) => !sites.some((s) => s.id === d.id));
-  if (stored === null || missing.length) await sitesItem.setValue([...sites, ...missing]);
+  const next = [...sites, ...missing];
+  if (JSON.stringify(next) !== JSON.stringify(stored)) await sitesItem.setValue(next);
 }
 
 export async function saveSite(site: Site): Promise<void> {
