@@ -13,7 +13,7 @@ export default defineConfig({
   vite: () => ({ plugins: [tailwindcss(), feedgrabProxyOnly()] }),
   manifest: ({ browser }) => ({
     name: newtab ? 'Ghostify (New Tab)' : 'Ghostify',
-    permissions: ['storage', 'alarms', 'scripting'],
+    permissions: ['storage', 'alarms', 'scripting', 'activeTab'],
     optional_host_permissions: ['*://*/*'],
     action: { default_title: 'Ghostify' },
     ...(browser === 'firefox' && {

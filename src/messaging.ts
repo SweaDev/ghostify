@@ -10,6 +10,8 @@ export interface ProtocolMap {
   setState(data: { key: string; state: ItemState; snoozeUntil?: number }): GhostItem;
   listItems(data: ListQuery): GhostItem[];
   openDashboard(): void;
+  /** Injects the add/edit-site picker into a tab. */
+  addSite(data: { tabId: number }): void;
 }
 
 export const { sendMessage, onMessage } = defineExtensionMessaging<ProtocolMap>();

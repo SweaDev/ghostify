@@ -18,6 +18,12 @@ export const handlers: Handlers = {
   openDashboard: async () => {
     await browser.tabs.create({ url: browser.runtime.getURL('/dashboard.html') });
   },
+  addSite: async ({ tabId }) => {
+    await browser.scripting.executeScript({
+      target: { tabId },
+      files: ['/content-scripts/picker.js'],
+    });
+  },
 };
 
 export function registerHandlers(): void {

@@ -92,7 +92,7 @@ Spec: `specs/SPEC-v1.md`. Plan: `specs/PLAN-v1.md`.
   Depends: T13
   Done: `optional_host_permissions` + `scripting` in manifest; enabling a site with granted permission registers `site-<id>`, disabling/deleting unregisters; sync on startup; tests with mocked scripting API.
 
-- [ ] T15: Add-site picker via feedgrab overlay
+- [x] T15: Add-site picker via feedgrab overlay
   Refs: specs/SPEC-v1.md L11; specs/PLAN-v1.md L121-124
   Files: entrypoints/picker.content.ts, src/sites/picker.ts, entrypoints/popup/App.tsx, src/background/handlers.ts, tests/picker.test.ts
   Depends: T14
