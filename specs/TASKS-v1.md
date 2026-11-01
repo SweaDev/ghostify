@@ -4,7 +4,7 @@ Spec: `specs/SPEC-v1.md`. Plan: `specs/PLAN-v1.md`.
 
 ## Phase 1: Ghost items on dev.to
 
-- [ ] T01: Scaffold WXT + React + Tailwind project with Biome, Vitest and release workflow
+- [x] T01: Scaffold WXT + React + Tailwind project with Biome, Vitest and release workflow
   Refs: specs/PLAN-v1.md L10-21; specs/PLAN-v1.md L135-165
   Files: package.json, bun.lock, wxt.config.ts, tsconfig.json, biome.json, vitest.config.ts, tests/setup.ts, tests/smoke.test.ts, .gitignore, .github/workflows/release.yml, entrypoints/background.ts, entrypoints/popup/{index.html,main.tsx,App.tsx}, src/ui/theme.css, src/ui/GhostIcon.tsx, public/icon/*.png
   Depends: none

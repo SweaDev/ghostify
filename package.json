@@ -1,0 +1,47 @@
+{
+  "name": "ghostify",
+  "description": "Ghostify feed items you've seen: hide them from the site, keep them to view later, snooze or search.",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "dev": "wxt",
+    "dev:firefox": "wxt -b firefox",
+    "build": "wxt build",
+    "build:firefox": "wxt build -b firefox",
+    "build:newtab": "GHOSTIFY_FLAVOR=newtab wxt build",
+    "build:newtab:firefox": "GHOSTIFY_FLAVOR=newtab wxt build -b firefox",
+    "zip": "wxt zip",
+    "zip:firefox": "wxt zip -b firefox",
+    "zip:newtab": "GHOSTIFY_FLAVOR=newtab wxt zip",
+    "zip:newtab:firefox": "GHOSTIFY_FLAVOR=newtab wxt zip -b firefox",
+    "test": "vitest run",
+    "lint": "biome check .",
+    "format": "biome format --write .",
+    "typecheck": "wxt prepare && tsc --noEmit",
+    "check": "bun run lint && bun run typecheck && bun run test",
+    "postinstall": "wxt prepare"
+  },
+  "dependencies": {
+    "feedgrab": "https://github.com/SweaDev/feedgrab/releases/download/v0.1.0/feedgrab-0.1.0.tgz",
+    "lucide-react": "^1.66.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.6.4",
+    "@tailwindcss/vite": "^4.3.3",
+    "@testing-library/react": "^16.3.3",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@wxt-dev/auto-icons": "^1.1.2",
+    "@wxt-dev/module-react": "^1.2.2",
+    "fake-indexeddb": "^6.2.7",
+    "happy-dom": "^21.0.4",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.5",
+    "wxt": "^0.21.5"
+  }
+}
