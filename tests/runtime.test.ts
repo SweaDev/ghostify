@@ -86,6 +86,24 @@ describe('feed runtime', () => {
     expect(document.querySelector('[data-ghostify]')).toBeNull();
   });
 
+  it('tracks stories that infinite scroll appends inside a paged-stories wrapper', async () => {
+    const { api, drafts } = fakeApi();
+    const rt = start(api);
+    const page = document.createElement('div');
+    page.className = 'paged-stories';
+    const story = stories()[2]?.cloneNode(true) as HTMLElement;
+    for (const a of story.querySelectorAll('a')) a.href = 'https://dev.to/someone/paged-post-1';
+    page.append(story);
+    document.querySelector('#substories')?.append(page);
+    await vi.waitFor(async () => {
+      await ghostViaButton(story);
+      expect(drafts).toHaveLength(1);
+    });
+    expect(drafts[0]?.url).toBe('https://dev.to/someone/paged-post-1');
+    await vi.waitFor(() => expect(isHidden(story)).toBe(true));
+    rt.dispose();
+  });
+
   it('hides already-ghosted items on load and when new ones are added', async () => {
     // Learn the ids of the stories from a first run.
     const first = fakeApi();

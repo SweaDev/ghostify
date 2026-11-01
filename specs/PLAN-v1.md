@@ -242,3 +242,4 @@ The zip names come from `zip.artifactTemplate` and `zip.sourcesTemplate`, and in
   - For JSON output the adapter adds the schema to the system prompt, primes the reply with `{` and cuts the reply to the outermost object.
   - Browser decisions use zero-shot NLI (`zero-shot-classification`, `multi_label`, hypothesis "This item is about {}."). A rule matches at score ≥ 0.7, which maps to the same `ClassifyResponse` as System One, cached under its model tag.
   - The text the AI reads is cut to 6k characters for browser models (vs 24k), to keep CPU prefill time reasonable.
+- D35: Built-in feed selectors are refreshed from the shipped defaults on install, update and startup (`ensureDefaultSites`), matched by feed id. Only `container` and `item` change; enabled state, rules and removed or picked pages are kept. This lets selector fixes (such as dev.to's `div.paged-stories` infinite-scroll wrapper) reach existing installs.

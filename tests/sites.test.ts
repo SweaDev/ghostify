@@ -58,6 +58,19 @@ describe('sites storage', () => {
   });
 });
 
+describe('built-in selector refresh', () => {
+  it('updates stored built-in feed selectors and keeps user edits', async () => {
+    const stale = structuredClone(DEVTO_SITE);
+    for (const e of stale.profiles)
+      for (const f of e.profile.feeds) f.item = { type: 'css', value: ':scope > .old' };
+    await saveSite({ ...stale, enabled: false, profiles: stale.profiles.slice(1) });
+    await ensureDefaultSites();
+    const [site] = await getSites();
+    expect(site?.enabled).toBe(false);
+    expect(site?.profiles).toEqual(DEVTO_SITE.profiles.slice(1));
+  });
+});
+
 describe('settings', () => {
   it('fills defaults', async () => {
     expect(await getSettings()).toEqual(DEFAULT_SETTINGS);
