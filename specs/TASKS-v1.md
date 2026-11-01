@@ -28,7 +28,7 @@ Spec: `specs/SPEC-v1.md`. Plan: `specs/PLAN-v1.md`.
   Depends: T02, T03
   Done: handlers for isGhosted, ghostify, unghost, setState, listItems, openDashboard tested via direct calls; background registers them with onMessage.
 
-- [ ] T05: Item extraction and ghost button
+- [x] T05: Item extraction and ghost button
   Refs: specs/SPEC-v1.md L13; specs/PLAN-v1.md L116; specs/PLAN-v1.md L172-181
   Files: src/feed/extract.ts, src/feed/ghost-button.ts, tests/extract.test.ts, tests/ghost-button.test.ts
   Depends: T01
