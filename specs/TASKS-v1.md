@@ -86,7 +86,7 @@ Spec: `specs/SPEC-v1.md`. Plan: `specs/PLAN-v1.md`.
   Depends: T12
   Done: list sites with enable/disable, delete (non-builtin), per-view profile list (view + path pattern + selectors), edit login indicator, export/import JSON (validated with feedgrab parseProfile); tests pass.
 
-- [ ] T14: Dynamic content script registration for user sites
+- [x] T14: Dynamic content script registration for user sites
   Refs: specs/PLAN-v1.md L121-124; specs/PLAN-v1.md L22-54
   Files: src/sites/registration.ts, entrypoints/feed.content.ts, entrypoints/background.ts, wxt.config.ts, tests/registration.test.ts
   Depends: T13
