@@ -1,28 +1,33 @@
 ---
-title: "From a Simple \"Mark as Seen\" to FeedGrab & Ghostify: Story of My Life!"
-published: false
+title: "From a Simple \"Mark as Seen\" to Feedgrab & Ghostify: Story of My Life!"
+published: true
 tags: devchallenge, hf26challenge, ai, webdevelopment
 cover_image: https://raw.githubusercontent.com/SweaDev/ghostify/main/submission/cover.png
+ai_disclosure_level: some_ai
 ---
 
 *This is a submission for the [Hacktoberfest Open-Source AI Challenge Week 4: Ghost in the Machine](https://dev.to/challenges/hacktoberfest-week4-2026-10-26)*
 
 ---
 
-> TL;DR; I keep seeing the same posts on most of the DEV home feed tabs: **`Discover`**, **`Following`** and **`Curated`**.
+> TL;DR: I keep seeing the same posts on most of the DEV home feed tabs: **`Discover`**, **`Following`** and **`Curated`**.
 >
-> Wanted to fix it by implementing a simple **Mark as Seen** browser extension. Then one thing lead to another, and I ended up building three projects: [one already abandoned](https://github.com/SweaDev/myDEV), and two on-going ([Feedgrab](https://github.com/SweaDev/feedgrab) & [Ghostify](https://github.com/SweaDev/ghostify)).
+> Wanted to fix it by implementing a simple **Mark as Seen** browser extension. Then one thing led to another, and I ended up building three projects: [one already abandoned](https://github.com/SweaDev/myDEV), and two ongoing ([Feedgrab](https://github.com/SweaDev/feedgrab) & [Ghostify](https://github.com/SweaDev/ghostify)).
+>
+> ***Note for users:*** This is still under development, so if you see errors, please look for updates: https://github.com/SweaDev/ghostify/releases
+> 
+> ***Note for judges:*** [v1.0.0](https://github.com/SweaDev/ghostify/releases/tag/v1.0.0) was completed within the submission period; later releases are updates. 
 
 ## Backstory
 
 These days, I spend too much time on DEV.
 
-- Deleted my old X/Twitter account because it gives me headache! Created a new one only as a placeholder.
-- Deactivated my Facebook account, because it's ... well that's a story for another day!
+- Deleted my old X/Twitter account because it gives me a headache! Created a new one only as a placeholder.
+- Deactivated my Facebook account, because it's… well, that's a story for another day!
 
-So most time I spend online is here on DEV and YouTube.
+So most of the time I spend online is here on DEV and YouTube.
 
-But problem with DEV is (and YouTube too), I keep seeing the same posts in the feed!
+But the problem with DEV (and YouTube too) is that I keep seeing the same posts in the feed!
 
 Open DEV in the morning: there's that post. Open it at lunch: there it is again. Open it at night: guess who's back! I've read it. I've reacted to it. I may have even commented on it. Still there, staring at me like it hasn't been introduced yet.
 
@@ -154,7 +159,7 @@ Security was a bit of a rabbit hole:
 
 - **Content scripts never see API keys.** They don't even open IndexedDB. Everything goes through typed messages to the background script, and the background talks to the model.
 - Keys aren't in `storage.local` either, because content scripts can read that. They live in a Dexie table on the extension's own origin.
-- Feedgrab's content-script bundle gets a proxy instead of a model, which also dropped the bundle from **380 KB to 71 KB**. Nice side effect!
+- In content scripts, Feedgrab gets a proxy instead of a model, which also shrank the bundle from **380 KB to 71 KB**. Nice side effect!
 
 ### The "how did you build all this in a week" part
 
