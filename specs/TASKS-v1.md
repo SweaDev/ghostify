@@ -48,7 +48,7 @@ Spec: `specs/SPEC-v1.md`. Plan: `specs/PLAN-v1.md`.
 
 ## Phase 2: Ghostify UI, snooze, new tab
 
-- [ ] T08: Dashboard shell with tabs and shared list components
+- [x] T08: Dashboard shell with tabs and shared list components
   Refs: specs/SPEC-v1.md L3; specs/SPEC-v1.md L8; specs/PLAN-v1.md L22-54
   Files: entrypoints/dashboard/{index.html,main.tsx,App.tsx}, src/ui/Dashboard.tsx, src/ui/Tabs.tsx, src/ui/ItemList.tsx, src/ui/ItemCard.tsx, tests/dashboard.test.tsx
   Depends: T07

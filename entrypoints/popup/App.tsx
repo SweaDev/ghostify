@@ -1,3 +1,5 @@
+import { ArrowUpRight } from 'lucide-react';
+import { browser } from 'wxt/browser';
 import { unghost } from '@/src/store/items';
 import { EmptyState } from '@/src/ui/EmptyState';
 import { GhostIcon } from '@/src/ui/GhostIcon';
@@ -28,6 +30,18 @@ export function App() {
           <ItemCard key={item.key} item={item} compact onUnghost={(i) => void unghost(i.key)} />
         ))}
       </section>
+      <footer className="border-zinc-100 border-t p-2 dark:border-zinc-800">
+        <button
+          type="button"
+          onClick={() => {
+            void browser.tabs.create({ url: browser.runtime.getURL('/dashboard.html') });
+            window.close();
+          }}
+          className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-ghost-500 px-3 py-2 font-medium text-sm text-white transition hover:bg-ghost-600"
+        >
+          Open Ghostify <ArrowUpRight className="size-4" />
+        </button>
+      </footer>
     </main>
   );
 }
