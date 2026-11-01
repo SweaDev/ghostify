@@ -35,6 +35,7 @@ export async function runFeedContent(ctx: ContentScriptContext): Promise<void> {
       api: messagingApi,
       onViewChange: () => void restart(),
       llm: settings.ai.enabled ? llm : undefined,
+      alive: () => browser.runtime?.id != null,
     });
   };
   ctx.addEventListener(window, 'wxt:locationchange', () => void restart());

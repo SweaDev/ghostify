@@ -9,6 +9,11 @@ export interface RuntimeApi {
   autoGhostify(draft: GhostDraft): Promise<GhostItem | null>;
 }
 
+/** True for the error Chrome throws once the extension reloads under a still-open page. */
+export function isContextInvalidated(e: unknown): boolean {
+  return /extension context invalidated/i.test(e instanceof Error ? e.message : String(e));
+}
+
 export const messagingApi: RuntimeApi = {
   isGhosted: (host, ids) => sendMessage('isGhosted', { host, ids }),
   ghostify: (draft) => sendMessage('ghostify', draft),
