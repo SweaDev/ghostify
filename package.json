@@ -2,7 +2,7 @@
   "name": "ghostify",
   "description": "Ghostify feed items you've seen: hide them from the site, keep them to view later, snooze or search.",
   "private": true,
-  "version": "1.3.0",
+  "version": "1.3.1",
   "type": "module",
   "license": "MIT",
   "scripts": {
