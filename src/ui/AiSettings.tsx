@@ -1,5 +1,6 @@
 import { CheckCircle2, CircleAlert, Loader2 } from 'lucide-react';
 import { type ReactNode, useEffect, useState } from 'react';
+import { groupsFor } from '../ai/catalog';
 import { modelTag } from '../ai/embed';
 import { hasModel, type OllamaStatus, ollamaStatus, SUGGESTED } from '../ai/models';
 import { sendMessage } from '../messaging';
@@ -7,7 +8,9 @@ import { getKeys, saveKey } from '../store/secrets';
 import type { Keys, ModelRef, Provider, Purpose, Settings } from '../store/settings';
 import { useSettings } from './GeneralSettings';
 import { IndexProgress } from './IndexProgress';
+import { ModelPicker } from './ModelPicker';
 import { Switch } from './Switch';
+import { useModelCatalog } from './useModelCatalog';
 
 const PURPOSES: { key: Purpose; label: string; hint: string }[] = [
   { key: 'embedding', label: 'Embeddings', hint: 'Semantic search over your ghosts' },
@@ -127,16 +130,29 @@ function OllamaSetup(props: { baseUrl: string }) {
 export function AiSettings() {
   const [settings, update] = useSettings();
   const [keys, setKeys] = useState<Keys>({});
+  const [savedKeys, setSavedKeys] = useState<Keys>({});
   const [ollama, setOllama] = useState<OllamaStatus>();
   const [checks, setChecks] = useState<
     Partial<Record<Purpose, 'busy' | { ok: boolean; message: string }>>
   >({});
 
-  useEffect(() => void getKeys().then(setKeys), []);
+  useEffect(
+    () =>
+      void getKeys().then((k) => {
+        setKeys(k);
+        setSavedKeys(k);
+      }),
+    [],
+  );
   const url = settings?.ai.ollamaBaseUrl;
   useEffect(() => {
     if (url) void ollamaStatus(url).then(setOllama);
   }, [url]);
+  const catalog = useModelCatalog(
+    settings ? PURPOSES.map((p) => settings.ai[p.key].provider) : [],
+    savedKeys,
+    url ?? '',
+  );
   if (!settings) return null;
 
   const setAi = (ai: Partial<Settings['ai']>) =>
@@ -181,6 +197,11 @@ export function AiSettings() {
           const ref = settings.ai[p.key];
           const missing =
             ref.provider === 'ollama' && ollama?.ok && !hasModel(ollama.models, ref.model);
+          const listed = catalog(ref.provider);
+          const fetched = listed && 'models' in listed ? groupsFor(p.key, listed.models) : [];
+          const groups = fetched.some((g) => g.models.length)
+            ? fetched
+            : [{ label: 'Suggested', models: SUGGESTED[ref.provider][p.key] }];
           return (
             <div
               key={p.key}
@@ -199,18 +220,14 @@ export function AiSettings() {
                     </option>
                   ))}
                 </select>
-                <input
-                  aria-label={`${p.label} model`}
-                  list={`models-${p.key}`}
+                <ModelPicker
+                  key={ref.provider}
+                  label={p.label}
                   value={ref.model}
-                  onChange={(e) => setRef(p.key, { model: e.target.value })}
-                  className={`${field} w-56 font-mono text-xs`}
+                  groups={groups}
+                  className={field}
+                  onChange={(model) => setRef(p.key, { model })}
                 />
-                <datalist id={`models-${p.key}`}>
-                  {SUGGESTED[ref.provider][p.key].map((m) => (
-                    <option key={m} value={m} />
-                  ))}
-                </datalist>
                 <button type="button" className={field} onClick={() => void check(p.key)}>
                   Test
                 </button>
@@ -219,6 +236,11 @@ export function AiSettings() {
                 {missing && (
                   <span className="text-amber-600 text-xs">
                     Not pulled yet: <code>ollama pull {ref.model}</code>
+                  </span>
+                )}
+                {listed && 'error' in listed && ref.provider !== 'ollama' && (
+                  <span className="text-amber-600 text-xs">
+                    Couldn't list models: {listed.error}
                   </span>
                 )}
                 <Status state={checks[p.key]} />
@@ -270,7 +292,11 @@ export function AiSettings() {
                 placeholder="API key"
                 value={keys[p] ?? ''}
                 onChange={(e) => setKeys((k) => ({ ...k, [p]: e.target.value }))}
-                onBlur={(e) => void saveKey(p, e.target.value)}
+                onBlur={(e) => {
+                  const v = e.target.value.trim();
+                  void saveKey(p, v);
+                  setSavedKeys((k) => ({ ...k, [p]: v || undefined }));
+                }}
                 className={`${field} w-72 font-mono text-xs`}
               />
             </Row>

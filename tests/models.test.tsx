@@ -81,4 +81,40 @@ describe('AiSettings', () => {
     expect(screen.getAllByText(/Not pulled yet/).length).toBeGreaterThan(0);
     vi.unstubAllGlobals();
   });
+
+  it("lists the provider's models in the dropdown and allows any id", async () => {
+    await saveKey('gemini', 'k');
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) =>
+        url.includes('googleapis')
+          ? Response.json({
+              models: [
+                { name: 'models/gemini-3-flash', supportedGenerationMethods: ['generateContent'] },
+                { name: 'models/gemini-embedding-2', supportedGenerationMethods: ['embedContent'] },
+              ],
+            })
+          : Response.json({ models: [] }),
+      ),
+    );
+    render(<AiSettings />);
+    const provider = await screen.findByLabelText('Decision model provider');
+    fireEvent.change(provider, { target: { value: 'gemini' } });
+    const select = screen.getByLabelText('Decision model model') as HTMLSelectElement;
+    await vi.waitFor(() =>
+      expect(screen.getByRole('option', { name: 'gemini-3-flash' })).toBeTruthy(),
+    );
+    expect(screen.queryByRole('option', { name: 'gemini-embedding-2' })).toBeNull();
+    fireEvent.change(select, { target: { value: 'gemini-3-flash' } });
+    await vi.waitFor(async () =>
+      expect((await getSettings()).ai.decision.model).toBe('gemini-3-flash'),
+    );
+    fireEvent.change(select, { target: { value: '__custom__' } });
+    fireEvent.change(screen.getByLabelText('Decision model model id'), {
+      target: { value: 'my-model' },
+    });
+    await vi.waitFor(async () => expect((await getSettings()).ai.decision.model).toBe('my-model'));
+    vi.unstubAllGlobals();
+    await saveKey('gemini', '');
+  });
 });
