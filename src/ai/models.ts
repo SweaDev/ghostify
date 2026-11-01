@@ -104,7 +104,12 @@ export async function ollamaStatus(
     const data = (await res.json()) as { models?: { name: string }[] };
     return { ok: true, models: (data.models ?? []).map((m) => m.name) };
   } catch (e) {
-    return { ok: false, models: [], error: `Cannot reach Ollama: ${(e as Error).message}` };
+    // A CORS rejection (OLLAMA_ORIGINS unset) also lands here, as a TypeError.
+    return {
+      ok: false,
+      models: [],
+      error: `Cannot reach Ollama (is it running with OLLAMA_ORIGINS set?): ${(e as Error).message}`,
+    };
   }
 }
 
