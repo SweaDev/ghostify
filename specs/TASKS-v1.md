@@ -192,7 +192,7 @@ Spec: `specs/SPEC-v1.md`. Plan: `specs/PLAN-v1.md`.
   Depends: T29
   Done: "In your browser" provider listed first; per-purpose model card shows size, status, progress, Download / Delete, device choice (CPU / GPU); render test passes.
 
-- [ ] T31: README and version 1.2.0
+- [x] T31: README and version 1.2.0
   Refs: specs/PLAN-v1.md L144-171; specs/PLAN-v1.md L198-244
   Files: README.md, package.json
   Depends: T27, T30

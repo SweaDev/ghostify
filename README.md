@@ -2,7 +2,7 @@
 
 Ghostify is a browser extension (Chrome and Firefox) for feeds that keep showing you the same posts. Hover a post, click the ghost, and it disappears from the site's feed for good. Ghostify keeps a copy so you can find it again later.
 
-> **v1.0.0.** Ghostify works on the dev.to home feeds out of the box, and you can add any site. It has a full Ghostify page with snooze and search, and optional AI that runs locally with Ollama or with your own OpenRouter, Gemini or OpenAI key.
+> **v1.2.0.** Ghostify works on the dev.to home feeds out of the box, and you can add any site. It has a full Ghostify page with snooze and search, and optional AI. By default the AI runs right in your browser with small downloadable models (no GPU, Ollama or API key needed). It can also use Ollama, or your own OpenRouter, Gemini or OpenAI key.
 
 ## Features
 - **The dev.to logged-out home feeds** (Relevant `/`, Latest `/latest`, Top `/top/*`) are recognized automatically, through [feedgrab](https://github.com/SweaDev/feedgrab).
@@ -14,7 +14,7 @@ Ghostify is a browser extension (Chrome and Firefox) for feeds that keep showing
   - **Later** is what you want to read.
   - **Snoozed** holds posts that come back later.
 - **Snooze** a post until later today, tomorrow, the weekend, next week, or a date you choose. The post stays hidden on the site, and when the time is up it shows in **Back from snooze** at the top of Ghosted.
-- **Search** your ghosts by keyword and **filter** them by site.
+- **Search** your ghosts by keyword and **filter** them by site. Long lists load 50 at a time (**Show more**), and **Unghost** on the Ghostify page has an **Undo**.
 - **The viewer** opens when you click a post's title, thumbnail or excerpt. It has three tabs:
   - **Overview**: the summary, tags and excerpt.
   - **Reader**: **Load full content** fetches the post and shows its main text inside Ghostify, without the site's ads and menus (the first time, you're asked to allow access to that site). **Reload** fetches it again.
@@ -36,19 +36,41 @@ Ghostify is a browser extension (Chrome and Firefox) for feeds that keep showing
   dev.to is built in. Its login indicator is `body[data-user-status="logged-in"]`, and only its logged-out home feeds are set up. Add the logged-in view yourself with **Edit selectors** if you want it.
 - **The view switches** as soon as you log in or out, without a reload.
 - **The new-tab flavor** (`ghostify-newtab-*` zips) puts the Ghostify page on every new tab. Install either the regular flavor or the new-tab flavor, not both.
-- **AI is optional and off by default.** Turn it on in **Settings → AI** to get:
+- **AI is optional and off by default.** Turn it on in **Settings → AI** and download the in-browser models (or pick another provider) to get:
   - **summaries and tags** for each ghosted post, written by the general model. Click a tag to filter by it.
   - **semantic search**: turn on **Semantic** next to the search box and describe what you remember.
   - **summaries of the full content and answers to your questions** in the viewer's **Ask AI** tab;
-  - **auto-ghostify rules**: in **Settings → Sites**, write plain-language rules per site, such as "posts that are mostly self-promotion". The decision model checks new feed items against them and ghosts the matches. Auto-ghosted posts are labelled with their rule. **Not this** brings a post back, and that rule never hides it again.
+  - **auto-ghostify rules**: in **Settings → Sites**, write plain-language rules per site, such as "crypto hype" or "posts that are mostly self-promotion". The decision model checks new feed items against them and ghosts the matches. Auto-ghosted posts are labelled with their rule. **Not this** brings a post back, and that rule never hides it again.
 - **AI activity** (the pulse button in the Ghostify page header, or **Settings → AI activity**) lists every AI request: summaries, tags, indexing, rule checks, searches, model tests and questions. Expand a row to see its model, prompt, input, output and error. Each job can be paused, resumed or stopped, and **Pause all**, **Resume all** and **Stop all** act on everything at once. A pause lasts across browser restarts. While AI is paused, searches fall back to keywords and auto-ghostify rules don't run.
 - **Settings → Prompts** lets you change what Ghostify asks the AI: the summary-and-tags prompt, the **Summarize** and **Ask** prompts, and the rule question sent to System One decision models. **Reset to default** restores the original prompt.
-- Everything stays local in your browser (IndexedDB), with no account and no sync. With Ollama, AI stays on your machine too.
+- Everything stays local in your browser (IndexedDB), with no account and no sync. With in-browser models or Ollama, AI stays on your machine too.
 
 ## AI setup
 Each purpose (embeddings, general model, decision model) can use its own provider and model.
 
-### Local with Ollama (default)
+### In your browser (default)
+Small open models run inside the browser with [Transformers.js](https://huggingface.co/docs/transformers.js) (ONNX Runtime Web). They need no GPU, no Ollama and no API key. No model ships with the extension and nothing downloads on its own: you choose what to download.
+
+| Purpose | Default model | Download (CPU) | Alternatives |
+|---|---|---|---|
+| Embeddings (semantic search) | [MiniLM L6](https://huggingface.co/Xenova/all-MiniLM-L6-v2) | ~23 MB | BGE small (~34 MB), multilingual MiniLM L12 (~118 MB) |
+| General (summaries, tags, Ask) | [SmolLM2 360M Instruct](https://huggingface.co/HuggingFaceTB/SmolLM2-360M-Instruct) | ~350 MB | SmolLM2 135M (~135 MB, for low-memory computers), Gemma 3 270M (~315 MB), Qwen2.5 0.5B (~495 MB) |
+| Decision (auto-ghostify rules) | [DeBERTa v3 xsmall NLI](https://huggingface.co/Xenova/nli-deberta-v3-xsmall) | ~85 MB | MobileBERT MNLI (~26 MB) |
+
+1. Open **Settings → AI** and turn on **Use AI**.
+2. Click **Download** on each row, or **Download all** (about 460 MB for the defaults). The files come from Hugging Face once and stay in the browser's cache. Progress shows on each row, and downloads keep going if you close the settings page.
+3. Click **Test** on each row. **Delete** removes a model's files.
+4. Optional: under **In-browser models**, pick **GPU (WebGPU)** instead of **CPU** if your browser supports WebGPU. It is faster, but uses different model files, so download again.
+
+Any Hugging Face ONNX repo works too: choose **Other…** in the model list and type its id (`owner/name`).
+
+How it works and what to expect:
+- Models run in a worker on an offscreen page (Chrome) or a hidden frame of the background page (Firefox). They stop after 10 idle minutes to free memory.
+- A model needs roughly 10–15 times its file size in RAM while it runs. On a computer with 4 GB of RAM, choose SmolLM2 135M.
+- Summaries take a few seconds per post on a laptop CPU. The viewer reads at most 6,000 characters of an article with in-browser models (24,000 with others).
+- Rule checks use a zero-shot classifier ("This item is about …"), not a chat model. Short topics such as "crypto hype" or "an advertisement" work much better than long descriptions. The rule question in **Settings → Prompts** applies only to System One models.
+
+### Local with Ollama
 | Purpose | Default model |
 |---|---|
 | Embeddings (semantic search) | [`embeddinggemma-2`](https://ollama.com/library/embeddinggemma-2) |
@@ -155,7 +177,7 @@ git push origin v1.0.0
 
 ## Project docs
 - The spec is `specs/SPEC-v1.md`, the plan is `specs/PLAN-v1.md`, and the tasks are `specs/TASKS-v1.md`.
-- This version covers every task, **T01–T23** (Phases 1–4), and all of the spec:
+- This version covers every task, **T01–T31** (Phases 1–5), and all of the spec:
   - feedgrab feed reading;
   - the dev.to logged-out home feeds, plus adding more sites;
   - custom feed selectors through feedgrab;
@@ -167,6 +189,11 @@ git push origin v1.0.0
   - the UI;
   - the new-tab option (as a build flavor);
   - local Ollama models (embeddinggemma-2, Gemma 4 E2B, d3:2b) and bring-your-own-key OpenRouter, Gemini and OpenAI, configurable per purpose.
+- Phase 5 (T24–T31) came out of a security, performance and UI audit, and added in-browser models:
+  - security: the background accepts only the feed messages from web pages, and only about that page's site. Saved posts keep only http(s) links, and their text is capped. Imported sites are validated. Full-content loads are limited to 5 MB of HTML within 20 s. Model lists time out. The extension's content security policy allows no remote code;
+  - performance: indexed, limited item lists; search reads only the current model's vectors; a single backlog per indexing run; fewer content-script restarts; a throttled login-view watcher; and a ghost button placed once per frame;
+  - UI: Undo for unghosting, paged lists, a viewer that stays open when its post moves tabs, settings that stay in sync across pages, focus handling for drawers, and a confirmation before deleting a site;
+  - in-browser models, which are now the default AI provider (see [AI setup](#ai-setup)).
 
 ## Known limits
 - Ghostify isn't published to the Chrome Web Store or Firefox Add-ons. Install it from a release zip or a local build.
@@ -175,6 +202,7 @@ git push origin v1.0.0
 - **Load full content** shows what the page sends to Ghostify, using your cookies for that site. Pages built entirely in the browser by scripts may have little readable text. In that case, open the original.
 - Pausing a job that is already running stops its request, and **Resume** starts it again from the beginning. Rule checks and searches can't be paused, because a page is waiting for them, so pausing them stops them.
 - Data isn't synced between browsers. To move your sites, use export and import in **Settings → Sites**.
+- In-browser models are small: summaries are plainer than those from larger models, and the smallest chat models sometimes leave out tags. They run on one CPU thread, because extension pages aren't cross-origin isolated. The extension includes ONNX Runtime's WebAssembly (about 27 MB).
 
 ## Permissions
 | Permission | Why |
@@ -183,6 +211,7 @@ git push origin v1.0.0
 | `alarms` | Waking snoozed posts |
 | `scripting` | Running Ghostify on sites you add |
 | `activeTab` | Reading the current tab's address in the popup, and opening the site picker |
+| `offscreen` (Chrome only) | Running the in-browser AI models in a worker (Chrome's background can't start workers) |
 | dev.to | The built-in site |
 | Other sites (optional) | Requested for one site at a time, when you add it or load a post's full content |
 
