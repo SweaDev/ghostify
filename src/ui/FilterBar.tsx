@@ -34,7 +34,7 @@ export function FilterBar(props: {
           aria-label="Search"
           value={text}
           onChange={(e) => setText(e.target.value)}
-          className="w-full rounded-xl border border-zinc-200 bg-white py-2 pr-8 pl-9 text-sm outline-none transition focus:border-ghost-400 focus:ring-2 focus:ring-ghost-200 dark:border-zinc-800 dark:bg-zinc-900 dark:focus:ring-ghost-900"
+          className="w-full rounded-xl border border-zinc-200 bg-white py-2 pr-8 pl-9 text-sm outline-none transition focus:border-ghost-400 focus:ring-2 focus:ring-ghost-200 dark:border-zinc-800 dark:bg-zinc-900 dark:focus:ring-ghost-900 [&::-webkit-search-cancel-button]:appearance-none"
         />
         {text && (
           <button
