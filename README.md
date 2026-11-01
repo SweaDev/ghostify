@@ -46,7 +46,7 @@ Each purpose (embeddings, general model, decision model) can use its own provide
 | General (summaries, tags) | [`gemma4:e2b`](https://ollama.com/library/gemma4) |
 | Decision (auto-ghostify rules) | [`d3:2b`](https://ollama.com/library/d3) (needs Ollama 0.40.9 or later) |
 
-Any Ollama model with the `decision` capability (for example [`d1-omni`](https://ollama.com/library/d1-omni)) works as the decision model. So does an OpenRouter decision model such as [Jev](https://openrouter.ai/docs/guides/community/jev) (`typesafe/jev-1.14`). Ghostify sends these models System One requests (`/v1/systemone`); any other model gets a chat prompt.
+Any Ollama model with the `decision` capability (for example [`tev1:0.8b` or `tev1:4b`](https://ollama.com/library/tev1), or [`d1-omni`](https://ollama.com/library/d1-omni)) works as the decision model. So does an OpenRouter decision model such as [Jev](https://openrouter.ai/docs/guides/community/jev) (`typesafe/jev-1.14`). Ghostify sends these models System One requests (`/v1/systemone`); any other model gets a chat prompt.
 
 1. Pull the models:
    ```sh

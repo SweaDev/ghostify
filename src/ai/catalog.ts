@@ -24,8 +24,8 @@ const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models';
 const OPENROUTER_MODELS = 'https://openrouter.ai/api/v1/models?output_modalities=all';
 const OPENAI_MODELS = 'https://api.openai.com/v1/models';
 
-/** Names that mark a decision model (d3, Jev, or a future "...-decision-..." model). */
-export const DECISION_NAME = /(^|\/)(d3|jev)([:-]|$)|decision/i;
+/** Names that mark a decision model (d3, Jev, Tev1, or a future "...-decision-..." model). */
+export const DECISION_NAME = /(^|\/)(d3|jev|tev1)([:-]|$)|decision/i;
 
 const kinds = (...k: (Kind | false)[]) => k.filter((x): x is Kind => !!x);
 

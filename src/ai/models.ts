@@ -66,7 +66,7 @@ export const SUGGESTED: Record<
   ollama: {
     embedding: ['embeddinggemma-2', 'embeddinggemma-2:270m'],
     general: ['gemma4:e2b', 'gemma4:e4b'],
-    decision: ['d3:2b', 'd3:4b', 'd1-omni', 'gemma4:e2b'],
+    decision: ['d3:2b', 'd3:4b', 'tev1:0.8b', 'tev1:4b', 'd1-omni', 'gemma4:e2b'],
   },
   openai: {
     embedding: ['text-embedding-3-small', 'text-embedding-3-large'],

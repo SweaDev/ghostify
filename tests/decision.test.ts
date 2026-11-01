@@ -58,16 +58,26 @@ describe('systemOneTarget', () => {
         capabilities: c[JSON.parse(String(init?.body)).model],
       })) as unknown as typeof fetch;
   const ollama = (model: string) => ({ provider: 'ollama' as const, model });
-  const f = caps({ 'd1-omni': ['vision', 'decision', 'audio'], 'gemma4:e2b': ['completion'] });
+  const f = caps({
+    'd1-omni': ['vision', 'decision', 'audio'],
+    'tev1:0.8b': ['tools', 'decision', 'thinking'],
+    'gemma4:e2b': ['completion'],
+  });
 
   it('sends Ollama models with the decision capability to /v1/systemone', async () => {
     expect(await systemOneTarget(ollama('d1-omni'), on, {}, f)).toEqual({
       url: 'http://localhost:11434/v1/systemone',
       model: 'd1-omni',
     });
+    expect(await systemOneTarget(ollama('tev1:0.8b'), on, {}, f)).toEqual({
+      url: 'http://localhost:11434/v1/systemone',
+      model: 'tev1:0.8b',
+    });
     expect(await systemOneTarget(ollama('gemma4:e2b'), on, {}, f)).toBeUndefined();
-    // Older Ollama without capabilities: d3 is still recognized by name.
+    // Older Ollama without capabilities: d3 and Tev1 are still recognized by name.
     expect(await systemOneTarget(ollama('d3:2b'), on, {}, caps({}))).toBeDefined();
+    expect(await systemOneTarget(ollama('tev1:4b'), on, {}, caps({}))).toBeDefined();
+    expect(await systemOneTarget(ollama('tev1'), on, {}, caps({}))).toBeDefined();
   });
 
   it('sends OpenRouter decision models (Jev) to its System One API with the key', async () => {
