@@ -1,5 +1,5 @@
 import { type FeedItem, openFeed, type RemovalHandle, removeItem } from 'feedgrab';
-import { resolveProfile, type Site } from '../sites/model';
+import { detectView, resolveProfile, type Site, siteForUrl } from '../sites/model';
 import type { RuntimeApi } from './api';
 import { extractItem } from './extract';
 import { mountGhostButton } from './ghost-button';
@@ -15,13 +15,49 @@ export interface RuntimeOptions {
   url: string;
   sites: Site[];
   api: RuntimeApi;
+  /** Called once when the site's login view changes, so the caller can restart the runtime. */
+  onViewChange?(): void;
 }
 
 /**
  * Runs Ghostify on a page: opens the matching feedgrab feed, hides ghosted items (now and as
  * new ones load) and lets the user ghostify items with the floating button.
  */
-export function startFeedRuntime({ doc, url, sites, api }: RuntimeOptions): FeedRuntime {
+/** Watches the login indicator (debounced) and reports a view change once. */
+function watchView(doc: Document, site: Site, onChange: () => void): () => void {
+  const initial = detectView(site, doc);
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const mo = new MutationObserver(() => {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      if (detectView(site, doc) === initial) return;
+      mo.disconnect();
+      onChange();
+    }, 300);
+  });
+  mo.observe(doc.documentElement, { subtree: true, childList: true, attributes: true });
+  return () => {
+    clearTimeout(timer);
+    mo.disconnect();
+  };
+}
+
+export function startFeedRuntime(opts: RuntimeOptions): FeedRuntime {
+  const { doc, url, sites, onViewChange } = opts;
+  const site = siteForUrl(sites, url);
+  const stopWatch =
+    site?.loginIndicator && onViewChange ? watchView(doc, site, onViewChange) : () => {};
+  const runtime = startFeed(opts);
+  return {
+    active: runtime.active,
+    dispose() {
+      stopWatch();
+      runtime.dispose();
+    },
+  };
+}
+
+function startFeed({ doc, url, sites, api }: RuntimeOptions): FeedRuntime {
   const resolved = resolveProfile(sites, url, doc);
   if (!resolved) return { active: false, dispose() {} };
 
