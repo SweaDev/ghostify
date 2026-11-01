@@ -7,6 +7,7 @@ import {
   systemOneTarget,
 } from '@/src/ai/decision';
 import { handlers } from '@/src/background/handlers';
+import { db } from '@/src/store/db';
 import { DEFAULT_SETTINGS, type Settings } from '@/src/store/settings';
 import { textModel } from './mock-model';
 
@@ -105,6 +106,8 @@ describe('systemOneClassify', () => {
 });
 
 describe('handleDecision', () => {
+  beforeEach(() => db.decisions.clear());
+
   const byokAnswer = JSON.stringify({
     results: [
       { id: '1', exclude: true, criteriaIndex: 0, confidence: 0.8 },
@@ -134,6 +137,25 @@ describe('handleDecision', () => {
     const res = await handleDecision(req, { settings: on, keys: {}, fetcher: down, model });
     expect(model).toHaveBeenCalledWith(on.ai.general);
     expect((res as { results: unknown[] }).results).toHaveLength(2);
+  });
+
+  it('answers repeated items from cache and sends only new ones', async () => {
+    const f = vi.fn(d3Fetch);
+    await handleDecision(req, { settings: on, keys: {}, fetcher: f });
+    const posts = () => f.mock.calls.filter(([u]) => String(u).endsWith('/systemone')).length;
+    expect(posts()).toBe(2);
+    const again = await handleDecision(req, { settings: on, keys: {}, fetcher: f });
+    expect(posts()).toBe(2);
+    expect(f).toHaveBeenCalledTimes(3); // 1 /api/show + 2 posts, none on the cached call
+    expect((again as { results: unknown[] }).results).toEqual([
+      { id: '1', exclude: true, criteriaIndex: 0, confidence: 0.92 },
+      { id: '2', exclude: false, confidence: 1 },
+    ]);
+    const more = { ...req, items: [...req.items, { id: '3', text: 'Another coin' }] };
+    await handleDecision(more, { settings: on, keys: {}, fetcher: f });
+    expect(posts()).toBe(3);
+    await handleDecision({ ...req, criteria: ['job ads'] }, { settings: on, keys: {}, fetcher: f });
+    expect(posts()).toBe(5);
   });
 
   it('refuses when AI is off, and the message handler reports it', async () => {

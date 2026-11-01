@@ -4,6 +4,8 @@ import { handleLlmRequest } from 'feedgrab/llm';
 import { getKeys } from '../store/secrets';
 import { getSettings, type Keys, type ModelRef, type Settings } from '../store/settings';
 import { DECISION_NAME, ollamaKinds } from './catalog';
+import { cachedClassify } from './decision-cache';
+import { modelTag } from './embed';
 import { key, languageModel, OPENROUTER_URL } from './models';
 
 export interface SystemOneTarget {
@@ -131,13 +133,17 @@ export async function handleDecision(req: unknown, deps?: DecisionDeps): Promise
   const general = () => handleLlmRequest(req, lm(settings.ai.general));
   const r = req as { task?: string };
   if (r.task !== 'classify') return general();
+  const classify = req as ClassifyRequest;
   const decision = settings.ai.decision;
+  const chat = (ref: ModelRef) => (r: ClassifyRequest) =>
+    handleLlmRequest(r, lm(ref)) as Promise<ClassifyResponse>;
   try {
-    const target = await systemOneTarget(decision, settings, keys, fetcher);
-    if (target) return await systemOneClassify(req as ClassifyRequest, target, fetcher);
-    return await handleLlmRequest(req, lm(decision));
+    return await cachedClassify(modelTag(decision), classify, async (r) => {
+      const target = await systemOneTarget(decision, settings, keys, fetcher);
+      return target ? systemOneClassify(r, target, fetcher) : chat(decision)(r);
+    });
   } catch (e) {
     console.warn('[ghostify:ai] decision model failed, using the general model', e);
-    return general();
+    return cachedClassify(modelTag(settings.ai.general), classify, chat(settings.ai.general));
   }
 }
