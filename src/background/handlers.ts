@@ -1,5 +1,6 @@
 import { browser } from 'wxt/browser';
 import { checkPurpose } from '../ai/check';
+import { handleDecision } from '../ai/decision';
 import type { ProtocolMap } from '../messaging';
 import { onMessage } from '../messaging';
 import { ghostedIds, ghostify, listItems, setState, unghost } from '../store/items';
@@ -32,6 +33,17 @@ export const handlers: Handlers = {
     }),
   searchSemantic: ({ query, filters }) => searchSemantic(query, filters),
   reindex: () => reindex(),
+  llm: async ({ req }) => {
+    try {
+      return { ok: true, res: await handleDecision(req) };
+    } catch (e) {
+      const err = e as { code?: string; message?: string };
+      return {
+        ok: false,
+        error: { code: err.code ?? 'LLM_UNAVAILABLE', message: String(err.message) },
+      };
+    }
+  },
   addSite: async ({ tabId }) => {
     await browser.scripting.executeScript({
       target: { tabId },

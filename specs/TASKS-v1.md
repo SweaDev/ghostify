@@ -130,7 +130,7 @@ Spec: `specs/SPEC-v1.md`. Plan: `specs/PLAN-v1.md`.
   Depends: T18
   Done: embeddings stored per item; semantic toggle in search ranks by cosine (keyword fallback when AI off or failing); "Reindex" action for missing embeddings; tests pass.
 
-- [ ] T21: Decision handler (d3 + BYOK + fallback) for classify
+- [x] T21: Decision handler (d3 + BYOK + fallback) for classify
   Refs: specs/SPEC-v1.md L14-15; specs/PLAN-v1.md L130-134; specs/PLAN-v1.md L172-181
   Files: src/ai/decision.ts, src/background/handlers.ts, tests/decision.test.ts
   Depends: T18
