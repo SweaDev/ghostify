@@ -91,3 +91,14 @@ export function chooseView(doc: Document, opts: ChooserOptions = {}): Promise<Vi
     );
   });
 }
+
+/** A short-lived message in the same panel style. */
+export function notice(doc: Document, message: string, ms = 6000): void {
+  const host = doc.createElement('div');
+  host.setAttribute('data-ghostify-chooser', '');
+  const root = host.attachShadow({ mode: 'open' });
+  root.innerHTML = `<style>${CSS}</style><div class="panel" role="status"><p></p></div>`;
+  (root.querySelector('p') as HTMLElement).textContent = message;
+  doc.documentElement.append(host);
+  setTimeout(() => host.remove(), ms);
+}
