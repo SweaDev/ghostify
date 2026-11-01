@@ -1,5 +1,11 @@
 import type { ClassifyRequest } from 'feedgrab';
-import { d3Classify, d3Questions, handleDecision, isD3, parseD3Answer } from '@/src/ai/decision';
+import {
+  handleDecision,
+  noulQuestions,
+  parseNoul,
+  systemOneClassify,
+  systemOneTarget,
+} from '@/src/ai/decision';
 import { handlers } from '@/src/background/handlers';
 import { DEFAULT_SETTINGS, type Settings } from '@/src/store/settings';
 import { textModel } from './mock-model';
@@ -25,40 +31,78 @@ const d3Fetch = vi.fn(async (_url: string, init?: RequestInit) => {
 
 describe('d3 parsing', () => {
   it('accepts the answer shapes we know of', () => {
-    expect(parseD3Answer({ noul: true })).toEqual({ match: true, confidence: 1 });
-    expect(parseD3Answer({ noul: 0.8 })).toEqual({ match: true, confidence: 0.8 });
-    expect(parseD3Answer({ noul: 0.2 })?.match).toBe(false);
-    expect(parseD3Answer({ noul: { value: true, probability: 0.7 } })).toEqual({
+    expect(parseNoul({ noul: true })).toEqual({ match: true, confidence: 1 });
+    expect(parseNoul({ noul: 0.8 })).toEqual({ match: true, confidence: 0.8 });
+    expect(parseNoul({ noul: 0.2 })?.match).toBe(false);
+    expect(parseNoul({ noul: { value: true, probability: 0.7 } })).toEqual({
       match: true,
       confidence: 0.7,
     });
-    expect(parseD3Answer({ noul: { probability: 0.9 } })).toEqual({ match: true, confidence: 0.9 });
-    expect(parseD3Answer('false')).toEqual({ match: false, confidence: 1 });
-    expect(parseD3Answer({ noul: 'maybe' })).toBeUndefined();
-    expect(parseD3Answer(undefined)).toBeUndefined();
+    expect(parseNoul({ noul: { probability: 0.9 } })).toEqual({ match: true, confidence: 0.9 });
+    expect(parseNoul('false')).toEqual({ match: false, confidence: 1 });
+    expect(parseNoul({ noul: 'maybe' })).toBeUndefined();
+    expect(parseNoul(undefined)).toBeUndefined();
   });
 
   it('builds one yes/no question per criterion', () => {
-    expect(Object.keys(d3Questions(['a', 'b']))).toEqual(['c0', 'c1']);
-    expect(d3Questions(['a']).c0?.type).toBe('noul');
-    expect(isD3({ provider: 'ollama', model: 'd3:2b' })).toBe(true);
-    expect(isD3({ provider: 'ollama', model: 'd3' })).toBe(true);
-    expect(isD3({ provider: 'openrouter', model: 'd3:2b' })).toBe(false);
+    expect(Object.keys(noulQuestions(['a', 'b']))).toEqual(['c0', 'c1']);
+    expect(noulQuestions(['a']).c0?.type).toBe('noul');
   });
 });
 
-describe('d3Classify', () => {
-  it('posts to /v1/systemone and maps answers to feedgrab results', async () => {
-    const res = await d3Classify(req, {
-      baseUrl: 'http://o:11434/',
-      model: 'd3:2b',
-      fetcher: d3Fetch,
+describe('systemOneTarget', () => {
+  const caps = (c: Record<string, string[]>) =>
+    (async (_url: string, init?: RequestInit) =>
+      Response.json({
+        capabilities: c[JSON.parse(String(init?.body)).model],
+      })) as unknown as typeof fetch;
+  const ollama = (model: string) => ({ provider: 'ollama' as const, model });
+  const f = caps({ 'd1-omni': ['vision', 'decision', 'audio'], 'gemma4:e2b': ['completion'] });
+
+  it('sends Ollama models with the decision capability to /v1/systemone', async () => {
+    expect(await systemOneTarget(ollama('d1-omni'), on, {}, f)).toEqual({
+      url: 'http://localhost:11434/v1/systemone',
+      model: 'd1-omni',
     });
+    expect(await systemOneTarget(ollama('gemma4:e2b'), on, {}, f)).toBeUndefined();
+    // Older Ollama without capabilities: d3 is still recognized by name.
+    expect(await systemOneTarget(ollama('d3:2b'), on, {}, caps({}))).toBeDefined();
+  });
+
+  it('sends OpenRouter decision models (Jev) to its System One API with the key', async () => {
+    const jev = { provider: 'openrouter' as const, model: 'typesafe/jev-1.14' };
+    expect(await systemOneTarget(jev, on, { openrouter: 'k' })).toEqual({
+      url: 'https://openrouter.ai/api/v1/systemone',
+      model: 'typesafe/jev-1.14',
+      apiKey: 'k',
+    });
+    const list = (async () =>
+      Response.json({ data: [{ id: 'acme/decider' }] })) as unknown as typeof fetch;
+    const acme = { provider: 'openrouter' as const, model: 'acme/decider' };
+    expect(await systemOneTarget(acme, on, { openrouter: 'k' }, list)).toBeDefined();
+    const chat = { provider: 'openrouter' as const, model: 'openai/gpt-5-mini' };
+    expect(await systemOneTarget(chat, on, { openrouter: 'k' }, list)).toBeUndefined();
+  });
+});
+
+describe('systemOneClassify', () => {
+  it('posts to /v1/systemone and maps answers to feedgrab results', async () => {
+    const res = await systemOneClassify(
+      req,
+      { url: 'http://o:11434/v1/systemone', model: 'd3:2b', apiKey: 'k' },
+      d3Fetch,
+    );
     expect(res.results).toEqual([
       { id: '1', exclude: true, criteriaIndex: 0, confidence: 0.92 },
       { id: '2', exclude: false, confidence: 1 },
     ]);
-    expect(vi.mocked(d3Fetch).mock.calls[0]?.[0]).toBe('http://o:11434/v1/systemone');
+    const [url, init] = vi.mocked(d3Fetch).mock.calls[0] ?? [];
+    expect(url).toBe('http://o:11434/v1/systemone');
+    expect(new Headers(init?.headers).get('authorization')).toBe('Bearer k');
+    expect(JSON.parse(String(init?.body))).toMatchObject({
+      model: 'd3:2b',
+      state: req.items[0]?.text,
+    });
   });
 });
 
