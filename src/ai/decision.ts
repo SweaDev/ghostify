@@ -16,7 +16,7 @@ export interface SystemOneTarget {
 
 /**
  * Where to send a System One decision request (`model` + `state` + typed `questions`), or
- * undefined for a chat model. Ollama decision models (d3, d1-omni, …) declare the `decision`
+ * undefined for a chat model. Ollama decision models (d3, Tev1, d1-omni, …) declare the `decision`
  * capability (checked locally). OpenRouter decision models (Jev, …) are flagged `systemOne` when
  * picked from its model list; a typed id falls back to its name.
  */
