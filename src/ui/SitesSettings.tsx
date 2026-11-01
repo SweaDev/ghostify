@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { mergeSites, parseSitesJson, serializeSites } from '../sites/io';
 import type { LoginIndicator, Site, View } from '../sites/model';
 import { deleteSite, getSites, saveSite, sitesItem } from '../sites/registry';
+import { useSettings } from './GeneralSettings';
 import { IconButton } from './ItemCard';
 import { Switch } from './Switch';
 
@@ -62,6 +63,8 @@ function IndicatorEditor({ site }: { site: Site }) {
 
 function RulesEditor({ site }: { site: Site }) {
   const [draft, setDraft] = useState('');
+  const [settings] = useSettings();
+  const nli = settings?.ai.decision.provider === 'browser';
   const save = (rules: Site['rules']) => void saveSite({ ...site, rules });
   const add = () => {
     const criteria = draft.trim();
@@ -76,6 +79,12 @@ function RulesEditor({ site }: { site: Site }) {
         <span className="ml-2 text-xs text-zinc-500">
           Plain language, checked by the decision model when AI is on.
         </span>
+        {nli && (
+          <p className="mt-0.5 text-xs text-zinc-500">
+            In-browser rule checks work best with short topics, like “crypto hype” or “an
+            advertisement”.
+          </p>
+        )}
       </div>
       {site.rules.map((r) => (
         <div key={r.id} className="flex items-center gap-2">

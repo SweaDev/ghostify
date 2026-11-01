@@ -1,11 +1,13 @@
 import { CheckCircle2, CircleAlert, Loader2 } from 'lucide-react';
 import { type ReactNode, useEffect, useState } from 'react';
+import { browserModels } from '../ai/browser/catalog';
 import { groupsFor } from '../ai/catalog';
 import { modelTag } from '../ai/embed';
 import { hasModel, type OllamaStatus, ollamaStatus, SUGGESTED } from '../ai/models';
 import { sendMessage } from '../messaging';
 import { getKeys, saveKey } from '../store/secrets';
 import type { KeyProvider, Keys, ModelRef, Provider, Purpose, Settings } from '../store/settings';
+import { BrowserModelStatus, BrowserRuntime } from './BrowserModels';
 import { useSettings } from './GeneralSettings';
 import { IndexProgress } from './IndexProgress';
 import { card, field } from './kit';
@@ -19,6 +21,7 @@ const PURPOSES: { key: Purpose; label: string; hint: string }[] = [
   { key: 'decision', label: 'Decision model', hint: 'Auto-ghostify rules' },
 ];
 const PROVIDERS: { key: Provider; label: string }[] = [
+  { key: 'browser', label: 'In your browser' },
   { key: 'ollama', label: 'Ollama (local)' },
   { key: 'openrouter', label: 'OpenRouter' },
   { key: 'gemini', label: 'Gemini' },
@@ -162,9 +165,11 @@ export function AiSettings() {
     [],
   );
   const url = settings?.ai.ollamaBaseUrl;
+  // Only probe Ollama when a purpose uses it.
+  const probeOllama = !!settings && PURPOSES.some((p) => settings.ai[p.key].provider === 'ollama');
   useEffect(() => {
-    if (url) void ollamaStatus(url).then(setOllama);
-  }, [url]);
+    if (url && probeOllama) void ollamaStatus(url).then(setOllama);
+  }, [url, probeOllama]);
   const catalog = useModelCatalog(
     settings ? PURPOSES.map((p) => settings.ai[p.key].provider) : [],
     savedKeys,
@@ -193,6 +198,9 @@ export function AiSettings() {
     setChecks((c) => ({ ...c, [p]: r }));
   };
   const usesOllama = PURPOSES.some((p) => settings.ai[p.key].provider === 'ollama');
+  const browserPurposes = PURPOSES.map((p) => p.key).filter(
+    (p) => settings.ai[p].provider === 'browser',
+  );
   const cloud = [...new Set(PURPOSES.map((p) => settings.ai[p.key].provider))].filter(
     (p): p is KeyProvider => p !== 'ollama' && p !== 'browser',
   );
@@ -203,8 +211,8 @@ export function AiSettings() {
         <div className="flex-1">
           <div className="font-medium">Use AI</div>
           <div className="text-sm text-zinc-500">
-            Summaries, tags, semantic search and auto-ghostify rules. Off by default; nothing leaves
-            your machine with Ollama.
+            Summaries, tags, semantic search and auto-ghostify rules. Off by default. With
+            in-browser models or Ollama, nothing leaves your machine.
           </div>
         </div>
         <Switch
@@ -214,6 +222,14 @@ export function AiSettings() {
         />
       </div>
 
+      {browserPurposes.length > 0 && (
+        <BrowserRuntime
+          settings={settings}
+          purposes={browserPurposes}
+          onDevice={(device) => setAi({ device })}
+        />
+      )}
+
       <div className={card}>
         {PURPOSES.map((p) => {
           const ref = settings.ai[p.key];
@@ -221,9 +237,12 @@ export function AiSettings() {
             ref.provider === 'ollama' && ollama?.ok && !hasModel(ollama.models, ref.model);
           const listed = catalog(ref.provider);
           const fetched = listed && 'models' in listed ? groupsFor(p.key, listed.models) : [];
-          const groups = fetched.some((g) => g.models.length)
-            ? fetched
-            : [{ label: 'Suggested', models: SUGGESTED[ref.provider][p.key] }];
+          const groups =
+            ref.provider === 'browser'
+              ? [{ label: 'In-browser models', models: browserModels(p.key).map((m) => m.id) }]
+              : fetched.some((g) => g.models.length)
+                ? fetched
+                : [{ label: 'Suggested', models: SUGGESTED[ref.provider][p.key] }];
           return (
             <div
               key={p.key}
@@ -254,6 +273,9 @@ export function AiSettings() {
                   Test
                 </button>
               </Row>
+              {ref.provider === 'browser' && (
+                <BrowserModelStatus settings={settings} purpose={p.key} />
+              )}
               <div className="flex min-h-5 flex-wrap gap-2 pb-2">
                 {missing && (
                   <span className="text-amber-600 text-xs">
