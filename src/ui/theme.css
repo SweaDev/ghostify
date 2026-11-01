@@ -16,10 +16,8 @@
   --color-ghost-900: #1e1b4b;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    color-scheme: dark;
-  }
+[data-theme="dark"] {
+  color-scheme: dark;
 }
 
 body {
