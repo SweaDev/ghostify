@@ -1,0 +1,27 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --color-ghost-50: #f4f2ff;
+  --color-ghost-100: #ebe6ff;
+  --color-ghost-200: #d6ccff;
+  --color-ghost-300: #b7a4ff;
+  --color-ghost-400: #9a7dff;
+  --color-ghost-500: #7c5cff;
+  --color-ghost-600: #6844f0;
+  --color-ghost-700: #5533cc;
+  --color-ghost-800: #43299f;
+  --color-ghost-900: #1e1b4b;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+  }
+}
+
+body {
+  @apply bg-white text-zinc-900 antialiased dark:bg-zinc-950 dark:text-zinc-100;
+}
