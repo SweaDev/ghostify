@@ -25,7 +25,7 @@ const OPENROUTER_MODELS = 'https://openrouter.ai/api/v1/models?output_modalities
 const OPENAI_MODELS = 'https://api.openai.com/v1/models';
 
 /** Names that mark a decision model (d3, Jev, or a future "...-decision-..." model). */
-const DECISION_NAME = /(^|\/)(d3|jev)([:-]|$)|decision/i;
+export const DECISION_NAME = /(^|\/)(d3|jev)([:-]|$)|decision/i;
 
 const kinds = (...k: (Kind | false)[]) => k.filter((x): x is Kind => !!x);
 
@@ -135,24 +135,6 @@ async function ollama(o: CatalogOptions, fetcher: typeof fetch): Promise<ModelIn
   return Promise.all(
     st.models.map(async (id) => ({ id, kinds: await ollamaKinds(o.ollamaBaseUrl, id, fetcher) })),
   );
-}
-
-let orDecisions: { at: number; ids: Promise<Set<string>> } | undefined;
-
-/** True when OpenRouter lists `id` as a decision model (list cached for an hour), or its name says so. */
-export async function isOpenRouterDecision(id: string, fetcher: typeof fetch = fetch) {
-  if (DECISION_NAME.test(id)) return true;
-  if (!orDecisions || Date.now() - orDecisions.at > 3_600_000) {
-    const ids = getJson<{ data?: { id: string }[] }>(
-      fetcher,
-      'https://openrouter.ai/api/v1/models?output_modalities=decisions',
-    ).then(({ data = [] }) => new Set(data.map((m) => m.id)));
-    orDecisions = { at: Date.now(), ids };
-    ids.catch(() => {
-      orDecisions = undefined;
-    });
-  }
-  return (await orDecisions.ids.catch(() => new Set<string>())).has(id);
 }
 
 const LISTERS = { gemini, openrouter, openai, ollama };
