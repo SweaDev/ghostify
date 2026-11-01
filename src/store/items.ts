@@ -1,3 +1,4 @@
+import { Dexie } from 'dexie';
 import { db, type GhostDraft, type GhostItem, type ItemState } from './db';
 
 export interface ListQuery {
@@ -105,15 +106,20 @@ function matchesText(item: GhostItem, text: string): boolean {
 /** Items newest first, filtered by state, host, tag and keywords (all words must match). */
 export async function listItems(q: ListQuery = {}): Promise<GhostItem[]> {
   const text = q.text?.trim();
-  let items = await db.items.orderBy('createdAt').reverse().toArray();
-  items = items.filter(
+  // Newest first within one state via the [state+createdAt] index; stops at `limit`.
+  const all = q.state
+    ? db.items
+        .where('[state+createdAt]')
+        .between([q.state, Dexie.minKey], [q.state, Dexie.maxKey])
+        .reverse()
+    : db.items.orderBy('createdAt').reverse();
+  const items = all.filter(
     (i) =>
-      (!q.state || i.state === q.state) &&
       (!q.host || i.host === q.host) &&
-      (!q.tag || i.tags?.includes(q.tag)) &&
+      (!q.tag || !!i.tags?.includes(q.tag)) &&
       (!text || matchesText(i, text)),
   );
-  return q.limit ? items.slice(0, q.limit) : items;
+  return (q.limit ? items.limit(q.limit) : items).toArray();
 }
 
 export async function countByState(): Promise<Record<ItemState, number>> {

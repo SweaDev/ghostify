@@ -93,7 +93,15 @@ export function mountGhostButton(doc: Document, opts: GhostButtonOptions): Ghost
       e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom
     );
   };
-  const onScroll = () => target && place();
+  let frame = 0;
+  // Scroll fires many times per frame; reposition at most once per frame.
+  const onScroll = () => {
+    if (!target || frame) return;
+    frame = requestAnimationFrame(() => {
+      frame = 0;
+      place();
+    });
+  };
   const onClick = async (e: Event) => {
     e.preventDefault();
     e.stopPropagation();
@@ -137,6 +145,7 @@ export function mountGhostButton(doc: Document, opts: GhostButtonOptions): Ghost
     },
     destroy() {
       clearTimeout(toastTimer);
+      cancelAnimationFrame(frame);
       doc.removeEventListener('pointerover', onOver);
       doc.removeEventListener('scroll', onScroll, { capture: true });
       doc.defaultView?.removeEventListener('resize', onScroll);

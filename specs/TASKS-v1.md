@@ -162,7 +162,7 @@ Spec: `specs/SPEC-v1.md`. Plan: `specs/PLAN-v1.md`.
   Depends: T24
   Done: reader rejects non-http(s), non-HTML and >5 MB pages and times out at 20 s; Ollama status and model lists time out at 8 s; manifest CSP set; tests pass.
 
-- [ ] T26: Performance fixes
+- [x] T26: Performance fixes
   Refs: specs/PLAN-v1.md L206-214
   Files: src/store/db.ts, src/store/items.ts, src/background/jobs.ts, src/background/indexer.ts, src/ai/catalog.ts, src/feed/content.ts, src/feed/runtime.ts, src/feed/ghost-button.ts, tests/items.test.ts, tests/runtime.test.ts
   Depends: T24

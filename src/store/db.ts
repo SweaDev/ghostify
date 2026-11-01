@@ -131,3 +131,6 @@ db.version(3).stores({ kept: 'key' });
 db.version(4).stores({ embeddings: 'key, model' });
 db.version(5).stores({ decisions: 'key, at' });
 db.version(6).stores({ aiJobs: 'id, createdAt, status', contents: 'key' });
+db.version(7).stores({
+  items: 'key, state, host, createdAt, snoozeUntil, *tags, [state+createdAt]',
+});
