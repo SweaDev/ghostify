@@ -50,6 +50,78 @@ function Row(props: { label: string; hint?: string; children: ReactNode }) {
   );
 }
 
+const ORIGINS = 'chrome-extension://*,moz-extension://*';
+type Os = 'linux' | 'mac' | 'windows' | 'terminal';
+const OS_LABELS: Record<Os, string> = {
+  linux: 'Linux',
+  mac: 'macOS',
+  windows: 'Windows',
+  terminal: 'Terminal',
+};
+
+function ollamaHost(baseUrl: string): string {
+  try {
+    const u = new URL(baseUrl);
+    return `${u.hostname}:${u.port || '11434'}`;
+  } catch {
+    return '127.0.0.1:11434';
+  }
+}
+
+function setupSnippet(os: Os, host: string): string {
+  switch (os) {
+    case 'linux':
+      return `sudo systemctl edit ollama
+# add:
+[Service]
+Environment="OLLAMA_HOST=${host}"
+Environment="OLLAMA_ORIGINS=${ORIGINS}"
+# then:
+sudo systemctl restart ollama`;
+    case 'mac':
+      return `launchctl setenv OLLAMA_HOST "${host}"
+launchctl setenv OLLAMA_ORIGINS "${ORIGINS}"
+# then quit and reopen the Ollama app`;
+    case 'windows':
+      return `setx OLLAMA_HOST "${host}"
+setx OLLAMA_ORIGINS "${ORIGINS}"
+# then quit Ollama from the tray and start it again`;
+    case 'terminal':
+      return `# only if Ollama isn't already running as a service
+OLLAMA_HOST=${host} OLLAMA_ORIGINS="${ORIGINS}" ollama serve`;
+  }
+}
+
+function OllamaSetup(props: { baseUrl: string }) {
+  const ua = navigator.userAgent;
+  const [os, setOs] = useState<Os>(/Mac/.test(ua) ? 'mac' : /Win/.test(ua) ? 'windows' : 'linux');
+  return (
+    <div className="mt-3">
+      <p className="text-xs text-zinc-500">
+        Let Ollama accept requests from extensions. Without this, the browser shows a CORS error.
+        Set the variables on the Ollama server that is running.
+      </p>
+      <div className="mt-2 flex gap-1">
+        {(Object.keys(OS_LABELS) as Os[]).map((k) => (
+          <button
+            key={k}
+            type="button"
+            onClick={() => setOs(k)}
+            className={`rounded-md px-2 py-0.5 text-xs ${
+              os === k ? 'bg-zinc-200 dark:bg-zinc-700' : 'text-zinc-500'
+            }`}
+          >
+            {OS_LABELS[k]}
+          </button>
+        ))}
+      </div>
+      <pre className="mt-1 overflow-x-auto rounded-lg bg-zinc-100 p-2 text-xs dark:bg-zinc-900">
+        {setupSnippet(os, ollamaHost(props.baseUrl))}
+      </pre>
+    </div>
+  );
+}
+
 export function AiSettings() {
   const [settings, update] = useSettings();
   const [keys, setKeys] = useState<Keys>({});
@@ -196,12 +268,7 @@ export function AiSettings() {
               }
             />
           </Row>
-          <p className="mt-2 text-xs text-zinc-500">
-            Start Ollama so that it accepts requests from extensions:
-          </p>
-          <pre className="mt-1 overflow-x-auto rounded-lg bg-zinc-100 p-2 text-xs dark:bg-zinc-900">
-            OLLAMA_ORIGINS="chrome-extension://*,moz-extension://*" ollama serve
-          </pre>
+          <OllamaSetup baseUrl={settings.ai.ollamaBaseUrl} />
         </div>
       )}
 

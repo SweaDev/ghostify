@@ -52,10 +52,26 @@ Each purpose (embeddings, general model, decision model) can use its own provide
    ollama pull gemma4:e2b
    ollama pull d3:2b
    ```
-2. Start Ollama so it accepts requests from browser extensions:
-   ```sh
-   OLLAMA_ORIGINS="chrome-extension://*,moz-extension://*" ollama serve
-   ```
+2. Let Ollama accept requests from browser extensions. Without this step, the browser console shows a CORS error. Set `OLLAMA_ORIGINS` on the Ollama server that is actually running. If you changed the Ollama URL in Settings, set `OLLAMA_HOST` to the same host and port.
+   - **Linux:** the installer runs Ollama as a systemd service, so setting the variable in a terminal has no effect. Run `sudo systemctl edit ollama` and add:
+     ```ini
+     [Service]
+     Environment="OLLAMA_HOST=127.0.0.1:11434"
+     Environment="OLLAMA_ORIGINS=chrome-extension://*,moz-extension://*"
+     ```
+     Then run `sudo systemctl restart ollama`.
+   - **macOS:** run the commands below, then quit and reopen the Ollama app:
+     ```sh
+     launchctl setenv OLLAMA_HOST "127.0.0.1:11434"
+     launchctl setenv OLLAMA_ORIGINS "chrome-extension://*,moz-extension://*"
+     ```
+   - **Windows:** add `OLLAMA_HOST` and `OLLAMA_ORIGINS` as user environment variables, then quit Ollama from the tray and start it again.
+   - **No background service:** run
+     ```sh
+     OLLAMA_HOST=127.0.0.1:11434 OLLAMA_ORIGINS="chrome-extension://*,moz-extension://*" ollama serve
+     ```
+
+   To check, run `curl -i -H "Origin: chrome-extension://x" http://127.0.0.1:11434/api/tags`. A `403` response means the running server didn't pick up `OLLAMA_ORIGINS`.
 3. In **Settings → AI**:
    1. Turn on **Use AI**.
    2. Click **Test** on each row.
