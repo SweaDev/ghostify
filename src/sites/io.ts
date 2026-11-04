@@ -34,9 +34,12 @@ export function parseSite(raw: unknown): Site {
     enabled: s.enabled !== false,
     builtin: false,
     loginIndicator: ind,
-    profiles: (s.profiles as { view: View; profile: unknown }[]).map((e) => {
+    profiles: (s.profiles as { view: View; profile: unknown; builtinKey?: unknown }[]).map((e) => {
       if (!VIEWS.includes(e?.view)) fail('profile.view must be any, loggedIn or loggedOut');
-      return { view: e.view, profile: parseProfile(JSON.stringify(e.profile)) };
+      const profile = parseProfile(JSON.stringify(e.profile));
+      return typeof e.builtinKey === 'string'
+        ? { view: e.view, profile, builtinKey: e.builtinKey }
+        : { view: e.view, profile };
     }),
     rules: parseRules(s.rules),
   };

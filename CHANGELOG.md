@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- Edit a site's pages by hand in **Settings → Sites**: path pattern, view, and each feed's container and item selectors (CSS or XPath), checked before saving.
+- **Restore built-in settings** for built-in sites (pages, selectors and login indicator; you choose whether to keep pages you added), and a restore button on each edited built-in page. Built-in pages are marked **built-in**.
 
 ## [1.4.4] - 2026-11-04
 ### Changed

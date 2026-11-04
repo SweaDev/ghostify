@@ -36,7 +36,8 @@ See [CHANGELOG.md](CHANGELOG.md) for every release.
   **Edit selectors** in the popup reopens the overlay on a site you already added.
 - **Settings → Sites** lists your sites with a search box, and each site opens on its own page (with a breadcrumb back to the list). It lets you:
   - turn sites on or off and delete the ones you added;
-  - see each page pattern, its view and its selectors;
+  - see and edit each page's path pattern, view and selectors (edited built-in selectors are kept over Ghostify's updates);
+  - restore a built-in site, or one edited built-in page, to how Ghostify ships it;
   - edit the login indicator;
   - export and import your sites as JSON.
 

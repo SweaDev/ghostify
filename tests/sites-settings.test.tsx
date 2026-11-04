@@ -1,5 +1,6 @@
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { DEVTO_SITE } from '@/src/sites/defaults';
+import { applyPageEdit, pageDraft } from '@/src/sites/edit';
 import { mergeSites, parseSitesJson, serializeSites } from '@/src/sites/io';
 import { getSites, saveSite } from '@/src/sites/registry';
 import { SitesSettings } from '@/src/ui/SitesSettings';
@@ -88,6 +89,68 @@ describe('SitesSettings', () => {
     await click(screen.getByText('Delete site'));
     await vi.waitFor(async () => expect((await getSites()).map((s) => s.id)).toEqual(['devto']));
     expect(location.hash).toBe('#sites');
+  });
+
+  it('edits a page path and selectors by hand', async () => {
+    await saveSite(custom);
+    render(<SitesSettings sub="ex" />);
+    const edit = await screen.findByLabelText('Edit /top/*');
+    const remove = screen.getByLabelText('Remove /top/*');
+    expect(edit.compareDocumentPosition(remove) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    await click(edit);
+    const form = screen.getByRole('form', { name: 'Edit /top/*' });
+    const item = within(form).getAllByLabelText(/item selector$/i)[0] as HTMLElement;
+    fireEvent.change(item, { target: { value: 'div[' } });
+    await act(async () => void fireEvent.submit(form));
+    expect(within(form).getByRole('alert').textContent).toMatch(/not a valid CSS/);
+
+    fireEvent.change(item, { target: { value: ':scope article' } });
+    fireEvent.change(within(form).getByLabelText('Path pattern'), {
+      target: { value: '/top/week' },
+    });
+    await act(async () => void fireEvent.submit(form));
+    await vi.waitFor(async () => {
+      const page = (await getSites())[1]?.profiles[2]?.profile;
+      expect(page?.pathPattern).toBe('/top/week');
+      expect(page?.feeds[0]?.item.value).toBe(':scope article');
+    });
+    await screen.findByText('/top/week');
+    expect(screen.queryByRole('form')).toBeNull();
+  });
+
+  it('marks built-in pages and restores a page or the whole site', async () => {
+    const [site] = await getSites();
+    if (!site) throw new Error('no built-in site');
+    const top = site.profiles.findIndex((e) => e.profile.pathPattern === '/top/*');
+    const topEntry = site.profiles[top];
+    if (!topEntry) throw new Error('no /top/*');
+    render(<SitesSettings sub="devto" />);
+    expect(await screen.findAllByText('built-in')).toHaveLength(site.profiles.length + 1);
+    const restoreAll = screen.getByRole('button', { name: /Restore built-in settings/ });
+    expect((restoreAll as HTMLButtonElement).disabled).toBe(true);
+
+    const d = pageDraft(topEntry);
+    d.pathPattern = '/top/week';
+    const own = { ...topEntry, profile: { ...topEntry.profile, pathPattern: '/mine' } };
+    const changed = applyPageEdit(site, top, d);
+    await act(() => saveSite({ ...changed, profiles: [...changed.profiles, own] }));
+    expect(await screen.findByText('edited')).toBeTruthy();
+    const restore = screen.getByLabelText('Restore built-in /top/week');
+    expect(
+      restore.compareDocumentPosition(screen.getByLabelText('Edit /top/week')) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    window.confirm = () => true;
+    await click(restore);
+    await vi.waitFor(() => expect(screen.queryByText('edited')).toBeNull());
+    expect((await getSites())[0]?.profiles[top]).toEqual(topEntry);
+
+    await click(restoreAll);
+    const dialog = screen.getByRole('dialog', { name: 'Restore built-in settings?' });
+    expect(within(dialog).getByText('/mine')).toBeTruthy();
+    await click(within(dialog).getByText('Restore, remove my pages'));
+    await vi.waitFor(async () => expect((await getSites())[0]?.profiles).toEqual(site.profiles));
+    expect(screen.queryByRole('dialog')).toBeNull();
   });
 
   it('shows a way back for an unknown site', async () => {
