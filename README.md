@@ -2,10 +2,10 @@
 
 Ghostify is a browser extension (Chrome and Firefox) for feeds that keep showing you the same posts. Hover a post, click the ghost, and it disappears from the site's feed for good. Ghostify keeps a copy so you can find it again later.
 
-> **v1.3.2.** Ghostify works on the dev.to home feeds out of the box, and you can add any site. It has a full Ghostify page with snooze and search, and optional AI. By default the AI runs right in your browser with small downloadable models (no GPU, Ollama or API key needed). It can also use Ollama, or your own OpenRouter, Gemini or OpenAI key.
+> **v1.3.3.** Ghostify works on the dev.to home feeds out of the box, and you can add any site. It has a full Ghostify page with snooze and search, and optional AI. By default the AI runs right in your browser with small downloadable models (no GPU, Ollama or API key needed). It can also use Ollama, or your own OpenRouter, Gemini or OpenAI key.
 
 ## Features
-- **The dev.to logged-out home feeds** (Relevant `/`, Latest `/latest`, Top `/top/*`) are recognized automatically, through [feedgrab](https://github.com/SweaDev/feedgrab).
+- **The dev.to home feeds, logged in or out** (Relevant `/`, Latest `/latest`, Top `/top/*`) are recognized automatically, through [feedgrab](https://github.com/SweaDev/feedgrab).
 - **The ghost button** shows on the post under your pointer. Clicking it hides the post and saves it, and an **Undo** toast lets you take it back.
 - **Ghosted posts stay hidden** when you reload, and also when they come back later through infinite scroll.
 - **The popup** lists your recent ghosts. From there you can open one, **unghost** it so it shows on the site again, or open the full Ghostify page.
@@ -33,7 +33,7 @@ Ghostify is a browser extension (Chrome and Firefox) for feeds that keep showing
   - edit the login indicator;
   - export and import your sites as JSON.
 
-  dev.to is built in. Its login indicator is `body[data-user-status="logged-in"]`, and only its logged-out home feeds are set up. Add the logged-in view yourself with **Edit selectors** if you want it.
+  dev.to is built in. Its login indicator is `#nav-profile-image`, and its home feeds are set up for both the logged-in and logged-out views.
 - **The view switches** as soon as you log in or out, without a reload.
 - **The new-tab flavor** (`ghostify-newtab-*` zips) puts the Ghostify page on every new tab. Install either the regular flavor or the new-tab flavor, not both.
 - **AI is optional and off by default.** Turn it on in **Settings → AI** and download the in-browser models (or pick another provider) to get:
@@ -152,7 +152,7 @@ Load the build unpacked:
 For the new-tab flavor, load `.output/chrome-mv3-newtab` or `.output/firefox-mv3-newtab/manifest.json` the same way.
 
 Then:
-1. Open <https://dev.to/> while logged out, hover a post, and click the ghost.
+1. Open <https://dev.to/>, hover a post, and click the ghost.
 2. Click the Ghostify toolbar icon, then **Open Ghostify**. If you use the new-tab flavor, open a new tab instead.
 3. To try another site, open it, click the toolbar icon and choose **Add this site**.
 4. Optional: set up AI (see [AI setup](#ai-setup)).
@@ -179,7 +179,7 @@ git push origin v1.0.0
 - The spec is `specs/SPEC-v1.md`, the plan is `specs/PLAN-v1.md`, and the tasks are `specs/TASKS-v1.md`.
 - This version covers every task, **T01–T31** (Phases 1–5), and all of the spec:
   - feedgrab feed reading;
-  - the dev.to logged-out home feeds, plus adding more sites;
+  - the dev.to home feeds (logged in and out), plus adding more sites;
   - custom feed selectors through feedgrab;
   - separate logged-in and logged-out views with their own selectors;
   - the ghost icon on recognized items;
@@ -197,7 +197,6 @@ git push origin v1.0.0
 
 ## Known limits
 - Ghostify isn't published to the Chrome Web Store or Firefox Add-ons. Install it from a release zip or a local build.
-- dev.to has only its logged-out home feeds built in.
 - Decision models get one yes/no (`noul`) System One question per rule. Ghostify reads the documented `{ "noul": <probability> }` answer and a few lenient variants (see `src/ai/decision.ts`). It treats anything else as "no match" and logs it.
 - **Load full content** shows what the page sends to Ghostify, using your cookies for that site. Pages built entirely in the browser by scripts may have little readable text. In that case, open the original.
 - Pausing a job that is already running stops its request, and **Resume** starts it again from the beginning. Rule checks and searches can't be paused, because a page is waiting for them, so pausing them stops them.
