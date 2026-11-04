@@ -12,6 +12,8 @@ export interface LoginIndicator {
 export interface SiteProfileEntry {
   view: View;
   profile: SiteProfile;
+  /** Built-in sites: `pageKey` of the shipped page this one was edited from. */
+  builtinKey?: string;
 }
 
 /** Plain-language auto-ghostify rule (used when AI is on). */
