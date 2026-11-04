@@ -47,15 +47,31 @@ describe('sites io', () => {
 });
 
 describe('SitesSettings', () => {
-  it('toggles, edits the login indicator, lists profiles and deletes custom sites', async () => {
+  it('lists sites with links to their pages and filters by search', async () => {
     await saveSite(custom);
     render(<SitesSettings />);
-    await screen.findByText('Example');
+    const link = (await screen.findByText('Example')).closest('a');
+    expect(link?.getAttribute('href')).toBe('#sites/ex');
     await click(screen.getByRole('switch', { name: 'Enable DEV Community' }));
     await vi.waitFor(async () => expect((await getSites())[0]?.enabled).toBe(false));
 
-    await click(screen.getByText('Example'));
-    const sel = screen.getByLabelText('Login indicator selector');
+    const search = screen.getByLabelText('Search sites');
+    fireEvent.change(search, { target: { value: 'EXAMPLE.com' } });
+    expect(screen.queryByText('DEV Community')).toBeNull();
+    expect(screen.getByText('Example')).toBeTruthy();
+    fireEvent.change(search, { target: { value: 'nothing' } });
+    expect(screen.getByText(/No sites match/)).toBeTruthy();
+  });
+
+  it('edits a site on its own page and deletes custom sites', async () => {
+    await saveSite(custom);
+    const { rerender } = render(<SitesSettings sub="devto" />);
+    const crumbs = await screen.findByRole('navigation', { name: 'Breadcrumb' });
+    expect(crumbs.querySelector('a')?.getAttribute('href')).toBe('#sites');
+    expect(screen.queryByText('Delete site')).toBeNull();
+
+    rerender(<SitesSettings sub="ex" />);
+    const sel = await screen.findByLabelText('Login indicator selector');
     fireEvent.change(sel, { target: { value: '#me' } });
     fireEvent.blur(sel);
     await vi.waitFor(async () =>
@@ -68,10 +84,15 @@ describe('SitesSettings', () => {
     await click(screen.getByLabelText('Remove /top/*'));
     await vi.waitFor(async () => expect((await getSites())[1]?.profiles).toHaveLength(2));
 
-    expect(screen.queryByLabelText('Delete DEV Community')).toBeNull();
     window.confirm = () => true;
-    await click(screen.getByLabelText('Delete Example'));
+    await click(screen.getByText('Delete site'));
     await vi.waitFor(async () => expect((await getSites()).map((s) => s.id)).toEqual(['devto']));
+    expect(location.hash).toBe('#sites');
+  });
+
+  it('shows a way back for an unknown site', async () => {
+    render(<SitesSettings sub="gone" />);
+    expect((await screen.findByText('Back to all sites')).getAttribute('href')).toBe('#sites');
   });
 
   it('imports a sites file and reports errors', async () => {
@@ -89,9 +110,10 @@ describe('SitesSettings', () => {
 
 describe('rules editor', () => {
   it('adds, toggles and deletes auto-ghostify rules', async () => {
-    render(<SitesSettings />);
-    await click(await screen.findByText('DEV Community'));
-    fireEvent.change(screen.getByLabelText('New rule'), { target: { value: 'crypto hype' } });
+    render(<SitesSettings sub="devto" />);
+    fireEvent.change(await screen.findByLabelText('New rule'), {
+      target: { value: 'crypto hype' },
+    });
     await click(screen.getByText('Add rule'));
     await vi.waitFor(async () =>
       expect((await getSites())[0]?.rules[0]).toMatchObject({

@@ -24,7 +24,8 @@ const SECTIONS: {
   label: string;
   hint: string;
   icon: LucideIcon;
-  Body(): React.ReactNode;
+  /** `sub` is the hash path after the section, e.g. a site id in `#sites/<id>`. */
+  Body(props: { sub?: string }): React.ReactNode;
 }[] = [
   {
     key: 'sites',
@@ -70,22 +71,35 @@ const SECTIONS: {
   },
 ];
 
-const fromHash = (): Section => {
-  const h = location.hash.slice(1);
-  return SECTIONS.some((s) => s.key === h) ? (h as Section) : 'sites';
+interface Route {
+  section: Section;
+  sub?: string;
+}
+
+const fromHash = (): Route => {
+  const [head = '', ...rest] = location.hash.slice(1).split('/');
+  if (!SECTIONS.some((s) => s.key === head)) return { section: 'sites' };
+  let sub: string | undefined;
+  try {
+    sub = rest.length ? decodeURIComponent(rest.join('/')) || undefined : undefined;
+  } catch {}
+  return { section: head as Section, sub };
 };
 
 export function App() {
-  const [section, setSection] = useState<Section>(fromHash);
+  const [{ section, sub }, setRoute] = useState<Route>(fromHash);
   const active = useActiveCount() ?? 0;
   useEffect(() => {
-    const on = () => setSection(fromHash());
+    const on = () => setRoute(fromHash());
     window.addEventListener('hashchange', on);
     return () => window.removeEventListener('hashchange', on);
   }, []);
+  useEffect(() => {
+    if (sub) window.scrollTo(0, 0);
+  }, [sub]);
   const go = (s: Section) => {
     history.replaceState(null, '', `#${s}`);
-    setSection(s);
+    setRoute({ section: s });
   };
   const current = SECTIONS.find((s) => s.key === section) ?? SECTIONS[0];
   if (!current) return null;
@@ -131,11 +145,13 @@ export function App() {
           </nav>
         </aside>
         <main className="min-w-0 flex-1">
-          <header className="mb-4">
-            <h2 className="font-semibold text-lg">{current.label}</h2>
-            <p className="text-sm text-zinc-500">{current.hint}</p>
-          </header>
-          <Body />
+          {!sub && (
+            <header className="mb-4">
+              <h2 className="font-semibold text-lg">{current.label}</h2>
+              <p className="text-sm text-zinc-500">{current.hint}</p>
+            </header>
+          )}
+          <Body sub={sub} />
         </main>
       </div>
     </div>
