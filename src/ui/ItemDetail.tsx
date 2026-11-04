@@ -91,13 +91,9 @@ function Overview(props: {
         )}
         <div className="flex flex-wrap items-center gap-2 pt-2">
           {item.url && (
-            <button
-              type="button"
-              className={btnPrimary}
-              onClick={() => openUrl(item.url as string, 'tab')}
-            >
+            <a href={item.url} target="_blank" rel="noopener noreferrer" className={btnPrimary}>
               <ExternalLink className="size-4" /> Open original
-            </button>
+            </a>
           )}
           <div className="ml-auto flex">{props.actions}</div>
         </div>

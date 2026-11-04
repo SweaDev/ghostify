@@ -2,7 +2,6 @@ import { BookOpen, ExternalLink, Loader2, RefreshCw } from 'lucide-react';
 import type { GhostItem } from '../store/db';
 import { timeAgo } from './format';
 import { btn, btnPrimary, btnQuiet } from './kit';
-import { openUrl } from './open';
 import type { Grab } from './useContent';
 
 /** The item's full content, loaded into the viewer (reader view). */
@@ -35,13 +34,9 @@ export function ReaderView(props: { item: GhostItem; grab: Grab }) {
             Load full content
           </button>
           {item.url && (
-            <button
-              type="button"
-              className={btn}
-              onClick={() => openUrl(item.url as string, 'tab')}
-            >
+            <a href={item.url} target="_blank" rel="noopener noreferrer" className={btn}>
               Open original <ExternalLink className="size-4" />
-            </button>
+            </a>
           )}
         </div>
         {grab.error && <p className="text-amber-600 text-sm">{grab.error}</p>}
