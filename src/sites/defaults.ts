@@ -26,25 +26,53 @@ const DEVTO_FEEDS: FeedDescriptor[] = [
   },
 ];
 
-const devtoProfile = (pathPattern: string): SiteProfile => ({
+const DEVTO_LOGGED_IN_FEEDS: FeedDescriptor[] = [
+  {
+    id: 'devto-stories-logged-in',
+    // Same nested `div.paged-stories` infinite scroll as the logged-out feed.
+    container: {
+      type: 'css',
+      value: '#rendered-article-feed, #rendered-article-feed .paged-stories',
+    },
+    item: { type: 'css', value: ':scope > article' },
+    exclude: [],
+    include: [],
+    source: 'manual',
+    confidence: 1,
+    confirmed: true,
+  },
+];
+
+const devtoProfile = (pathPattern: string, feeds: FeedDescriptor[]): SiteProfile => ({
   version: CURRENT_PROFILE_VERSION,
   hostname: 'dev.to',
   pathPattern,
-  feeds: DEVTO_FEEDS,
+  feeds,
 });
 
-/** dev.to home feeds (Relevant, Latest, Top) for logged-out visitors. */
+const DEVTO_PATHS = ['/', '/latest', '/top/*'];
+
+/** Login indicator shipped before the logged-in feed; stored copies are migrated. */
+export const LEGACY_DEVTO_INDICATOR = 'body[data-user-status="logged-in"]';
+
+/** dev.to home feeds (Relevant, Latest, Top) for logged-out and logged-in visitors. */
 export const DEVTO_SITE: Site = {
   id: 'devto',
   hostname: 'dev.to',
   label: 'DEV Community',
   enabled: true,
   builtin: true,
-  loginIndicator: { selector: 'body[data-user-status="logged-in"]', whenPresent: 'loggedIn' },
-  profiles: ['/', '/latest', '/top/*'].map((p) => ({
-    view: 'loggedOut',
-    profile: devtoProfile(p),
-  })),
+  loginIndicator: { selector: '#nav-profile-image', whenPresent: 'loggedIn' },
+  profiles: [
+    ...DEVTO_PATHS.map((p) => ({
+      view: 'loggedOut' as const,
+      profile: devtoProfile(p, DEVTO_FEEDS),
+    })),
+    ...DEVTO_PATHS.map((p) => ({
+      view: 'loggedIn' as const,
+      profile: devtoProfile(p, DEVTO_LOGGED_IN_FEEDS),
+    })),
+  ],
   rules: [],
 };
 

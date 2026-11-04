@@ -1,11 +1,11 @@
-import { DEVTO_SITE } from '@/src/sites/defaults';
+import { DEVTO_SITE, LEGACY_DEVTO_INDICATOR } from '@/src/sites/defaults';
 import { detectView, resolveProfile } from '@/src/sites/model';
 import { ensureDefaultSites, getSites, saveSite } from '@/src/sites/registry';
 import { DEFAULT_SETTINGS, getSettings } from '@/src/store/settings';
 
 function doc(status: 'logged-in' | 'logged-out'): Document {
   const d = document.implementation.createHTMLDocument('t');
-  d.body.dataset.userStatus = status;
+  if (status === 'logged-in') d.body.innerHTML = '<img id="nav-profile-image">';
   return d;
 }
 
@@ -34,11 +34,16 @@ describe('resolveProfile', () => {
     },
   );
 
-  it('ignores article pages and the logged-in view', () => {
+  it('matches the logged-in home feed', () => {
+    const r = resolveProfile(sites, 'https://dev.to/latest', doc('logged-in'));
+    expect(r?.view).toBe('loggedIn');
+    expect(r?.profile.feeds[0]?.id).toBe('devto-stories-logged-in');
+  });
+
+  it('ignores article pages', () => {
     expect(resolveProfile(sites, 'https://dev.to/someone/a-post-1abc', doc('logged-out'))).toBe(
       undefined,
     );
-    expect(resolveProfile(sites, 'https://dev.to/', doc('logged-in'))).toBe(undefined);
   });
 
   it('skips disabled sites', () => {
@@ -68,6 +73,20 @@ describe('built-in selector refresh', () => {
     const [site] = await getSites();
     expect(site?.enabled).toBe(false);
     expect(site?.profiles).toEqual(DEVTO_SITE.profiles.slice(1));
+  });
+
+  it('adds the logged-in view once to installs with the legacy indicator', async () => {
+    const legacy = structuredClone(DEVTO_SITE);
+    legacy.loginIndicator = { selector: LEGACY_DEVTO_INDICATOR, whenPresent: 'loggedIn' };
+    legacy.profiles = legacy.profiles.filter((e) => e.view === 'loggedOut');
+    await saveSite(legacy);
+    await ensureDefaultSites();
+    expect((await getSites())[0]).toEqual(DEVTO_SITE);
+
+    // Removed logged-in pages stay removed after the migration.
+    await saveSite({ ...DEVTO_SITE, profiles: DEVTO_SITE.profiles.slice(0, -1) });
+    await ensureDefaultSites();
+    expect((await getSites())[0]?.profiles).toHaveLength(DEVTO_SITE.profiles.length - 1);
   });
 });
 

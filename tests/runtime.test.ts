@@ -1,4 +1,3 @@
-import type { SiteProfile } from 'feedgrab';
 import type { RuntimeApi } from '@/src/feed/api';
 import { startFeedRuntime } from '@/src/feed/runtime';
 import { DEVTO_SITE } from '@/src/sites/defaults';
@@ -200,10 +199,15 @@ describe('feed runtime', () => {
 });
 
 describe('login views', () => {
-  const loggedOutHome = DEVTO_SITE.profiles[0]?.profile as SiteProfile;
-  const both = {
+  const loggedOutOnly = {
     ...DEVTO_SITE,
-    profiles: [...DEVTO_SITE.profiles, { view: 'loggedIn' as const, profile: loggedOutHome }],
+    profiles: DEVTO_SITE.profiles.filter((e) => e.view === 'loggedOut'),
+  };
+  const setLoggedIn = (on: boolean) => {
+    if (!on) return document.querySelector('#nav-profile-image')?.remove();
+    const img = document.createElement('img');
+    img.id = 'nav-profile-image';
+    document.body.prepend(img);
   };
 
   it('picks the profile for the current view and reports view changes', async () => {
@@ -212,39 +216,58 @@ describe('login views', () => {
     const rt = startFeedRuntime({
       doc: document,
       url: 'https://dev.to/',
-      sites: [DEVTO_SITE],
+      sites: [loggedOutOnly],
       api: fakeApi().api,
       onViewChange,
     });
     expect(rt.active).toBe(true);
-    document.body.dataset.userStatus = 'logged-in';
+    setLoggedIn(true);
     await vi.waitFor(() => expect(onViewChange).toHaveBeenCalledTimes(1));
     rt.dispose();
 
-    // Logged in: the built-in site has no logged-in profile, but still watches for a change back.
+    // Logged in without a logged-in profile: inactive, but still watches for a change back.
     const onBack = vi.fn();
     const rt2 = startFeedRuntime({
       doc: document,
       url: 'https://dev.to/',
-      sites: [DEVTO_SITE],
+      sites: [loggedOutOnly],
       api: fakeApi().api,
       onViewChange: onBack,
     });
     expect(rt2.active).toBe(false);
-    document.body.dataset.userStatus = 'logged-out';
+    setLoggedIn(false);
     await vi.waitFor(() => expect(onBack).toHaveBeenCalled());
     rt2.dispose();
+  });
 
-    // With a logged-in profile the runtime is active in that view too.
-    document.body.dataset.userStatus = 'logged-in';
-    const rt3 = startFeedRuntime({
-      doc: document,
-      url: 'https://dev.to/',
-      sites: [both],
-      api: fakeApi().api,
+  it('tracks logged-in dev.to articles, including nested paged-stories', async () => {
+    const template = (devtoDoc().querySelector('#substories > .crayons-story') as HTMLElement)
+      .innerHTML;
+    document.body.innerHTML = '<div id="rendered-article-feed"></div>';
+    setLoggedIn(true);
+    let parent = document.querySelector('#rendered-article-feed') as Element;
+    let story: HTMLElement | undefined;
+    for (let depth = 0; depth <= 2; depth++) {
+      story = document.createElement('article');
+      story.className = 'crayons-story';
+      story.innerHTML = template;
+      for (const a of story.querySelectorAll('a')) a.href = `https://dev.to/me/in-post-${depth}`;
+      parent.append(story);
+      const page = document.createElement('div');
+      page.className = 'paged-stories';
+      parent.append(page);
+      parent = page;
+    }
+    if (!story) throw new Error('no story');
+    const { api, drafts } = fakeApi();
+    const rt = start(api);
+    expect(rt.active).toBe(true);
+    await vi.waitFor(async () => {
+      await ghostViaButton(story);
+      expect(drafts).toHaveLength(1);
     });
-    expect(rt3.active).toBe(true);
-    rt3.dispose();
+    expect(drafts[0]).toMatchObject({ url: 'https://dev.to/me/in-post-2', view: 'loggedIn' });
+    rt.dispose();
   });
 });
 
