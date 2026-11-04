@@ -76,11 +76,11 @@ export function serializeSites(sites: Site[]): string {
   );
 }
 
-/** Imported sites replace same-id sites (keeping built-in flags); new ones are appended. */
+/** Imported sites replace same-id sites (keeping built-in state); new ones are appended. */
 export function mergeSites(existing: Site[], incoming: Site[]): Site[] {
   const out = existing.map((s) => {
     const inc = incoming.find((i) => i.id === s.id);
-    return inc ? { ...inc, builtin: s.builtin } : s;
+    return inc ? { ...inc, builtin: s.builtin, shippedPages: s.shippedPages } : s;
   });
   return [...out, ...incoming.filter((i) => !existing.some((s) => s.id === i.id))];
 }

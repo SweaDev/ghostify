@@ -11,7 +11,7 @@ Ghostify is a browser extension (Chrome and Firefox) for feeds that keep showing
 > - It can also use Ollama, or your own OpenRouter, Gemini or OpenAI key.
 
 ## Features
-- **The dev.to home feeds, logged in or out** (Relevant `/`, Latest `/latest`, Top `/top/*`) are recognized automatically, through [feedgrab](https://github.com/SweaDev/feedgrab).
+- **The dev.to home feeds, logged in or out** (Relevant `/`, Latest `/latest`, Top `/top/*`, and when logged in also `/discover`, `/following`, `/following/latest`, `/curated` and `/latest_less_filtered`) are recognized automatically, through [feedgrab](https://github.com/SweaDev/feedgrab).
 - **The ghost button** shows on the post under your pointer. Clicking it hides the post and saves it, and an **Undo** toast lets you take it back.
 - **Ghosted posts stay hidden** when you reload, and also when they come back later through infinite scroll.
 - **The popup** lists your recent ghosts. From there you can open one, **unghost** it so it shows on the site again, or open the full Ghostify page.

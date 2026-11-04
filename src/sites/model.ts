@@ -30,7 +30,15 @@ export interface Site {
   loginIndicator?: LoginIndicator;
   profiles: SiteProfileEntry[];
   rules: SiteRule[];
+  /**
+   * Built-in sites only: `pageKey`s of the shipped pages this install has already been given,
+   * so pages added in an update are added once and pages the user removed stay removed.
+   */
+  shippedPages?: string[];
 }
+
+/** Identifies a site page by view and path. */
+export const pageKey = (e: SiteProfileEntry) => `${e.view}:${e.profile.pathPattern}`;
 
 export interface ResolvedProfile {
   site: Site;

@@ -1,5 +1,5 @@
 import { CURRENT_PROFILE_VERSION, type FeedDescriptor, type SiteProfile } from 'feedgrab';
-import type { Site } from './model';
+import { pageKey, type Site } from './model';
 
 const DEVTO_FEEDS: FeedDescriptor[] = [
   {
@@ -52,10 +52,33 @@ const devtoProfile = (pathPattern: string, feeds: FeedDescriptor[]): SiteProfile
 
 const DEVTO_PATHS = ['/', '/latest', '/top/*'];
 
+/** The logged-in home has more tabs; all render the same `#rendered-article-feed`. */
+const DEVTO_LOGGED_IN_PATHS = [
+  '/',
+  '/discover',
+  '/following',
+  '/following/latest',
+  '/curated',
+  '/latest',
+  '/latest_less_filtered',
+  '/top/*',
+];
+
+const DEVTO_PROFILES: Site['profiles'] = [
+  ...DEVTO_PATHS.map((p) => ({
+    view: 'loggedOut' as const,
+    profile: devtoProfile(p, DEVTO_FEEDS),
+  })),
+  ...DEVTO_LOGGED_IN_PATHS.map((p) => ({
+    view: 'loggedIn' as const,
+    profile: devtoProfile(p, DEVTO_LOGGED_IN_FEEDS),
+  })),
+];
+
 /** Login indicator shipped before the logged-in feed; stored copies are migrated. */
 export const LEGACY_DEVTO_INDICATOR = 'body[data-user-status="logged-in"]';
 
-/** dev.to home feeds (Relevant, Latest, Top) for logged-out and logged-in visitors. */
+/** dev.to home feeds (Relevant, Latest, Top, and the logged-in tabs) for both views. */
 export const DEVTO_SITE: Site = {
   id: 'devto',
   hostname: 'dev.to',
@@ -63,17 +86,9 @@ export const DEVTO_SITE: Site = {
   enabled: true,
   builtin: true,
   loginIndicator: { selector: '#nav-profile-image', whenPresent: 'loggedIn' },
-  profiles: [
-    ...DEVTO_PATHS.map((p) => ({
-      view: 'loggedOut' as const,
-      profile: devtoProfile(p, DEVTO_FEEDS),
-    })),
-    ...DEVTO_PATHS.map((p) => ({
-      view: 'loggedIn' as const,
-      profile: devtoProfile(p, DEVTO_LOGGED_IN_FEEDS),
-    })),
-  ],
+  profiles: DEVTO_PROFILES,
   rules: [],
+  shippedPages: DEVTO_PROFILES.map(pageKey),
 };
 
 export const DEFAULT_SITES: Site[] = [DEVTO_SITE];
