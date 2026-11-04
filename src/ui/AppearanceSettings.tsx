@@ -1,5 +1,5 @@
 import { RotateCcw } from 'lucide-react';
-import { useId } from 'react';
+import { useId, useState } from 'react';
 import {
   type ButtonPlacement,
   type Corner,
@@ -9,6 +9,8 @@ import {
 } from '../store/settings';
 import { GhostIcon } from './GhostIcon';
 import { btnQuiet, card, field } from './kit';
+import { useSites } from './SitesSettings';
+import { Switch } from './Switch';
 import { useSettings } from './useSettings';
 
 const CORNERS: { key: Corner; label: string }[] = [
@@ -46,19 +48,28 @@ export function AppearanceSettings() {
           <option value="dark">Dark</option>
         </select>
       </label>
-      <ButtonPlacementCard
-        value={settings.ui.ghostButton}
-        onChange={(ghostButton) => setUi({ ghostButton })}
-      />
+      <ButtonPlacementCard ui={settings.ui} setUi={setUi} />
     </section>
   );
 }
 
 function ButtonPlacementCard(props: {
-  value: ButtonPlacement;
-  onChange(p: ButtonPlacement): void;
+  ui: Settings['ui'];
+  setUi(ui: Partial<Settings['ui']>): void;
 }) {
-  const { value, onChange } = props;
+  const { ui, setUi } = props;
+  const sites = useSites();
+  const scopeId = useId();
+  const [scope, setScope] = useState('');
+  const site = sites?.find((s) => s.id === scope);
+  const override = site && ui.siteGhostButtons[site.id];
+  const value = override || ui.ghostButton;
+  const setOverride = (p?: ButtonPlacement) => {
+    if (!site) return;
+    const { [site.id]: _, ...rest } = ui.siteGhostButtons;
+    setUi({ siteGhostButtons: p ? { ...rest, [site.id]: p } : rest });
+  };
+  const onChange = (p: ButtonPlacement) => (site ? setOverride(p) : setUi({ ghostButton: p }));
   const set = (p: Partial<ButtonPlacement>) => onChange({ ...value, ...p });
   const fallback = DEFAULT_SETTINGS.ui.ghostButton;
   const isDefault = (Object.keys(fallback) as (keyof ButtonPlacement)[]).every(
@@ -73,16 +84,51 @@ function ButtonPlacementCard(props: {
           <h3 className="font-medium">Ghost button</h3>
           <p className="text-sm text-zinc-500">
             Where the 👻 button sits on a feed item you hover. If it covers something you need, pick
-            another corner, then fine-tune its distance from the edges.
+            another corner, then fine-tune its distance from the edges. Pick a site to give it its
+            own position.
           </p>
         </div>
-        {!isDefault && (
+        {!site && !isDefault && (
           <button type="button" className={btnQuiet} onClick={() => onChange(fallback)}>
             <RotateCcw className="size-4" /> Reset
           </button>
         )}
       </div>
-      <div className="mt-4 flex flex-col gap-5 sm:flex-row sm:items-center">
+      <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+        <label htmlFor={scopeId} className="text-zinc-600 dark:text-zinc-300">
+          Applies to
+        </label>
+        <select
+          id={scopeId}
+          value={site ? scope : ''}
+          onChange={(e) => setScope(e.target.value)}
+          className={field}
+        >
+          <option value="">All sites</option>
+          {sites?.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.label}
+              {ui.siteGhostButtons[s.id] ? ' (own position)' : ''}
+            </option>
+          ))}
+        </select>
+        {site && (
+          <span className="flex items-center gap-2">
+            <Switch
+              checked={!!override}
+              label={`Own position on ${site.label}`}
+              onChange={(on) => setOverride(on ? ui.ghostButton : undefined)}
+            />
+            <span className="text-zinc-500">
+              {override ? `Own position on ${site.label}` : 'Uses the all-sites position'}
+            </span>
+          </span>
+        )}
+      </div>
+      <fieldset
+        disabled={!!site && !override}
+        className="mt-4 flex min-w-0 flex-col gap-5 transition disabled:opacity-50 sm:flex-row sm:items-center"
+      >
         <fieldset className="relative h-36 w-full shrink-0 overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50 sm:w-72 dark:border-zinc-800 dark:bg-zinc-950/60">
           <legend className="sr-only">Button corner</legend>
           <MockItem />
@@ -108,7 +154,7 @@ function ButtonPlacementCard(props: {
             onChange={(horizontal) => set({ horizontal })}
           />
         </div>
-      </div>
+      </fieldset>
     </div>
   );
 }

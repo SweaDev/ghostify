@@ -1,6 +1,7 @@
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
-import { DEFAULT_SETTINGS, getSettings, withDefaults } from '@/src/store/settings';
+import { sitesItem } from '@/src/sites/registry';
+import { DEFAULT_SETTINGS, getSettings, placementFor, withDefaults } from '@/src/store/settings';
 import { AppearanceSettings } from '@/src/ui/AppearanceSettings';
 import { GeneralSettings } from '@/src/ui/GeneralSettings';
 
@@ -14,7 +15,54 @@ describe('appearance settings', () => {
     expect(s.ui).toEqual({
       theme: 'dark',
       ghostButton: { ...DEFAULT_SETTINGS.ui.ghostButton, corner: 'bottom-left' },
+      siteGhostButtons: {},
     });
+  });
+
+  it('uses a site override over the global placement', () => {
+    const own = { corner: 'bottom-left', vertical: 4, horizontal: 12 } as const;
+    const s = withDefaults({ ui: { siteGhostButtons: { devto: own } } as never });
+    expect(placementFor(s, 'devto')).toEqual(own);
+    expect(placementFor(s, 'other')).toEqual(DEFAULT_SETTINGS.ui.ghostButton);
+    expect(placementFor(s)).toEqual(DEFAULT_SETTINGS.ui.ghostButton);
+  });
+
+  it('gives a site its own placement and removes it again', async () => {
+    await sitesItem.setValue([
+      {
+        id: 'devto',
+        hostname: 'dev.to',
+        label: 'DEV',
+        enabled: true,
+        builtin: false,
+        profiles: [],
+        rules: [],
+      },
+    ]);
+    render(<AppearanceSettings />);
+    const scope = await screen.findByLabelText('Applies to');
+    await vi.waitFor(() => expect(screen.getByRole('option', { name: 'DEV' })).toBeTruthy());
+    fireEvent.change(scope, { target: { value: 'devto' } });
+    const own = screen.getByRole('switch', { name: 'Own position on DEV' });
+    // The editor is locked while the site follows the global placement.
+    const editor = () => screen.getByLabelText('From top').closest('fieldset');
+    expect(editor()?.disabled).toBe(true);
+    await act(async () => void fireEvent.click(own));
+    await vi.waitFor(async () =>
+      expect((await getSettings()).ui.siteGhostButtons.devto).toEqual(
+        DEFAULT_SETTINGS.ui.ghostButton,
+      ),
+    );
+    expect(editor()?.disabled).toBe(false);
+    await act(async () => void fireEvent.click(screen.getByLabelText('Bottom left')));
+    await vi.waitFor(async () => {
+      const { ui } = await getSettings();
+      expect(ui.siteGhostButtons.devto?.corner).toBe('bottom-left');
+      expect(ui.ghostButton).toEqual(DEFAULT_SETTINGS.ui.ghostButton);
+    });
+    expect(screen.getByRole('option', { name: 'DEV (own position)' })).toBeTruthy();
+    await act(async () => void fireEvent.click(own));
+    await vi.waitFor(async () => expect((await getSettings()).ui.siteGhostButtons).toEqual({}));
   });
 
   it('saves the corner and margins, clamped, and resets them', async () => {
@@ -45,7 +93,9 @@ describe('appearance settings', () => {
     render(<AppearanceSettings />);
     const corner = await screen.findByLabelText('Top left');
     await act(async () => void fireEvent.click(corner));
-    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'dark' } });
+    fireEvent.change(screen.getByRole('combobox', { name: /theme/i }), {
+      target: { value: 'dark' },
+    });
     await vi.waitFor(async () =>
       expect((await getSettings()).ui).toMatchObject({
         theme: 'dark',

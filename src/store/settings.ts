@@ -51,7 +51,12 @@ export interface Settings {
     general: ModelRef;
     decision: ModelRef;
   };
-  ui: { theme: 'system' | 'light' | 'dark'; ghostButton: ButtonPlacement };
+  ui: {
+    theme: 'system' | 'light' | 'dark';
+    ghostButton: ButtonPlacement;
+    /** Per-site placements (by site id) that replace `ghostButton` on that site. */
+    siteGhostButtons: Record<string, ButtonPlacement>;
+  };
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -64,7 +69,11 @@ export const DEFAULT_SETTINGS: Settings = {
     decision: { provider: 'browser', model: DEFAULT_BROWSER.decision },
     prompts: DEFAULT_PROMPTS,
   },
-  ui: { theme: 'system', ghostButton: { corner: 'top-right', vertical: 8, horizontal: 8 } },
+  ui: {
+    theme: 'system',
+    ghostButton: { corner: 'top-right', vertical: 8, horizontal: 8 },
+    siteGhostButtons: {},
+  },
 };
 
 const settingsItem = storage.defineItem<Partial<Settings>>('local:settings', { fallback: {} });
@@ -81,9 +90,14 @@ export function withDefaults(s: Partial<Settings>): Settings {
       ...DEFAULT_SETTINGS.ui,
       ...s.ui,
       ghostButton: { ...DEFAULT_SETTINGS.ui.ghostButton, ...s.ui?.ghostButton },
+      siteGhostButtons: { ...s.ui?.siteGhostButtons },
     },
   };
 }
+
+/** The ghost button placement on a site: its override, else the global one. */
+export const placementFor = (s: Settings, siteId?: string): ButtonPlacement =>
+  (siteId && s.ui.siteGhostButtons[siteId]) || s.ui.ghostButton;
 
 /** A prompt, or its default when the stored one is blank. */
 export const prompt = (s: Settings, k: PromptKey) => s.ai.prompts[k].trim() || DEFAULT_PROMPTS[k];
