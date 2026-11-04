@@ -3,7 +3,7 @@
 Ghostify is a browser extension (Chrome and Firefox) for feeds that keep showing you the same posts, or posts you probably want to deal with later. Hover a post, click the ghost, and it disappears from the site's feed. Ghostify keeps a copy so you can find them again later, snooze them, read later, run AI models on them, and many more interesting features are coming up!
 
 ## Updates
-Latest: **v1.4.3**.
+Latest: **v1.4.4**.
 - Move the ghost button to any corner of a post, for all sites or per site (v1.4).
 - dev.to works logged in on every home tab (v1.3).
 - AI runs in your browser by default, with no GPU, Ollama or API key needed (v1.2).
@@ -34,7 +34,7 @@ See [CHANGELOG.md](CHANGELOG.md) for every release.
   3. You choose whether they're for the **logged-in**, the **logged-out** or **any** view. For a specific view, you can pick an element that only shows in it (for example your avatar), so Ghostify can tell the views apart.
 
   **Edit selectors** in the popup reopens the overlay on a site you already added.
-- **Settings → Sites** lets you:
+- **Settings → Sites** lists your sites with a search box, and each site opens on its own page (with a breadcrumb back to the list). It lets you:
   - turn sites on or off and delete the ones you added;
   - see each page pattern, its view and its selectors;
   - edit the login indicator;
