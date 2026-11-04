@@ -2,7 +2,8 @@
 
 Ghostify is a browser extension (Chrome and Firefox) for feeds that keep showing you the same posts, or posts you probably want to deal with later. Hover a post, click the ghost, and it disappears from the site's feed. Ghostify keeps a copy so you can find them again later, snooze them, read later, run AI models on them, and many more interesting features are coming up!
 
-> Updates: **v1.4.0.**
+> Updates: **v1.4.1.**
+> - Give a site its own ghost button position in Settings → Appearance (pick the site under "Applies to"); other sites keep the all-sites position.
 > - Move the ghost button to any corner of a post, with its own margins, in Settings → Appearance (handy when it covers something on a site).
 > - Settings → General now has an About Ghostify card.
 > - Logged in to dev.to, every home tab works now: Discover, Following, Curated, Latest, Top and the rest.
