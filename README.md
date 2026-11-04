@@ -2,7 +2,8 @@
 
 Ghostify is a browser extension (Chrome and Firefox) for feeds that keep showing you the same posts, or posts you probably want to deal with later. Hover a post, click the ghost, and it disappears from the site's feed. Ghostify keeps a copy so you can find them again later, snooze them, read later, run AI models on them, and many more interesting features are coming up!
 
-> Updates: **v1.3.3.**
+> Updates: **v1.3.4.**
+> - A new 👻 look: the emoji is now the Ghostify icon everywhere.
 > - Ghostify now works on the dev.to home feeds out of the box (both logged-in and logged-out view).
 > - You can add any site by inspecting selectors using the Ghostify extension icon.
 > - It has a full Ghostify page with snooze and search, and optional AI.
