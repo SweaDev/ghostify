@@ -221,3 +221,5 @@ git push origin v1.0.0
 
 ## License
 MIT
+
+The extension icon is the 👻 glyph from [Noto Emoji](https://github.com/googlefonts/noto-emoji) (Apache-2.0).

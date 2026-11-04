@@ -1,5 +1,5 @@
 import { useLiveQuery } from 'dexie-react-hooks';
-import { Activity, Bookmark, ExternalLink, Ghost, Pause, Settings, Undo2, X } from 'lucide-react';
+import { Activity, Bookmark, ExternalLink, Pause, Settings, Undo2, X } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { browser } from 'wxt/browser';
 import { sendMessage } from '../messaging';
@@ -153,7 +153,7 @@ function ViewerPage(props: { itemKey: string; tab?: ViewerTab; onBack(): void })
   if (!item)
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-3 text-zinc-500">
-        <GhostIcon className="size-12 text-ghost-300" />
+        <GhostIcon className="size-12 opacity-60 grayscale" />
         This ghost is gone (it was unghosted).
         <button type="button" className="text-ghost-600 hover:underline" onClick={props.onBack}>
           Back to Ghostify
@@ -277,7 +277,7 @@ function Feed() {
       )}
       {item.state !== 'ghost' && (
         <IconButton label="Back to Ghosted" onClick={() => move(item, 'ghost')}>
-          <Ghost className="size-4" />
+          <GhostIcon className="size-4" />
         </IconButton>
       )}
     </>
@@ -288,7 +288,7 @@ function Feed() {
       <header className="sticky top-0 z-10 border-zinc-200/70 border-b bg-white/80 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/80">
         <div className="mx-auto flex max-w-4xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3">
           <div className="flex items-center gap-2">
-            <GhostIcon className="size-8 text-ghost-500" />
+            <GhostIcon className="size-8 drop-shadow-sm" />
             <h1 className="font-semibold text-xl tracking-tight">Ghostify</h1>
           </div>
           <nav className="order-last w-full sm:order-none sm:ml-auto sm:w-auto">

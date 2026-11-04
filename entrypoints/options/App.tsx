@@ -87,7 +87,7 @@ export function App() {
       <div className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-8 md:flex-row">
         <aside className="md:sticky md:top-8 md:h-fit md:w-56 md:shrink-0">
           <div className="mb-4 flex items-center gap-2 px-2">
-            <GhostIcon className="size-8 text-ghost-500" />
+            <GhostIcon className="size-8 drop-shadow-sm" />
             <h1 className="font-semibold text-xl">Settings</h1>
           </div>
           <nav
