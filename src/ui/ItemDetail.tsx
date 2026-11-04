@@ -48,7 +48,6 @@ function Overview(props: {
   actions?: ReactNode;
   onTag?(tag: string): void;
   onRegenerate?(): void;
-  onRead(): void;
 }) {
   const { item } = props;
   return (
@@ -92,8 +91,12 @@ function Overview(props: {
         )}
         <div className="flex flex-wrap items-center gap-2 pt-2">
           {item.url && (
-            <button type="button" className={btnPrimary} onClick={props.onRead}>
-              <BookOpen className="size-4" /> Read here
+            <button
+              type="button"
+              className={btnPrimary}
+              onClick={() => openUrl(item.url as string, 'tab')}
+            >
+              <ExternalLink className="size-4" /> Open original
             </button>
           )}
           <div className="ml-auto flex">{props.actions}</div>
@@ -216,10 +219,6 @@ export function ItemDetail(props: {
           actions={props.actions}
           onTag={props.onTag}
           onRegenerate={props.onRegenerate}
-          onRead={() => {
-            setTab('reader');
-            if (!grab.grabbed) void grab.grab();
-          }}
         />
       )}
       {tab === 'reader' && <ReaderView item={item} grab={grab} />}
