@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [1.4.4] - 2026-11-04
 ### Changed
 - **Settings → Sites** is a searchable list; each site's settings open on their own page with a breadcrumb, and the browser Back button returns to the list.
 
@@ -103,7 +105,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Search index builds in the background, with live progress.
 - Ollama setup guide in the README.
 
-[Unreleased]: https://github.com/SweaDev/ghostify/compare/v1.4.3...HEAD
+[Unreleased]: https://github.com/SweaDev/ghostify/compare/v1.4.4...HEAD
+[1.4.4]: https://github.com/SweaDev/ghostify/compare/v1.4.3...v1.4.4
 [1.4.3]: https://github.com/SweaDev/ghostify/compare/v1.4.2...v1.4.3
 [1.4.2]: https://github.com/SweaDev/ghostify/compare/v1.4.1...v1.4.2
 [1.4.1]: https://github.com/SweaDev/ghostify/compare/v1.4.0...v1.4.1
