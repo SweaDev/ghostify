@@ -112,7 +112,7 @@ describe('dashboard search and detail', () => {
 
     await click(screen.getByLabelText('Show details'));
     const dialog = await screen.findByRole('dialog');
-    expect(within(dialog).getByRole('button', { name: 'Read here' })).toBeTruthy();
+    expect(within(dialog).getByText('Open original')).toBeTruthy();
     expect(within(dialog).getByLabelText('Open original in a new window')).toBeTruthy();
     fireEvent.keyDown(document, { key: 'Escape' });
     await vi.waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
