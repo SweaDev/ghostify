@@ -17,7 +17,6 @@ import {
 import { AiActivity } from './AiActivity';
 import { FilterBar, type Filters } from './FilterBar';
 import { timeAgo } from './format';
-import { useSettings } from './GeneralSettings';
 import { GhostIcon } from './GhostIcon';
 import { IconButton } from './ItemCard';
 import { ItemDetail, type ViewerTab } from './ItemDetail';
@@ -29,6 +28,7 @@ import { useToast } from './Toast';
 import { useActiveCount, useAiPaused } from './useAi';
 import { useDialogFocus } from './useDialogFocus';
 import { useCounts, useHosts, useItems } from './useItems';
+import { useSettings } from './useSettings';
 
 const RETURNED_WINDOW = 7 * 86_400_000;
 const isReturned = (i: GhostItem, now: number) =>

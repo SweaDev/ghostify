@@ -13,7 +13,7 @@ Ghostify is a browser extension (Chrome and Firefox) for feeds that keep showing
 
 ## Features
 - **The dev.to home feeds, logged in or out** (Relevant `/`, Latest `/latest`, Top `/top/*`, and when logged in also `/discover`, `/following`, `/following/latest`, `/curated` and `/latest_less_filtered`) are recognized automatically, through [feedgrab](https://github.com/SweaDev/feedgrab).
-- **The ghost button** shows on the post under your pointer. Clicking it hides the post and saves it, and an **Undo** toast lets you take it back.
+- **The ghost button** shows on the post under your pointer. Clicking it hides the post and saves it, and an **Undo** toast lets you take it back. If it covers something on a site, move it in **Settings → Appearance** to any corner of the post, with its distance from the edges in px.
 - **Ghosted posts stay hidden** when you reload, and also when they come back later through infinite scroll.
 - **The popup** lists your recent ghosts. From there you can open one, **unghost** it so it shows on the site again, or open the full Ghostify page.
 - **The Ghostify page** has three tabs:

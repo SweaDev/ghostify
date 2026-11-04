@@ -1,5 +1,11 @@
 const GHOST_SVG = `<svg viewBox="0 0 24 24" overflow="visible" aria-hidden="true"><text x="12" y="12" font-size="20" text-anchor="middle" dominant-baseline="central" font-family='"Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "Twemoji Mozilla", sans-serif'>👻</text></svg>`;
 
+import { type ButtonPlacement, DEFAULT_SETTINGS } from '../store/settings';
+
+/** Button size and the minimum gap it keeps from the viewport edge while an item scrolls. */
+const SIZE = 36;
+const EDGE = 8;
+
 /** Item mist thickens before removal, then lifts off the reflowed feed. */
 const VANISH_MS = 320;
 const LIFT_MS = 420;
@@ -69,6 +75,8 @@ export interface GhostButtonOptions {
   /** The feed item element for an element under the pointer, if any. */
   resolve(el: Element): Element | undefined;
   onGhost(target: Element): void | Promise<void>;
+  /** Corner and margins of the button on the item (default: top-right, 8px). */
+  placement?: ButtonPlacement;
 }
 
 export interface GhostButton {
@@ -110,8 +118,14 @@ export function mountGhostButton(doc: Document, opts: GhostButtonOptions): Ghost
   const place = () => {
     if (!target?.isConnected) return hide();
     const r = target.getBoundingClientRect();
-    btn.style.top = `${Math.max(r.top + 8, 8)}px`;
-    btn.style.left = `${r.right - 42}px`;
+    const { corner, vertical, horizontal } = opts.placement ?? DEFAULT_SETTINGS.ui.ghostButton;
+    const vh = doc.defaultView?.innerHeight ?? doc.documentElement.clientHeight;
+    // Stays on screen while the item's edge is scrolled out of view.
+    const top = corner.startsWith('top')
+      ? Math.max(r.top + vertical, EDGE)
+      : Math.min(r.bottom - vertical - SIZE, vh - SIZE - EDGE);
+    btn.style.top = `${top}px`;
+    btn.style.left = `${corner.endsWith('left') ? r.left + horizontal : r.right - horizontal - SIZE}px`;
     Object.assign(aura.style, {
       top: `${r.top}px`,
       left: `${r.left}px`,

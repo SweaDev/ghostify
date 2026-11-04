@@ -8,12 +8,12 @@ import { sendMessage } from '../messaging';
 import { getKeys, saveKey } from '../store/secrets';
 import type { KeyProvider, Keys, ModelRef, Provider, Purpose, Settings } from '../store/settings';
 import { BrowserModelStatus, BrowserRuntime } from './BrowserModels';
-import { useSettings } from './GeneralSettings';
 import { IndexProgress } from './IndexProgress';
 import { card, field } from './kit';
 import { ModelPicker } from './ModelPicker';
 import { Switch } from './Switch';
 import { useModelCatalog } from './useModelCatalog';
+import { useSettings } from './useSettings';
 
 const PURPOSES: { key: Purpose; label: string; hint: string }[] = [
   { key: 'embedding', label: 'Embeddings', hint: 'Semantic search over your ghosts' },
