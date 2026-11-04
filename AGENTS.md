@@ -41,6 +41,9 @@ Bun (commit `bun.lock`), TypeScript strict, WXT (Chrome MV3 + Firefox), React 19
 ## Phases and releases
 - Each phase's README task sets `package.json` version to `0.N.0` for phase N (`1.0.0` for the last phase) and explains loading the build unpacked in Chrome and Firefox, from a local build or a Release zip.
 - After the phase check passes: `git tag -a v<version> -m "Phase N: <what runs>"`. Never push tags or branches; tell the user `git push origin v<version>` publishes the release.
+- Before every version bump and tag (phase or not), update the docs in the same commit:
+  - `CHANGELOG.md`: move `## [Unreleased]` entries into a new `## [<version>] - <YYYY-MM-DD>` section ([Keep a Changelog](https://keepachangelog.com/en/1.1.0/) groups: Added, Changed, Deprecated, Removed, Fixed, Security; one brief line each), leave an empty `## [Unreleased]`, and add/update the compare links at the bottom.
+  - `README.md` `## Updates`: set **Latest** to the new version. List only significant user-facing updates since v1.0.0 (one very brief line each, newest first, tagged with the version), not every release; add a line only when a release brings one, and drop lines that no longer matter. Keep the link to `CHANGELOG.md` last.
 - `.github/workflows/release.yml` builds and publishes zips on pushed `v*` tags.
 - Publishing to browser stores is out of scope.
 

@@ -2,18 +2,14 @@
 
 Ghostify is a browser extension (Chrome and Firefox) for feeds that keep showing you the same posts, or posts you probably want to deal with later. Hover a post, click the ghost, and it disappears from the site's feed. Ghostify keeps a copy so you can find them again later, snooze them, read later, run AI models on them, and many more interesting features are coming up!
 
-> Updates: **v1.4.2.**
-> - The viewer's Overview tab now has an "Open original" button (opens the post in a new tab) in place of "Read here"; the Reader tab is still one click away.
-> - Give a site its own ghost button position in Settings → Appearance (pick the site under "Applies to"); other sites keep the all-sites position.
-> - Move the ghost button to any corner of a post, with its own margins, in Settings → Appearance (handy when it covers something on a site).
-> - Settings → General now has an About Ghostify card.
-> - Logged in to dev.to, every home tab works now: Discover, Following, Curated, Latest, Top and the rest.
-> - A new 👻 look: the emoji is now the Ghostify icon everywhere.
-> - Ghostify now works on the dev.to home feeds out of the box (both logged-in and logged-out view).
-> - You can add any site by inspecting selectors using the Ghostify extension icon.
-> - It has a full Ghostify page with snooze and search, and optional AI.
-> - By default the AI runs right in your browser with small downloadable models (no GPU, Ollama or API key needed).
-> - It can also use Ollama, or your own OpenRouter, Gemini or OpenAI key.
+## Updates
+Latest: **v1.4.2**.
+- Move the ghost button to any corner of a post, for all sites or per site (v1.4).
+- dev.to works logged in on every home tab (v1.3).
+- AI runs in your browser by default, with no GPU, Ollama or API key needed (v1.2).
+- Read full posts and ask AI about them in the viewer; every AI job can be paused or stopped (v1.1).
+
+See [CHANGELOG.md](CHANGELOG.md) for every release.
 
 ## Features
 - **The dev.to home feeds, logged in or out** (Relevant `/`, Latest `/latest`, Top `/top/*`, and when logged in also `/discover`, `/following`, `/following/latest`, `/curated` and `/latest_less_filtered`) are recognized automatically, through [feedgrab](https://github.com/SweaDev/feedgrab).
