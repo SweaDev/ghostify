@@ -1,6 +1,6 @@
 import { storage } from 'wxt/utils/storage';
 import { DEFAULT_SITES, LEGACY_DEVTO_INDICATOR } from './defaults';
-import type { Site } from './model';
+import { pageKey, type Site } from './model';
 
 export const sitesItem = storage.defineItem<Site[]>('local:sites', { fallback: DEFAULT_SITES });
 
@@ -23,23 +23,29 @@ function refreshBuiltin(site: Site): Site {
       }),
     },
   }));
-  return migrateLoggedIn({ ...site, profiles });
+  return addShippedPages(migrateIndicator({ ...site, profiles }));
+}
+
+/** Installs from before the built-in logged-in view get the shipped login indicator. */
+function migrateIndicator(site: Site): Site {
+  const d = DEFAULT_SITES.find((s) => s.id === site.id);
+  if (!d || site.loginIndicator?.selector !== LEGACY_DEVTO_INDICATOR) return site;
+  return { ...site, loginIndicator: d.loginIndicator };
 }
 
 /**
- * One-time upgrade of installs from before the built-in logged-in view: swaps the old
- * login indicator for the shipped one and adds the shipped logged-in profiles.
+ * Adds shipped pages this install has not been given yet (all missing ones when it has no
+ * record). Pages the user removed after getting them stay removed.
  */
-function migrateLoggedIn(site: Site): Site {
+function addShippedPages(site: Site): Site {
   const d = DEFAULT_SITES.find((s) => s.id === site.id);
-  if (!d || site.loginIndicator?.selector !== LEGACY_DEVTO_INDICATOR) return site;
-  const has = (e: Site['profiles'][number]) =>
-    site.profiles.some((s) => s.view === e.view && s.profile.pathPattern === e.profile.pathPattern);
-  const added = d.profiles.filter((e) => e.view === 'loggedIn' && !has(e));
+  if (!d) return site;
+  const given = new Set([...(site.shippedPages ?? []), ...site.profiles.map(pageKey)]);
+  const added = d.profiles.filter((e) => !given.has(pageKey(e)));
   return {
     ...site,
-    loginIndicator: d.loginIndicator,
     profiles: [...site.profiles, ...added],
+    shippedPages: d.profiles.map(pageKey),
   };
 }
 

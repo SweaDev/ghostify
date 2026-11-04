@@ -1,5 +1,5 @@
 import { DEVTO_SITE, LEGACY_DEVTO_INDICATOR } from '@/src/sites/defaults';
-import { detectView, resolveProfile } from '@/src/sites/model';
+import { detectView, pageKey, resolveProfile } from '@/src/sites/model';
 import { ensureDefaultSites, getSites, saveSite } from '@/src/sites/registry';
 import { DEFAULT_SETTINGS, getSettings } from '@/src/store/settings';
 
@@ -34,8 +34,17 @@ describe('resolveProfile', () => {
     },
   );
 
-  it('matches the logged-in home feed', () => {
-    const r = resolveProfile(sites, 'https://dev.to/latest', doc('logged-in'));
+  it.each([
+    '/',
+    '/discover',
+    '/following',
+    '/following/latest',
+    '/curated',
+    '/latest',
+    '/latest_less_filtered',
+    '/top/week',
+  ])('matches the logged-in home feed %s', (path) => {
+    const r = resolveProfile(sites, `https://dev.to${path}`, doc('logged-in'));
     expect(r?.view).toBe('loggedIn');
     expect(r?.profile.feeds[0]?.id).toBe('devto-stories-logged-in');
   });
@@ -79,6 +88,7 @@ describe('built-in selector refresh', () => {
     const legacy = structuredClone(DEVTO_SITE);
     legacy.loginIndicator = { selector: LEGACY_DEVTO_INDICATOR, whenPresent: 'loggedIn' };
     legacy.profiles = legacy.profiles.filter((e) => e.view === 'loggedOut');
+    delete legacy.shippedPages;
     await saveSite(legacy);
     await ensureDefaultSites();
     expect((await getSites())[0]).toEqual(DEVTO_SITE);
@@ -87,6 +97,37 @@ describe('built-in selector refresh', () => {
     await saveSite({ ...DEVTO_SITE, profiles: DEVTO_SITE.profiles.slice(0, -1) });
     await ensureDefaultSites();
     expect((await getSites())[0]?.profiles).toHaveLength(DEVTO_SITE.profiles.length - 1);
+  });
+
+  it('adds newly shipped pages once to installs that predate them', async () => {
+    const old = structuredClone(DEVTO_SITE);
+    old.profiles = old.profiles.filter(
+      (e) => e.view === 'loggedOut' || e.profile.pathPattern === '/',
+    );
+    old.shippedPages = old.profiles.map(pageKey);
+    old.shippedPages.push('loggedIn:/latest'); // given before and removed by the user
+    await saveSite(old);
+    await ensureDefaultSites();
+    const paths = (await getSites())[0]?.profiles
+      .filter((e) => e.view === 'loggedIn')
+      .map((e) => e.profile.pathPattern);
+    expect(paths).toContain('/discover');
+    expect(paths).toContain('/following/latest');
+    expect(paths).not.toContain('/latest');
+    expect((await getSites())[0]?.shippedPages).toEqual(DEVTO_SITE.shippedPages);
+  });
+
+  it('gives installs without a record every missing shipped page', async () => {
+    const old = structuredClone(DEVTO_SITE);
+    old.profiles = old.profiles.filter(
+      (e) => e.view === 'loggedOut' || e.profile.pathPattern === '/',
+    );
+    delete old.shippedPages;
+    await saveSite(old);
+    await ensureDefaultSites();
+    expect((await getSites())[0]?.profiles.map(pageKey).sort()).toEqual(
+      DEVTO_SITE.profiles.map(pageKey).sort(),
+    );
   });
 });
 

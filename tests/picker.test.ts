@@ -39,7 +39,12 @@ describe('picker merge', () => {
       'loggedOut /',
       'loggedOut /top/*',
       'loggedIn /',
+      'loggedIn /discover',
+      'loggedIn /following',
+      'loggedIn /following/latest',
+      'loggedIn /curated',
       'loggedIn /latest',
+      'loggedIn /latest_less_filtered',
       'loggedIn /top/*',
       'loggedOut /latest',
     ]);
@@ -50,7 +55,7 @@ describe('picker merge', () => {
       view: 'loggedIn',
       indicator: { selector: '#me', whenPresent: 'loggedIn' },
     });
-    expect(withIn.profiles).toHaveLength(6);
+    expect(withIn.profiles).toHaveLength(DEVTO_SITE.profiles.length);
     expect(withIn.loginIndicator?.selector).toBe('#me');
   });
 
