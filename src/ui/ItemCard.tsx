@@ -56,7 +56,7 @@ export function ItemCard(props: ItemCardProps) {
         {item.image ? (
           <img src={item.image} alt="" loading="lazy" className="size-full object-cover" />
         ) : (
-          <GhostIcon className="size-full p-3 text-white/80 dark:text-ghost-700" />
+          <GhostIcon className="size-full p-2.5 drop-shadow-sm transition group-hover:-rotate-6 group-hover:scale-110" />
         )}
       </button>
       <div className="min-w-0 flex-1 basis-0">

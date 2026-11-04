@@ -9,7 +9,7 @@ export default defineConfig({
   modules: ['@wxt-dev/module-react', '@wxt-dev/auto-icons'],
   manifestVersion: 3,
   outDirTemplate: `{{browser}}-mv{{manifestVersion}}${newtab ? '-newtab' : ''}`,
-  autoIcons: { baseIconPath: 'assets/icon.svg' },
+  autoIcons: { baseIconPath: 'assets/icon.png' },
   vite: () => ({
     plugins: [tailwindcss(), feedgrabProxyOnly()],
     // The model worker imports ONNX Runtime's module glue at runtime.

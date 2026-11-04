@@ -14,7 +14,7 @@ export function App() {
   return (
     <main className="flex max-h-[560px] w-[360px] flex-col">
       <header className="flex items-center gap-2 border-zinc-100 border-b px-4 py-3 dark:border-zinc-800">
-        <GhostIcon className="size-7 text-ghost-500" />
+        <GhostIcon className="size-7 drop-shadow-sm" />
         <h1 className="font-semibold text-base">Ghostify</h1>
         {counts && (
           <span className="ml-auto rounded-full bg-ghost-50 px-2 py-0.5 font-medium text-ghost-700 text-xs dark:bg-ghost-900/50 dark:text-ghost-200">

@@ -3,7 +3,6 @@ import {
   ArrowLeft,
   BookOpen,
   ExternalLink,
-  Ghost,
   Maximize2,
   Minimize2,
   PanelTop,
@@ -11,10 +10,11 @@ import {
   Sparkles,
   X,
 } from 'lucide-react';
-import { type ReactNode, useEffect, useRef, useState } from 'react';
+import { type ComponentType, type ReactNode, useEffect, useRef, useState } from 'react';
 import type { GhostItem } from '../store/db';
 import { AskPanel } from './AskPanel';
 import { timeAgo } from './format';
+import { GhostIcon } from './GhostIcon';
 import { btnPrimary } from './kit';
 import { openUrl, type Target, viewerUrl } from './open';
 import { ReaderView } from './ReaderView';
@@ -23,8 +23,8 @@ import { useContent } from './useContent';
 import { useDialogFocus } from './useDialogFocus';
 
 export type ViewerTab = 'overview' | 'reader' | 'ask';
-const TABS: { key: ViewerTab; label: string; icon: typeof BookOpen }[] = [
-  { key: 'overview', label: 'Overview', icon: Ghost },
+const TABS: { key: ViewerTab; label: string; icon: ComponentType<{ className?: string }> }[] = [
+  { key: 'overview', label: 'Overview', icon: GhostIcon },
   { key: 'reader', label: 'Reader', icon: BookOpen },
   { key: 'ask', label: 'Ask AI', icon: Sparkles },
 ];

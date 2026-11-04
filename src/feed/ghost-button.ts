@@ -1,4 +1,4 @@
-const GHOST_SVG = `<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2.5c-4.1 0-7 3.1-7 7.1v11.9l2-1.6 1.7 1.6 1.7-1.6 1.6 1.6 1.6-1.6 1.7 1.6 1.7-1.6 2 1.6V9.6c0-4-2.9-7.1-7-7.1z"/><ellipse cx="9.5" cy="10" rx="1.4" ry="1.8" fill="#1e1b4b"/><ellipse cx="14.5" cy="10" rx="1.4" ry="1.8" fill="#1e1b4b"/></svg>`;
+const GHOST_SVG = `<svg viewBox="0 0 24 24" overflow="visible" aria-hidden="true"><text x="12" y="12" font-size="20" text-anchor="middle" dominant-baseline="central" font-family='"Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "Twemoji Mozilla", sans-serif'>👻</text></svg>`;
 
 /** Item mist thickens before removal, then lifts off the reflowed feed. */
 const VANISH_MS = 320;
@@ -7,7 +7,7 @@ const LIFT_MS = 420;
 const CSS = `
 :host { all: initial; }
 .btn {
-  position: fixed; z-index: 2147483646; display: none; width: 34px; height: 34px; padding: 6px;
+  position: fixed; z-index: 2147483646; display: none; width: 36px; height: 36px; padding: 6px;
   border: 0; border-radius: 999px; cursor: pointer; color: #fff;
   background: linear-gradient(135deg, #7c5cff, #3b82f6);
   box-shadow: 0 6px 18px rgba(76, 52, 200, .35), inset 0 0 0 1px rgba(255,255,255,.25);
@@ -16,7 +16,7 @@ const CSS = `
 .btn.on { display: block; animation: appear .55s cubic-bezier(.2,.8,.3,1.25) both, float 2.4s ease-in-out .55s infinite; }
 .btn:hover { scale: 1.12; box-shadow: 0 0 0 4px rgba(183,164,255,.25), 0 8px 26px rgba(124,92,255,.6); }
 .btn:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
-.btn svg { width: 100%; height: 100%; display: block; }
+.btn svg { width: 100%; height: 100%; display: block; filter: drop-shadow(0 1px 1px rgba(30,27,75,.35)); }
 .btn.poof { animation: depart .45s ease-in forwards; pointer-events: none; }
 .aura {
   position: fixed; z-index: 2147483645; display: none; pointer-events: none; border-radius: 10px;
