@@ -12,6 +12,7 @@ const custom = {
   hostname: 'example.com',
   label: 'Example',
   builtin: false,
+  profiles: DEVTO_SITE.profiles.filter((e) => e.view === 'loggedOut'),
 };
 
 describe('sites io', () => {

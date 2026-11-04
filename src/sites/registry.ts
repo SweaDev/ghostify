@@ -1,5 +1,5 @@
 import { storage } from 'wxt/utils/storage';
-import { DEFAULT_SITES } from './defaults';
+import { DEFAULT_SITES, LEGACY_DEVTO_INDICATOR } from './defaults';
 import type { Site } from './model';
 
 export const sitesItem = storage.defineItem<Site[]>('local:sites', { fallback: DEFAULT_SITES });
@@ -23,7 +23,24 @@ function refreshBuiltin(site: Site): Site {
       }),
     },
   }));
-  return { ...site, profiles };
+  return migrateLoggedIn({ ...site, profiles });
+}
+
+/**
+ * One-time upgrade of installs from before the built-in logged-in view: swaps the old
+ * login indicator for the shipped one and adds the shipped logged-in profiles.
+ */
+function migrateLoggedIn(site: Site): Site {
+  const d = DEFAULT_SITES.find((s) => s.id === site.id);
+  if (!d || site.loginIndicator?.selector !== LEGACY_DEVTO_INDICATOR) return site;
+  const has = (e: Site['profiles'][number]) =>
+    site.profiles.some((s) => s.view === e.view && s.profile.pathPattern === e.profile.pathPattern);
+  const added = d.profiles.filter((e) => e.view === 'loggedIn' && !has(e));
+  return {
+    ...site,
+    loginIndicator: d.loginIndicator,
+    profiles: [...site.profiles, ...added],
+  };
 }
 
 /**

@@ -35,7 +35,14 @@ describe('picker merge', () => {
       view: 'loggedOut',
     });
     expect(merged.enabled).toBe(true);
-    expect(merged.profiles.map((e) => e.profile.pathPattern)).toEqual(['/', '/top/*', '/latest']);
+    expect(merged.profiles.map((e) => `${e.view} ${e.profile.pathPattern}`)).toEqual([
+      'loggedOut /',
+      'loggedOut /top/*',
+      'loggedIn /',
+      'loggedIn /latest',
+      'loggedIn /top/*',
+      'loggedOut /latest',
+    ]);
     expect(merged.profiles.at(-1)?.profile.feeds).toEqual([]);
 
     const withIn = mergePicked([site], 'dev.to', 'DEV', {
@@ -43,7 +50,7 @@ describe('picker merge', () => {
       view: 'loggedIn',
       indicator: { selector: '#me', whenPresent: 'loggedIn' },
     });
-    expect(withIn.profiles).toHaveLength(4);
+    expect(withIn.profiles).toHaveLength(6);
     expect(withIn.loginIndicator?.selector).toBe('#me');
   });
 
@@ -52,7 +59,10 @@ describe('picker merge', () => {
     expect(existingProfile(DEVTO_SITE, 'https://dev.to/top/week', 'loggedOut')?.pathPattern).toBe(
       '/top/*',
     );
-    expect(existingProfile(DEVTO_SITE, 'https://dev.to/', 'loggedIn')).toBeUndefined();
+    expect(existingProfile(DEVTO_SITE, 'https://dev.to/', 'loggedIn')?.feeds[0]?.id).toBe(
+      'devto-stories-logged-in',
+    );
+    expect(existingProfile(DEVTO_SITE, 'https://dev.to/tags', 'loggedIn')).toBeUndefined();
   });
 });
 
