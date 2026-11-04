@@ -2,20 +2,22 @@ import {
   Activity,
   Cpu,
   Globe,
+  Info,
   type LucideIcon,
   MessageSquareText,
-  SlidersHorizontal,
+  Palette,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { AiActivity } from '@/src/ui/AiActivity';
 import { AiSettings } from '@/src/ui/AiSettings';
+import { AppearanceSettings } from '@/src/ui/AppearanceSettings';
 import { GeneralSettings } from '@/src/ui/GeneralSettings';
 import { GhostIcon } from '@/src/ui/GhostIcon';
 import { PromptSettings } from '@/src/ui/PromptSettings';
 import { SitesSettings } from '@/src/ui/SitesSettings';
 import { useActiveCount } from '@/src/ui/useAi';
 
-type Section = 'sites' | 'ai' | 'prompts' | 'activity' | 'general';
+type Section = 'sites' | 'ai' | 'prompts' | 'activity' | 'appearance' | 'general';
 
 const SECTIONS: {
   key: Section;
@@ -53,10 +55,17 @@ const SECTIONS: {
     Body: () => <AiActivity />,
   },
   {
+    key: 'appearance',
+    label: 'Appearance',
+    hint: 'Theme and where the ghost button sits on feed items',
+    icon: Palette,
+    Body: AppearanceSettings,
+  },
+  {
     key: 'general',
     label: 'General',
-    hint: 'Appearance',
-    icon: SlidersHorizontal,
+    hint: 'About Ghostify',
+    icon: Info,
     Body: GeneralSettings,
   },
 ];

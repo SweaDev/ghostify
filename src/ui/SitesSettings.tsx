@@ -3,9 +3,9 @@ import { useEffect, useRef, useState } from 'react';
 import { mergeSites, parseSitesJson, serializeSites } from '../sites/io';
 import type { LoginIndicator, Site, View } from '../sites/model';
 import { deleteSite, getSites, saveSite, sitesItem } from '../sites/registry';
-import { useSettings } from './GeneralSettings';
 import { IconButton } from './ItemCard';
 import { Switch } from './Switch';
+import { useSettings } from './useSettings';
 
 const VIEW_LABEL: Record<View, string> = {
   any: 'Any view',

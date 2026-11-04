@@ -1,8 +1,8 @@
 import { RotateCcw } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { DEFAULT_PROMPTS, type PromptKey } from '../store/settings';
-import { useSettings } from './GeneralSettings';
 import { btnQuiet, card, field } from './kit';
+import { useSettings } from './useSettings';
 
 const PROMPTS: { key: PromptKey; label: string; hint: string }[] = [
   {

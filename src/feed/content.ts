@@ -24,7 +24,7 @@ export async function runFeedContent(ctx: ContentScriptContext): Promise<void> {
     const n = ++seq;
     const [sites, settings] = await Promise.all([getSites(), getSettings()]);
     const site = sites.find((s) => hostMatches(s.hostname, location.hostname));
-    const next = JSON.stringify([site, settings.ai.enabled]);
+    const next = JSON.stringify([site, settings.ai.enabled, settings.ui.ghostButton]);
     if (n !== seq || ctx.isInvalid || (!force && next === sig)) return;
     sig = next;
     runtime?.dispose();
@@ -36,6 +36,7 @@ export async function runFeedContent(ctx: ContentScriptContext): Promise<void> {
       onViewChange: () => void restart(),
       llm: settings.ai.enabled ? llm : undefined,
       alive: () => browser.runtime?.id != null,
+      placement: settings.ui.ghostButton,
     });
   };
   ctx.addEventListener(window, 'wxt:locationchange', () => void restart());

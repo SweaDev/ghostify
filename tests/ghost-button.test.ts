@@ -1,11 +1,13 @@
 import { mountGhostButton } from '@/src/feed/ghost-button';
+import type { ButtonPlacement } from '@/src/store/settings';
 
-function setup() {
+function setup(placement?: ButtonPlacement) {
   document.body.innerHTML = '<ul><li class="item"><p>hi</p></li></ul><footer>x</footer>';
   const onGhost = vi.fn();
   const gb = mountGhostButton(document, {
     resolve: (el) => el.closest('.item') ?? undefined,
     onGhost,
+    placement,
   });
   const btn = gb.host.shadowRoot?.querySelector('button') as HTMLButtonElement;
   const aura = gb.host.shadowRoot?.querySelector('.aura') as HTMLElement;
@@ -15,6 +17,30 @@ function setup() {
 const over = (el: Element) => el.dispatchEvent(new Event('pointerover', { bubbles: true }));
 
 describe('ghost button', () => {
+  it.each([
+    [undefined, 28, 166],
+    [{ corner: 'top-left', vertical: 4, horizontal: 12 }, 24, 22],
+    [{ corner: 'bottom-left', vertical: 4, horizontal: 12 }, 80, 22],
+    [{ corner: 'bottom-right', vertical: 0, horizontal: 0 }, 84, 174],
+  ] as const)('places the button at %o', (placement, top, left) => {
+    const { gb, btn } = setup(placement && { ...placement });
+    const item = document.querySelector('.item') as Element;
+    item.getBoundingClientRect = () => new DOMRect(10, 20, 200, 100);
+    over(item);
+    expect(btn.style.top).toBe(`${top}px`);
+    expect(btn.style.left).toBe(`${left}px`);
+    gb.destroy();
+  });
+
+  it('keeps the button on screen while the item edge is scrolled away', () => {
+    const { gb, btn } = setup({ corner: 'bottom-right', vertical: 8, horizontal: 8 });
+    const item = document.querySelector('.item') as Element;
+    item.getBoundingClientRect = () => new DOMRect(0, 100, 200, innerHeight * 2);
+    over(item);
+    expect(btn.style.top).toBe(`${innerHeight - 44}px`);
+    gb.destroy();
+  });
+
   it('shows over a hovered item and ghostifies it on click', async () => {
     const { gb, btn, onGhost } = setup();
     const item = document.querySelector('.item') as Element;

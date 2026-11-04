@@ -26,6 +26,19 @@ export const DEFAULT_PROMPTS: Prompts = {
   rule: 'Does this feed item match the rule: "{rule}"?',
 };
 
+export type Corner = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
+
+/** Where the floating ghost button sits on a hovered feed item, in px from its corner. */
+export interface ButtonPlacement {
+  corner: Corner;
+  /** Distance from the item's top or bottom edge (per `corner`). */
+  vertical: number;
+  /** Distance from the item's left or right edge (per `corner`). */
+  horizontal: number;
+}
+
+export const MAX_BUTTON_MARGIN = 200;
+
 export interface Settings {
   ai: {
     enabled: boolean;
@@ -38,7 +51,7 @@ export interface Settings {
     general: ModelRef;
     decision: ModelRef;
   };
-  ui: { theme: 'system' | 'light' | 'dark' };
+  ui: { theme: 'system' | 'light' | 'dark'; ghostButton: ButtonPlacement };
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -51,7 +64,7 @@ export const DEFAULT_SETTINGS: Settings = {
     decision: { provider: 'browser', model: DEFAULT_BROWSER.decision },
     prompts: DEFAULT_PROMPTS,
   },
-  ui: { theme: 'system' },
+  ui: { theme: 'system', ghostButton: { corner: 'top-right', vertical: 8, horizontal: 8 } },
 };
 
 const settingsItem = storage.defineItem<Partial<Settings>>('local:settings', { fallback: {} });
@@ -64,7 +77,11 @@ export function withDefaults(s: Partial<Settings>): Settings {
       ...s.ai,
       prompts: { ...DEFAULT_PROMPTS, ...s.ai?.prompts },
     },
-    ui: { ...DEFAULT_SETTINGS.ui, ...s.ui },
+    ui: {
+      ...DEFAULT_SETTINGS.ui,
+      ...s.ui,
+      ghostButton: { ...DEFAULT_SETTINGS.ui.ghostButton, ...s.ui?.ghostButton },
+    },
   };
 }
 

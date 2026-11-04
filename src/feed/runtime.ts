@@ -7,6 +7,7 @@ import {
   type SiteProfile,
 } from 'feedgrab';
 import { detectView, resolveProfile, type Site, type SiteRule, siteForUrl } from '../sites/model';
+import type { ButtonPlacement } from '../store/settings';
 import { isContextInvalidated, type RuntimeApi } from './api';
 import { extractItem } from './extract';
 import { mountGhostButton } from './ghost-button';
@@ -28,6 +29,8 @@ export interface RuntimeOptions {
   llm?: LlmBackend;
   /** False once the extension reloaded or updated under this page (orphaned content script). */
   alive?(): boolean;
+  /** Where the ghost button sits on a hovered item. */
+  placement?: ButtonPlacement;
 }
 
 /** Adds the site's enabled auto-ghostify rules to every feed as feedgrab `llm-text` exclusions. */
@@ -88,7 +91,7 @@ export function startFeedRuntime(opts: RuntimeOptions): FeedRuntime {
   };
 }
 
-function startFeed({ doc, url, sites, api, llm, alive }: RuntimeOptions): FeedRuntime {
+function startFeed({ doc, url, sites, api, llm, alive, placement }: RuntimeOptions): FeedRuntime {
   const resolved = resolveProfile(sites, url, doc);
   if (!resolved) return { active: false, dispose() {} };
 
@@ -177,6 +180,7 @@ function startFeed({ doc, url, sites, api, llm, alive }: RuntimeOptions): FeedRu
   };
 
   const button = mountGhostButton(doc, {
+    placement,
     resolve(el) {
       if (orphaned) return undefined;
       if (alive?.() === false) {
