@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.3] - 2026-11-04
+### Changed
+- **Open original** in the viewer (Overview and Reader tabs) is a regular link, so middle-click, Ctrl/Cmd-click and "Copy link" work.
+
 ## [1.4.2] - 2026-11-04
 ### Changed
 - The viewer's Overview tab has an **Open original** button (opens the post in a new tab) in place of **Read here**.
@@ -97,7 +101,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Search index builds in the background, with live progress.
 - Ollama setup guide in the README.
 
-[Unreleased]: https://github.com/SweaDev/ghostify/compare/v1.4.2...HEAD
+[Unreleased]: https://github.com/SweaDev/ghostify/compare/v1.4.3...HEAD
+[1.4.3]: https://github.com/SweaDev/ghostify/compare/v1.4.2...v1.4.3
 [1.4.2]: https://github.com/SweaDev/ghostify/compare/v1.4.1...v1.4.2
 [1.4.1]: https://github.com/SweaDev/ghostify/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/SweaDev/ghostify/compare/v1.3.5...v1.4.0
