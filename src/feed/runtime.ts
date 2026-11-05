@@ -96,7 +96,13 @@ function startFeed({ doc, url, sites, api, llm, alive, placement }: RuntimeOptio
   if (!resolved) return { active: false, dispose() {} };
 
   const host = new URL(url).hostname;
-  const ctx = { host, siteId: resolved.site.id, view: resolved.view, baseUrl: url };
+  const ctx = {
+    host,
+    siteId: resolved.site.id,
+    view: resolved.view,
+    baseUrl: url,
+    links: resolved.links,
+  };
   const profile = llm ? withRules(resolved.profile, resolved.site.rules) : resolved.profile;
   const feed = openFeed(doc, profile, { builtinExclusions: false, llm });
   const byElement = new WeakMap<Element, FeedItem>();

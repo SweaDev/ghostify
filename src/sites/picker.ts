@@ -1,5 +1,12 @@
 import { matchProfile, type SiteProfile } from 'feedgrab';
-import { hostMatches, type LoginIndicator, type Site, type View } from './model';
+import type { ItemLinks } from './links';
+import {
+  hostMatches,
+  type LoginIndicator,
+  type Site,
+  type SiteProfileEntry,
+  type View,
+} from './model';
 
 export const bareHost = (host: string) => host.replace(/^www\./, '');
 
@@ -8,25 +15,31 @@ export function findSite(sites: Site[], host: string): Site | undefined {
   return sites.find((s) => hostMatches(s.hostname, host));
 }
 
-/** The stored profile that would apply to `url` in `view` (for editing it in the overlay). */
-export function existingProfile(
+/** The stored page that would apply to `url` in `view` (for editing it in the overlay). */
+export function existingEntry(
   site: Site | undefined,
   url: string,
   view: View,
-): SiteProfile | undefined {
+): SiteProfileEntry | undefined {
   if (!site) return undefined;
   const host = new URL(url).hostname;
-  const candidates = site.profiles
-    .filter((e) => e.view === view)
-    .map((e) => ({ ...e.profile, hostname: host }));
+  const entries = site.profiles.filter((e) => e.view === view);
+  const candidates = entries.map((e) => ({ ...e.profile, hostname: host }));
   const match = matchProfile(url, candidates);
-  return match && site.profiles.filter((e) => e.view === view)[candidates.indexOf(match)]?.profile;
+  return match && entries[candidates.indexOf(match)];
 }
+
+export const existingProfile = (
+  site: Site | undefined,
+  url: string,
+  view: View,
+): SiteProfile | undefined => existingEntry(site, url, view)?.profile;
 
 export interface PickResult {
   profile: SiteProfile;
   view: View;
   indicator?: LoginIndicator;
+  links?: ItemLinks;
 }
 
 /**
@@ -56,6 +69,13 @@ export function mergePicked(sites: Site[], host: string, label: string, r: PickR
     ...site,
     enabled: true,
     loginIndicator: r.indicator ?? site.loginIndicator,
-    profiles: [...profiles, { view: r.view, profile }],
+    profiles: [
+      ...profiles,
+      {
+        view: r.view,
+        profile,
+        ...(r.links && Object.keys(r.links).length > 0 && { links: r.links }),
+      },
+    ],
   };
 }

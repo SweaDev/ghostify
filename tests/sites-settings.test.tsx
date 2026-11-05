@@ -35,6 +35,28 @@ describe('sites io', () => {
     ).toThrow();
   });
 
+  it('round-trips and validates item links', () => {
+    const id = custom.profiles[0]?.profile.feeds[0]?.id ?? '';
+    const option = {
+      selector: { type: 'css' as const, value: 'a:has(time)' },
+      url: 'https://e.x/p/1',
+      text: '3h',
+    };
+    const links = {
+      [id]: { selector: { type: 'css' as const, value: 'a:has(time)' }, options: [option] },
+    };
+    const [first] = custom.profiles;
+    if (!first) throw new Error('no page');
+    const site = { ...custom, profiles: custom.profiles.with(0, { ...first, links }) };
+    expect(parseSitesJson(serializeSites([site]))[0]?.profiles[0]?.links).toEqual(links);
+    const bad = (l: unknown) => () =>
+      parseSitesJson(JSON.stringify([{ ...site, profiles: [{ ...site.profiles[0], links: l }] }]));
+    expect(bad({ [id]: { selector: { type: 'regex', value: 'a' } } })).toThrow(/selector/);
+    expect(bad({ [id]: { ...links[id], options: [{ ...option, url: 'javascript:x' }] } })).toThrow(
+      /http/,
+    );
+  });
+
   it('merges by id, keeping built-in flags', () => {
     const merged = mergeSites(
       [DEVTO_SITE],
@@ -116,6 +138,48 @@ describe('SitesSettings', () => {
     });
     await screen.findByText('/top/week');
     expect(screen.queryByRole('form')).toBeNull();
+  });
+
+  it('picks a post link from the saved choices or by selector', async () => {
+    const id = custom.profiles[2]?.profile.feeds[0]?.id ?? '';
+    const options = [
+      {
+        selector: { type: 'css' as const, value: 'a.author' },
+        url: 'https://example.com/al',
+        text: 'Al',
+      },
+      {
+        selector: { type: 'css' as const, value: 'h2 a' },
+        url: 'https://example.com/al/post',
+        text: 'Post',
+      },
+    ];
+    const entry = custom.profiles[2];
+    if (!entry) throw new Error('no page');
+    await saveSite({
+      ...custom,
+      profiles: custom.profiles.with(2, {
+        ...entry,
+        links: { [id]: { selector: { type: 'css', value: 'h2 a' }, options } },
+      }),
+    });
+    render(<SitesSettings sub="ex" />);
+    await screen.findByText(/→ link: h2 a/);
+    await click(screen.getByLabelText('Edit /top/*'));
+    const form = screen.getByRole('form', { name: 'Edit /top/*' });
+    const choice = within(form).getAllByLabelText(/link selector choice$/i)[0] as HTMLSelectElement;
+    const input = within(form).getAllByLabelText(/1 link selector$/i)[0] as HTMLInputElement;
+    expect(choice.value).toBe('1');
+    expect([...choice.options].map((o) => o.text)).toContain('/al/post · Post');
+    fireEvent.change(choice, { target: { value: '0' } });
+    expect(input.value).toBe('a.author');
+    fireEvent.change(input, { target: { value: 'a.title' } });
+    expect(choice.value).toBe('custom');
+    await act(async () => void fireEvent.submit(form));
+    await vi.waitFor(async () => {
+      const page = (await getSites()).find((s) => s.id === 'ex')?.profiles[2];
+      expect(page?.links?.[id]).toEqual({ selector: { type: 'css', value: 'a.title' }, options });
+    });
   });
 
   it('marks built-in pages and restores a page or the whole site', async () => {

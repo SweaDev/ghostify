@@ -1,4 +1,5 @@
 import type { FeedItem } from 'feedgrab';
+import { absoluteUrl as absolute, deepestIndex, type ItemLinks, urlIn } from '../sites/links';
 import type { View } from '../sites/model';
 import type { GhostDraft } from '../store/db';
 
@@ -7,6 +8,8 @@ export interface ExtractContext {
   siteId: string;
   view: View;
   baseUrl: string;
+  /** Per-feed link selectors from the site page. */
+  links?: ItemLinks;
 }
 
 const HEADING = 'h1, h2, h3, h4, [role="heading"]';
@@ -28,24 +31,17 @@ const MAX_EXCERPT = 400;
 
 const clean = (s: string | null | undefined) => (s ?? '').replace(/\s+/g, ' ').trim();
 
-function absolute(href: string | null | undefined, base: string): string | undefined {
-  if (!href || href.startsWith('#') || href.startsWith('javascript:')) return undefined;
-  try {
-    const u = new URL(href, base);
-    return u.protocol === 'http:' || u.protocol === 'https:' ? u.href : undefined;
-  } catch {
-    return undefined;
-  }
-}
-
+/** The heading's link, else the item itself if it is a link, else the deepest link in it. */
 function findUrl(el: Element, heading: Element | null, base: string): string | undefined {
   const fromHeading = heading?.closest('a[href]') ?? heading?.querySelector('a[href]');
-  const candidates = [fromHeading, el.matches('a[href]') ? el : null, ...el.querySelectorAll('a')];
-  for (const a of candidates) {
+  for (const a of [fromHeading, el.matches('a[href]') ? el : null]) {
     const url = absolute(a?.getAttribute('href'), base);
     if (url) return url;
   }
-  return undefined;
+  const urls = [...el.querySelectorAll('a[href]')].flatMap(
+    (a) => absolute(a.getAttribute('href'), base) ?? [],
+  );
+  return urls[deepestIndex(urls)];
 }
 
 function findImage(el: Element, base: string): string | undefined {
@@ -87,13 +83,14 @@ function findExcerpt(el: Element, title: string): string {
 
 /** Turns a feedgrab item into what Ghostify stores. */
 export function extractItem(
-  item: Pick<FeedItem, 'id' | 'element' | 'text'>,
+  item: Pick<FeedItem, 'id' | 'element' | 'text'> & { feedId?: string },
   ctx: ExtractContext,
 ): GhostDraft {
   const el = item.element;
   const heading = el.querySelector(HEADING);
   const title = clean(heading?.textContent) || clean(item.text()).slice(0, 120) || 'Untitled';
   const excerpt = findExcerpt(el, title);
+  const link = item.feedId ? ctx.links?.[item.feedId]?.selector : undefined;
   return {
     id: item.id,
     host: ctx.host,
@@ -101,7 +98,7 @@ export function extractItem(
     view: ctx.view,
     title,
     excerpt,
-    url: findUrl(el, heading, ctx.baseUrl),
+    url: (link && urlIn(el, link, ctx.baseUrl)) ?? findUrl(el, heading, ctx.baseUrl),
     image: findImage(el, ctx.baseUrl),
     author: findAuthor(el),
   };

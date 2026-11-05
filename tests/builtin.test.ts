@@ -39,6 +39,16 @@ describe('built-in restore', () => {
     expect(builtinStatus(back)?.customized).toBe(false);
   });
 
+  it('flags a page whose link selector was set, and restoring drops it', () => {
+    const d = pageDraft(topEntry as NonNullable<typeof topEntry>);
+    const [first] = d.feeds;
+    if (!first) throw new Error('no feed');
+    d.feeds[0] = { ...first, link: { type: 'css', value: 'h2 a' } };
+    const site = applyPageEdit(shipped, top, d);
+    expect(builtinStatus(site)?.customized).toBe(true);
+    expect(restorePage(site, top).profiles[top]?.links).toBeUndefined();
+  });
+
   it('flags a changed indicator or a removed shipped page', () => {
     const ind = {
       ...shipped,

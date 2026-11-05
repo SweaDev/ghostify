@@ -19,6 +19,7 @@ import {
 } from '../sites/builtin';
 import { applyPageEdit, type PageDraft, pageDraft } from '../sites/edit';
 import { mergeSites, parseSitesJson, serializeSites } from '../sites/io';
+import { type LinkOption, optionIndex, optionLabel } from '../sites/links';
 import {
   type LoginIndicator,
   pageKey,
@@ -172,8 +173,13 @@ function Breadcrumb({ current }: { current: string }) {
   );
 }
 
-function SelectorField(props: { label: string; value: Selector; onChange(s: Selector): void }) {
-  const { label, value, onChange } = props;
+function SelectorField(props: {
+  label: string;
+  value: Selector;
+  placeholder?: string;
+  onChange(s: Selector): void;
+}) {
+  const { label, value, placeholder, onChange } = props;
   return (
     <div className="flex gap-2">
       <select
@@ -188,6 +194,7 @@ function SelectorField(props: { label: string; value: Selector; onChange(s: Sele
       <input
         aria-label={label}
         value={value.value}
+        placeholder={placeholder}
         spellCheck={false}
         onChange={(e) => onChange({ ...value, value: e.target.value })}
         className={`${field} min-w-0 flex-1 font-mono text-xs`}
@@ -196,12 +203,50 @@ function SelectorField(props: { label: string; value: Selector; onChange(s: Sele
   );
 }
 
+function LinkField(props: {
+  label: string;
+  value: Selector;
+  options: LinkOption[];
+  base: string;
+  onChange(s: Selector): void;
+}) {
+  const { label, value, options, base, onChange } = props;
+  const j = optionIndex(options, value);
+  const choice = !value.value.trim() ? 'auto' : j >= 0 ? String(j) : 'custom';
+  return (
+    <>
+      {options.length > 0 && (
+        <select
+          aria-label={`${label} choice`}
+          value={choice}
+          onChange={(e) => {
+            const v = e.target.value;
+            const o = options[Number(v)];
+            if (v === 'auto') onChange({ type: 'css', value: '' });
+            else if (o) onChange({ ...o.selector });
+          }}
+          className={`${field} min-w-0 text-xs`}
+        >
+          {options.map((o, i) => (
+            <option key={o.url} value={i}>
+              {optionLabel(o, base)}
+            </option>
+          ))}
+          <option value="custom">Custom selector</option>
+          <option value="auto">Automatic (heading link, else the deepest link)</option>
+        </select>
+      )}
+      <SelectorField label={label} value={value} onChange={onChange} placeholder="Automatic" />
+    </>
+  );
+}
+
 function PageForm(props: { site: Site; index: number; entry: SiteProfileEntry; onDone(): void }) {
   const { site, index, entry, onDone } = props;
   const [draft, setDraft] = useState<PageDraft>(() => pageDraft(entry));
   const [error, setError] = useState<string>();
   const many = entry.profile.feeds.length > 1;
-  const setFeed = (i: number, part: 'container' | 'item', sel: Selector) =>
+  const setFeed = (i: number, part: 'container' | 'item' | 'link', sel: Selector) =>
     setDraft((d) => ({
       ...d,
       feeds: d.feeds.map((f, j) => (j === i ? { ...f, [part]: sel } : f)),
@@ -276,6 +321,16 @@ function PageForm(props: { site: Site; index: number; entry: SiteProfileEntry; o
               label={name('item')}
               value={d.item}
               onChange={(s) => setFeed(i, 'item', s)}
+            />
+            <span className="text-xs text-zinc-500">
+              Post link (inside each item; leave empty to pick it automatically)
+            </span>
+            <LinkField
+              label={name('link')}
+              value={d.link}
+              options={entry.links?.[f.id]?.options ?? []}
+              base={`https://${site.hostname}/`}
+              onChange={(s) => setFeed(i, 'link', s)}
             />
           </fieldset>
         );
@@ -367,6 +422,7 @@ function PageItem(props: {
             {e.profile.feeds.map((f) => (
               <li key={f.id}>
                 {f.container.value} → {f.item.value}
+                {e.links?.[f.id]?.selector.value && ` → link: ${e.links[f.id]?.selector.value}`}
               </li>
             ))}
           </ul>
