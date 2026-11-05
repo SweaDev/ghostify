@@ -1,6 +1,7 @@
 import { browser } from 'wxt/browser';
 import type { ProtocolMap } from '../messaging';
 import type { GhostDraft } from '../store/db';
+import { SAMPLE_MAX_CHARS } from '../store/samples';
 
 export interface Sender {
   url?: string;
@@ -14,6 +15,8 @@ export const CONTENT_MESSAGES = new Set<keyof ProtocolMap>([
   'autoGhostify',
   'unghost',
   'llm',
+  'samplesNeeded',
+  'saveSample',
 ]);
 
 const MAX = { id: 200, title: 300, excerpt: 2000, author: 120, url: 2048, ids: 500 };
@@ -89,5 +92,24 @@ export function guard<K extends keyof ProtocolMap>(
   }
   if (type === 'unghost' && !(data as { key: string }).key?.startsWith(`${host}:`))
     deny('host mismatch');
+  if (type === 'samplesNeeded' || type === 'saveSample') {
+    const d = data as {
+      siteId: unknown;
+      feedId?: unknown;
+      feedIds?: unknown;
+      url: unknown;
+      html?: unknown;
+    };
+    const url = safeUrl(d.url);
+    if (!url || new URL(url).hostname !== host) deny('host mismatch');
+    if (typeof d.siteId !== 'string' || d.siteId.length > MAX.id) deny('bad site');
+    if (type === 'samplesNeeded') {
+      const ids = (Array.isArray(d.feedIds) ? d.feedIds : []).filter((f) => typeof f === 'string');
+      return { siteId: d.siteId, url, feedIds: ids.slice(0, 50) } as never;
+    }
+    if (typeof d.feedId !== 'string' || d.feedId.length > MAX.id) deny('bad feed');
+    if (typeof d.html !== 'string' || d.html.length > SAMPLE_MAX_CHARS) deny('sample too large');
+    return { siteId: d.siteId, feedId: d.feedId, url, html: d.html } as never;
+  }
   return clean as never;
 }

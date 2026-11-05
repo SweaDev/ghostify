@@ -1,5 +1,6 @@
 import { storage } from 'wxt/utils/storage';
 import { DEFAULT_SITES, LEGACY_DEVTO_INDICATOR } from './defaults';
+import { migrateLinks } from './links';
 import { pageKey, type Site } from './model';
 
 export const sitesItem = storage.defineItem<Site[]>('local:sites', { fallback: DEFAULT_SITES });
@@ -55,7 +56,9 @@ function addShippedPages(site: Site): Site {
  */
 export async function ensureDefaultSites(): Promise<void> {
   const stored = await storage.getItem<Site[]>('local:sites');
-  const sites = (stored ?? []).map(refreshBuiltin);
+  const sites = (stored ?? [])
+    .map((s) => ({ ...s, profiles: s.profiles.map(migrateLinks) }))
+    .map(refreshBuiltin);
   const missing = DEFAULT_SITES.filter((d) => !sites.some((s) => s.id === d.id));
   const next = [...sites, ...missing];
   if (JSON.stringify(next) !== JSON.stringify(stored)) await sitesItem.setValue(next);

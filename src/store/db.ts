@@ -110,6 +110,18 @@ export interface ContentRow {
   qa?: QaEntry[];
 }
 
+/** A stripped-down copy of one feed (feedgrab `captureSample`), to check edited selectors. */
+export interface SampleRow {
+  /** `siteId|feedId` */
+  key: string;
+  siteId: string;
+  feedId: string;
+  /** Page the sample came from (base for its relative links). */
+  url: string;
+  html: string;
+  capturedAt: number;
+}
+
 export const db = new Dexie('ghostify') as Dexie & {
   items: EntityTable<GhostItem, 'key'>;
   embeddings: EntityTable<Embedding, 'key'>;
@@ -120,6 +132,7 @@ export const db = new Dexie('ghostify') as Dexie & {
   decisions: EntityTable<DecisionRow, 'key'>;
   aiJobs: EntityTable<AiJob, 'id'>;
   contents: EntityTable<ContentRow, 'key'>;
+  samples: EntityTable<SampleRow, 'key'>;
 };
 
 db.version(1).stores({
@@ -134,3 +147,4 @@ db.version(6).stores({ aiJobs: 'id, createdAt, status', contents: 'key' });
 db.version(7).stores({
   items: 'key, state, host, createdAt, snoozeUntil, *tags, [state+createdAt]',
 });
+db.version(8).stores({ samples: 'key, siteId' });

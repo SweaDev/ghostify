@@ -1,5 +1,4 @@
 import { matchProfile, type SiteProfile } from 'feedgrab';
-import type { ItemLinks } from './links';
 import {
   hostMatches,
   type LoginIndicator,
@@ -39,7 +38,6 @@ export interface PickResult {
   profile: SiteProfile;
   view: View;
   indicator?: LoginIndicator;
-  links?: ItemLinks;
 }
 
 /**
@@ -69,13 +67,6 @@ export function mergePicked(sites: Site[], host: string, label: string, r: PickR
     ...site,
     enabled: true,
     loginIndicator: r.indicator ?? site.loginIndicator,
-    profiles: [
-      ...profiles,
-      {
-        view: r.view,
-        profile,
-        ...(r.links && Object.keys(r.links).length > 0 && { links: r.links }),
-      },
-    ],
+    profiles: [...profiles, { view: r.view, profile }],
   };
 }

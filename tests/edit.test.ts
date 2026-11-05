@@ -1,5 +1,5 @@
 import { DEVTO_SITE } from '@/src/sites/defaults';
-import { applyPageEdit, pageDraft } from '@/src/sites/edit';
+import { applyPageEdit, editPage, pageDraft } from '@/src/sites/edit';
 import type { Site } from '@/src/sites/model';
 import { ensureDefaultSites, getSites, saveSite } from '@/src/sites/registry';
 
@@ -56,39 +56,36 @@ describe('applyPageEdit', () => {
     expect(sel('div[')).toThrow(/not a valid CSS selector/);
   });
 
-  it('edits the link selector, keeping it with a feed whose id changes', () => {
+  it('edits the post link on the feed; only container/item edits rename the feed', () => {
     const id = entry.profile.feeds[0]?.id ?? '';
-    const options = [
-      { selector: { type: 'css' as const, value: 'a' }, url: 'https://dev.to/a', text: '' },
-    ];
-    const withLink = {
-      ...site,
-      profiles: site.profiles.with(top, {
-        ...entry,
-        links: { [id]: { selector: { type: 'css' as const, value: 'a' }, options } },
-      }),
-    };
-    const d = pageDraft(withLink.profiles[top] ?? entry);
+    const d = pageDraft(entry);
     const [first] = d.feeds;
     if (!first) throw new Error('no feed');
-    expect(first.link.value).toBe('a');
+    expect(first.link.value).toBe('');
+    d.feeds[0] = { ...first, link: { type: 'css', value: ' h2 a ' } };
+    const linked = editPage(site, top, d);
+    expect(linked.renamed).toEqual({});
+    const feed = linked.site.profiles[top]?.profile.feeds[0];
+    expect(feed).toMatchObject({ id, permalink: { type: 'css', value: 'h2 a' } });
+    expect(pageDraft(linked.site.profiles[top] ?? entry).feeds[0]?.link.value).toBe('h2 a');
+
     d.feeds[0] = {
       ...first,
       item: { type: 'css', value: 'li' },
-      link: { type: 'css', value: ' h2 a ' },
+      link: { type: 'css', value: 'a' },
     };
-    const next = applyPageEdit(withLink, top, d).profiles[top];
-    const newId = next?.profile.feeds[0]?.id ?? '';
-    expect(newId).not.toBe(id);
-    expect(next?.links).toEqual({ [newId]: { selector: { type: 'css', value: 'h2 a' }, options } });
+    const moved = editPage(site, top, d);
+    const newId = moved.site.profiles[top]?.profile.feeds[0]?.id ?? '';
+    expect(moved.renamed).toEqual({ [id]: newId });
+    expect(moved.site.profiles[top]?.profile.feeds[0]?.permalink?.value).toBe('a');
 
     d.feeds[0] = { ...first, link: { type: 'css', value: 'a[' } };
-    expect(() => applyPageEdit(withLink, top, d)).toThrow(
+    expect(() => applyPageEdit(site, top, d)).toThrow(
       /Link selector \(feed 1\) is not a valid CSS/,
     );
-    d.feeds[0] = { ...first, link: { type: 'css', value: '' } };
-    expect(applyPageEdit(withLink, top, d).profiles[top]?.links?.[id]?.selector.value).toBe('');
-    expect(applyPageEdit(site, top, pageDraft(entry)).profiles[top]?.links).toBeUndefined();
+    d.feeds[0] = { ...first, link: { type: 'css', value: '  ' } };
+    const cleared = applyPageEdit(linked.site, top, d).profiles[top]?.profile.feeds[0];
+    expect(cleared).not.toHaveProperty('permalink');
   });
 
   it('survives the built-in selector refresh on startup', async () => {

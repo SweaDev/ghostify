@@ -14,9 +14,13 @@ describe('extractItem', () => {
     const stories = [...doc.querySelectorAll('#substories > .crayons-story')];
     expect(stories).toHaveLength(3);
     const el = stories[0] as Element;
-    const d = extractItem({ id: 'x', element: el, text: () => el.textContent ?? '' }, ctx);
+    const permalink = 'https://dev.to/user/post';
+    const d = extractItem(
+      { id: 'x', element: el, text: () => el.textContent ?? '', permalink },
+      ctx,
+    );
     expect(d.title).toBe(el.querySelector('h2')?.textContent?.trim());
-    expect(d.url).toMatch(/^https:\/\/dev\.to\/[^/]+\/.+/);
+    expect(d.url).toBe(permalink);
     expect(d.image).toMatch(/^https:\/\/media2\.dev\.to\//);
     expect(d.image).not.toMatch(/profile_image/);
     expect(d.author?.length).toBeGreaterThan(1);
@@ -32,7 +36,9 @@ describe('extractItem', () => {
     const el = doc.querySelector('li') as Element;
     const d = extractItem({ id: 'y', element: el, text: () => el.textContent ?? '' }, ctx);
     expect(d.title).toBe('Hello world, this is a post');
-    expect(d.url).toBe('https://dev.to/p/1');
+    expect(d.url).toBeUndefined();
+    const bad = { id: 'y', element: el, text: () => '', permalink: 'javascript:alert(1)' };
+    expect(extractItem(bad, ctx).url).toBeUndefined();
     expect(d.image).toBeUndefined();
     expect(d.excerpt).toBe('');
   });

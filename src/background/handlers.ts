@@ -6,7 +6,10 @@ import { handleDecision } from '../ai/decision';
 import { modelTag } from '../ai/embed';
 import type { ProtocolMap } from '../messaging';
 import { onMessage } from '../messaging';
+import { hostMatches, type Site } from '../sites/model';
+import { getSites } from '../sites/registry';
 import { autoGhostify, ghostedIds, ghostify, listItems, setState, unghost } from '../store/items';
+import { samplesNeeded, saveSample } from '../store/samples';
 import { getSettings } from '../store/settings';
 import { pauseAll, pauseJob, resumeAll, resumeJob, runJob, stopAll, stopJob } from './ai-queue';
 import { deleteModel, downloadModel } from './browser-models';
@@ -26,6 +29,13 @@ function describe(req: unknown): { kind: 'decision' | 'detect'; label: string; i
       input: (r.items ?? []).map((i) => i.text.slice(0, 200)).join('\n---\n'),
     };
   return { kind: 'detect', label: 'Find feeds on a page', input: '' };
+}
+
+/** The site `siteId` if `url` is on it, and the ids of its feeds. */
+async function siteFeeds(siteId: string, url: string): Promise<{ site?: Site; ids: Set<string> }> {
+  const site = (await getSites()).find((s) => s.id === siteId);
+  if (!site || !hostMatches(site.hostname, new URL(url).hostname)) return { ids: new Set() };
+  return { site, ids: new Set(site.profiles.flatMap((e) => e.profile.feeds.map((f) => f.id))) };
 }
 
 type Handlers = {
@@ -109,6 +119,18 @@ export const handlers: Handlers = {
         error: { code: err.code ?? 'LLM_UNAVAILABLE', message: String(err.message) },
       };
     }
+  },
+  samplesNeeded: async ({ siteId, feedIds, url }) => {
+    const { ids } = await siteFeeds(siteId, url);
+    return samplesNeeded(
+      siteId,
+      feedIds.filter((f) => ids.has(f)),
+    );
+  },
+  saveSample: async ({ siteId, feedId, url, html }) => {
+    const { ids } = await siteFeeds(siteId, url);
+    if (!ids.has(feedId)) throw new Error('unknown feed');
+    await saveSample({ siteId, feedId, url, html });
   },
   addSite: async ({ tabId }) => {
     await browser.scripting.executeScript({

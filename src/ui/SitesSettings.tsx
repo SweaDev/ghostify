@@ -1,4 +1,9 @@
-import type { Selector } from 'feedgrab';
+import {
+  type FeedDescriptor,
+  type PermalinkCandidate,
+  type Selector,
+  suggestPermalinks,
+} from 'feedgrab';
 import {
   ChevronRight,
   Download,
@@ -17,9 +22,9 @@ import {
   restoreSite,
   shippedPages,
 } from '../sites/builtin';
-import { applyPageEdit, type PageDraft, pageDraft } from '../sites/edit';
+import { editPage, type PageDraft, pageDraft } from '../sites/edit';
 import { mergeSites, parseSitesJson, serializeSites } from '../sites/io';
-import { type LinkOption, optionIndex, optionLabel } from '../sites/links';
+import { checkFeed, optionIndex, optionLabel, withPermalink } from '../sites/links';
 import {
   type LoginIndicator,
   pageKey,
@@ -28,8 +33,10 @@ import {
   type View,
 } from '../sites/model';
 import { deleteSite, getSites, saveSite, sitesItem } from '../sites/registry';
+import { deleteSamples, renameSamples } from '../store/samples';
 import { IconButton } from './ItemCard';
 import { btn, btnDanger, btnPrimary, card, field } from './kit';
+import { type Sample, SampleStatus, useSamples } from './SampleCheck';
 import { Switch } from './Switch';
 import { useDialogFocus } from './useDialogFocus';
 import { useSettings } from './useSettings';
@@ -206,7 +213,7 @@ function SelectorField(props: {
 function LinkField(props: {
   label: string;
   value: Selector;
-  options: LinkOption[];
+  options: PermalinkCandidate[];
   base: string;
   onChange(s: Selector): void;
 }) {
@@ -233,11 +240,21 @@ function LinkField(props: {
             </option>
           ))}
           <option value="custom">Custom selector</option>
-          <option value="auto">Automatic (heading link, else the deepest link)</option>
+          <option value="auto">Automatic</option>
         </select>
       )}
       <SelectorField label={label} value={value} onChange={onChange} placeholder="Automatic" />
     </>
+  );
+}
+
+/** feedgrab's post-link suggestions for the items the edited selectors find in the sample. */
+function sampleOptions(sample: Sample | undefined, d: FeedDescriptor): PermalinkCandidate[] {
+  if (!sample) return [];
+  const { items } = checkFeed(sample.doc, d, sample.row.url);
+  return suggestPermalinks(
+    items.map((i) => i.element),
+    sample.row.url,
   );
 }
 
@@ -246,6 +263,7 @@ function PageForm(props: { site: Site; index: number; entry: SiteProfileEntry; o
   const [draft, setDraft] = useState<PageDraft>(() => pageDraft(entry));
   const [error, setError] = useState<string>();
   const many = entry.profile.feeds.length > 1;
+  const samples = useSamples(site.id);
   const setFeed = (i: number, part: 'container' | 'item' | 'link', sel: Selector) =>
     setDraft((d) => ({
       ...d,
@@ -253,7 +271,9 @@ function PageForm(props: { site: Site; index: number; entry: SiteProfileEntry; o
     }));
   const save = async () => {
     try {
-      await saveSite(applyPageEdit(site, index, draft));
+      const { site: next, renamed } = editPage(site, index, draft);
+      await saveSite(next);
+      await renameSamples(site.id, renamed);
       onDone();
     } catch (e) {
       setError((e as Error).message);
@@ -298,6 +318,9 @@ function PageForm(props: { site: Site; index: number; entry: SiteProfileEntry; o
       {entry.profile.feeds.map((f, i) => {
         const d = draft.feeds[i];
         if (!d) return null;
+        const sample = samples?.get(f.id);
+        const edited = withPermalink({ ...f, container: d.container, item: d.item }, d.link);
+        const options = sampleOptions(sample, edited);
         const name = (part: string) =>
           many
             ? `Feed ${i + 1} ${part} selector`
@@ -328,10 +351,13 @@ function PageForm(props: { site: Site; index: number; entry: SiteProfileEntry; o
             <LinkField
               label={name('link')}
               value={d.link}
-              options={entry.links?.[f.id]?.options ?? []}
-              base={`https://${site.hostname}/`}
+              options={options}
+              base={sample?.row.url ?? `https://${site.hostname}/`}
               onChange={(s) => setFeed(i, 'link', s)}
             />
+            {samples && (
+              <SampleStatus sample={sample} saved={f} draft={edited} host={site.hostname} />
+            )}
           </fieldset>
         );
       })}
@@ -412,7 +438,15 @@ function PageItem(props: {
             <IconButton
               label={`Remove ${path}`}
               onClick={() =>
-                void saveSite({ ...site, profiles: site.profiles.filter((_, j) => j !== index) })
+                void saveSite({
+                  ...site,
+                  profiles: site.profiles.filter((_, j) => j !== index),
+                }).then(() =>
+                  deleteSamples(
+                    site.id,
+                    e.profile.feeds.map((f) => f.id),
+                  ),
+                )
               }
             >
               <Trash2 className="size-3.5" />
@@ -422,7 +456,7 @@ function PageItem(props: {
             {e.profile.feeds.map((f) => (
               <li key={f.id}>
                 {f.container.value} → {f.item.value}
-                {e.links?.[f.id]?.selector.value && ` → link: ${e.links[f.id]?.selector.value}`}
+                {f.permalink?.value && ` → link: ${f.permalink.value}`}
               </li>
             ))}
           </ul>
@@ -495,7 +529,7 @@ function SiteDetailBody({ site }: { site: Site }) {
               className={btnDanger}
               onClick={() => {
                 if (!confirm(`Delete ${site.label}? Its selectors and rules are removed.`)) return;
-                void deleteSite(site.id);
+                void deleteSite(site.id).then(() => deleteSamples(site.id));
                 location.replace('#sites');
               }}
             >
