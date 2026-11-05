@@ -6,25 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [1.5.0] - 2026-11-05
 ### Added
+- Choose which link in a post is its URL when adding a site: pick from the suggested links (the best one is preselected) or edit the selector. Suggestions are ranked across the feed's posts, so x.com suggests the post, not the author or a photo.
+- Edit a page's post link (suggestion or selector) in **Settings → Sites**.
 - **Settings → Sites** checks edited selectors against a small saved sample of each feed (two posts, at most 20 KB, kept on this device and never exported). It shows how many posts they find and where the first one links, and warns without blocking when the sample can't confirm an edit.
-- Samples are saved when you add a site and refreshed from the page when missing or older than 30 days. The post-link choices in Settings come from them.
+- Samples are saved when you add a site and refreshed from the page when missing or older than 30 days.
 
 ### Changed
-- The post link is part of the feed's selectors (feedgrab `permalink`) and Ghostify recognises posts by it. Changing it can make posts ghostified on that page show again. Post links saved by 1.4.6 are moved over automatically.
-- Suggested post links are ranked across the feed's posts (links on a time stamp or heading, links that differ per post and appear in every post), so x.com posts with photos suggest the post, not the photo.
+- Ghostify recognises posts by their post link (feedgrab `permalink`), so changing a page's post link can make posts ghostified there show again.
 - Requires feedgrab 0.2.0.
 
 ### Fixed
+- Posts without a linked heading (such as on x.com) saved the author's profile link instead of the post's.
 - On sites without time-stamp or heading links, posts by the same author could share an id, so one was dropped or ghostifying one hid both.
-
-## [1.4.6] - 2026-11-05
-### Added
-- Choose which link in a post is its URL when adding a site: pick from the links in the first post (the deepest is preselected) or edit the selector.
-- Edit a page's post link (choice or selector) in **Settings → Sites**.
-
-### Fixed
-- Posts without a linked heading (such as on x.com) saved the author's profile link instead of the post's; Ghostify now uses the deepest link.
 
 ## [1.4.5] - 2026-11-04
 ### Added
@@ -129,8 +125,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Search index builds in the background, with live progress.
 - Ollama setup guide in the README.
 
-[Unreleased]: https://github.com/SweaDev/ghostify/compare/v1.4.6...HEAD
-[1.4.6]: https://github.com/SweaDev/ghostify/compare/v1.4.5...v1.4.6
+[Unreleased]: https://github.com/SweaDev/ghostify/compare/v1.5.0...HEAD
+[1.5.0]: https://github.com/SweaDev/ghostify/compare/v1.4.5...v1.5.0
 [1.4.5]: https://github.com/SweaDev/ghostify/compare/v1.4.4...v1.4.5
 [1.4.4]: https://github.com/SweaDev/ghostify/compare/v1.4.3...v1.4.4
 [1.4.3]: https://github.com/SweaDev/ghostify/compare/v1.4.2...v1.4.3
