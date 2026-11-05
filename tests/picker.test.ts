@@ -13,6 +13,22 @@ const profile = (host: string, pathPattern: string): SiteProfile => ({
 });
 
 describe('picker merge', () => {
+  it('keeps the chosen item links on the page', () => {
+    const links = { f: { selector: { type: 'css' as const, value: 'a:has(time)' } } };
+    const s = mergePicked([], 'x.example', 'X', {
+      profile: profile('x.example', '/'),
+      view: 'any',
+      links,
+    });
+    expect(s.profiles[0]?.links).toEqual(links);
+    const none = mergePicked([], 'x.example', 'X', {
+      profile: profile('x.example', '/'),
+      view: 'any',
+      links: {},
+    });
+    expect(none.profiles[0]).not.toHaveProperty('links');
+  });
+
   it('creates a new site from the first profile', () => {
     const s = mergePicked([], 'www.news.example', 'News', {
       profile: profile('www.news.example', '/'),

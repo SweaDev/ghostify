@@ -1,4 +1,5 @@
 import { parseProfile, serializeProfile } from 'feedgrab';
+import type { ItemLinks } from './links';
 import type { Site, View } from './model';
 
 const VIEWS: View[] = ['any', 'loggedIn', 'loggedOut'];
@@ -34,15 +35,56 @@ export function parseSite(raw: unknown): Site {
     enabled: s.enabled !== false,
     builtin: false,
     loginIndicator: ind,
-    profiles: (s.profiles as { view: View; profile: unknown; builtinKey?: unknown }[]).map((e) => {
+    profiles: (
+      s.profiles as { view: View; profile: unknown; builtinKey?: unknown; links?: unknown }[]
+    ).map((e) => {
       if (!VIEWS.includes(e?.view)) fail('profile.view must be any, loggedIn or loggedOut');
       const profile = parseProfile(JSON.stringify(e.profile));
-      return typeof e.builtinKey === 'string'
-        ? { view: e.view, profile, builtinKey: e.builtinKey }
-        : { view: e.view, profile };
+      const links = parseLinks(e.links);
+      return {
+        view: e.view,
+        profile,
+        ...(typeof e.builtinKey === 'string' && { builtinKey: e.builtinKey }),
+        ...(links && { links }),
+      };
     }),
     rules: parseRules(s.rules),
   };
+}
+
+const MAX_SELECTOR = 1000;
+
+function parseSelector(raw: unknown, what: string): { type: 'css' | 'xpath'; value: string } {
+  const o = (raw ?? {}) as Record<string, unknown>;
+  if ((o.type !== 'css' && o.type !== 'xpath') || typeof o.value !== 'string')
+    fail(`${what} must be a CSS or XPath selector`);
+  if (o.value.length > MAX_SELECTOR) fail(`${what} is too long`);
+  return { type: o.type, value: o.value };
+}
+
+const isHttp = (u: unknown) => typeof u === 'string' && /^https?:\/\//.test(u) && u.length < 2048;
+
+function parseLinks(raw: unknown): ItemLinks | undefined {
+  if (raw === undefined) return undefined;
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw))
+    fail('profile.links must be an object');
+  const out: ItemLinks = {};
+  for (const [id, v] of Object.entries(raw)) {
+    const o = (v ?? {}) as Record<string, unknown>;
+    const selector = parseSelector(o.selector, 'link.selector');
+    if (o.options !== undefined && !Array.isArray(o.options)) fail('link.options must be an array');
+    const options = ((o.options as unknown[] | undefined) ?? []).slice(0, 30).map((x) => {
+      const p = (x ?? {}) as Record<string, unknown>;
+      if (!isHttp(p.url)) fail('link option url must be http(s)');
+      return {
+        selector: parseSelector(p.selector, 'link option selector'),
+        url: p.url as string,
+        text: typeof p.text === 'string' ? p.text.slice(0, 60) : '',
+      };
+    });
+    out[id] = options.length ? { selector, options } : { selector };
+  }
+  return Object.keys(out).length ? out : undefined;
 }
 
 function parseRules(raw: unknown): Site['rules'] {

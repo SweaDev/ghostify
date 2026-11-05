@@ -1,6 +1,6 @@
 import type { LoginIndicator, View } from './model';
 
-const CSS = `
+export const PANEL_CSS = `
 :host { all: initial; }
 .panel {
   position: fixed; z-index: 2147483647; top: 16px; right: 16px; width: 320px;
@@ -36,7 +36,7 @@ export function chooseView(doc: Document, opts: ChooserOptions = {}): Promise<Vi
   const host = doc.createElement('div');
   host.setAttribute('data-ghostify-chooser', '');
   const root = host.attachShadow({ mode: 'open' });
-  root.innerHTML = `<style>${CSS}</style>
+  root.innerHTML = `<style>${PANEL_CSS}</style>
 <div class="panel" role="dialog" aria-label="Ghostify: which view?">
   <h2>Which view is this?</h2>
   <p>Sites can show different feeds when you are logged in. Ghostify keeps separate selectors per view.</p>
@@ -97,7 +97,7 @@ export function notice(doc: Document, message: string, ms = 6000): void {
   const host = doc.createElement('div');
   host.setAttribute('data-ghostify-chooser', '');
   const root = host.attachShadow({ mode: 'open' });
-  root.innerHTML = `<style>${CSS}</style><div class="panel" role="status"><p></p></div>`;
+  root.innerHTML = `<style>${PANEL_CSS}</style><div class="panel" role="status"><p></p></div>`;
   (root.querySelector('p') as HTMLElement).textContent = message;
   doc.documentElement.append(host);
   setTimeout(() => host.remove(), ms);

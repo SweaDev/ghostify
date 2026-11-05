@@ -36,7 +36,12 @@ export function isPageCustomized(e: SiteProfileEntry, shipped: SiteProfileEntry)
     a.feeds.length !== b.feeds.length ||
     a.feeds.some((f, i) => {
       const g = b.feeds[i];
-      return !g || !sameSel(f.container, g.container) || !sameSel(f.item, g.item);
+      return (
+        !g ||
+        !sameSel(f.container, g.container) ||
+        !sameSel(f.item, g.item) ||
+        (e.links?.[f.id]?.selector.value ?? '') !== (shipped.links?.[g.id]?.selector.value ?? '')
+      );
     })
   );
 }

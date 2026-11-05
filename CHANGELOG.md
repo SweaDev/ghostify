@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- Choose which link in a post is its URL when adding a site: pick from the links in the first post (the deepest is preselected) or edit the selector.
+- Edit a page's post link (choice or selector) in **Settings → Sites**.
+
+### Fixed
+- Posts without a linked heading (such as on x.com) saved the author's profile link instead of the post's; Ghostify now uses the deepest link.
 
 ## [1.4.5] - 2026-11-04
 ### Added
