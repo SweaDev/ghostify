@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [1.4.6] - 2026-11-05
 ### Added
 - Choose which link in a post is its URL when adding a site: pick from the links in the first post (the deepest is preselected) or edit the selector.
 - Edit a page's post link (choice or selector) in **Settings → Sites**.
@@ -116,7 +118,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Search index builds in the background, with live progress.
 - Ollama setup guide in the README.
 
-[Unreleased]: https://github.com/SweaDev/ghostify/compare/v1.4.5...HEAD
+[Unreleased]: https://github.com/SweaDev/ghostify/compare/v1.4.6...HEAD
+[1.4.6]: https://github.com/SweaDev/ghostify/compare/v1.4.5...v1.4.6
 [1.4.5]: https://github.com/SweaDev/ghostify/compare/v1.4.4...v1.4.5
 [1.4.4]: https://github.com/SweaDev/ghostify/compare/v1.4.3...v1.4.4
 [1.4.3]: https://github.com/SweaDev/ghostify/compare/v1.4.2...v1.4.3
