@@ -46,7 +46,7 @@ describe('built-in restore', () => {
     d.feeds[0] = { ...first, link: { type: 'css', value: 'h2 a' } };
     const site = applyPageEdit(shipped, top, d);
     expect(builtinStatus(site)?.customized).toBe(true);
-    expect(restorePage(site, top).profiles[top]?.links).toBeUndefined();
+    expect(restorePage(site, top).profiles[top]?.profile.feeds[0]?.permalink).toBeUndefined();
   });
 
   it('flags a changed indicator or a removed shipped page', () => {

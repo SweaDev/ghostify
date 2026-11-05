@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- **Settings → Sites** checks edited selectors against a small saved sample of each feed (two posts, at most 20 KB, kept on this device and never exported). It shows how many posts they find and where the first one links, and warns without blocking when the sample can't confirm an edit.
+- Samples are saved when you add a site and refreshed from the page when missing or older than 30 days. The post-link choices in Settings come from them.
+
+### Changed
+- The post link is part of the feed's selectors (feedgrab `permalink`) and Ghostify recognises posts by it. Changing it can make posts ghostified on that page show again. Post links saved by 1.4.6 are moved over automatically.
+- Suggested post links are ranked across the feed's posts (links on a time stamp or heading, links that differ per post and appear in every post), so x.com posts with photos suggest the post, not the photo.
+- Requires feedgrab 0.2.0.
+
+### Fixed
+- On sites without time-stamp or heading links, posts by the same author could share an id, so one was dropped or ghostifying one hid both.
 
 ## [1.4.6] - 2026-11-05
 ### Added

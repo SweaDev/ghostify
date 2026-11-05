@@ -19,6 +19,10 @@ export interface ProtocolMap {
   setState(data: { key: string; state: ItemState; snoozeUntil?: number }): GhostItem;
   listItems(data: ListQuery): GhostItem[];
   openDashboard(): void;
+  /** Feeds of a site (on the sender's page) that need a fresh selector-check sample. */
+  samplesNeeded(data: { siteId: string; feedIds: string[]; url: string }): string[];
+  /** Stores a feed sample (feedgrab `captureSample`) for checking selectors in Settings. */
+  saveSample(data: { siteId: string; feedId: string; url: string; html: string }): void;
   /** Injects the add/edit-site picker into a tab. */
   addSite(data: { tabId: number }): void;
   /** Tries the model configured for a purpose (AI settings "Test"). */

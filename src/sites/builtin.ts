@@ -40,7 +40,7 @@ export function isPageCustomized(e: SiteProfileEntry, shipped: SiteProfileEntry)
         !g ||
         !sameSel(f.container, g.container) ||
         !sameSel(f.item, g.item) ||
-        (e.links?.[f.id]?.selector.value ?? '') !== (shipped.links?.[g.id]?.selector.value ?? '')
+        (f.permalink?.value ?? '') !== (g.permalink?.value ?? '')
       );
     })
   );

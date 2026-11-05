@@ -11,6 +11,7 @@ import type { ButtonPlacement } from '../store/settings';
 import { isContextInvalidated, type RuntimeApi } from './api';
 import { extractItem } from './extract';
 import { mountGhostButton } from './ghost-button';
+import { watchSamples } from './samples';
 
 export interface FeedRuntime {
   /** False when no enabled site profile matches the page. */
@@ -96,13 +97,7 @@ function startFeed({ doc, url, sites, api, llm, alive, placement }: RuntimeOptio
   if (!resolved) return { active: false, dispose() {} };
 
   const host = new URL(url).hostname;
-  const ctx = {
-    host,
-    siteId: resolved.site.id,
-    view: resolved.view,
-    baseUrl: url,
-    links: resolved.links,
-  };
+  const ctx = { host, siteId: resolved.site.id, view: resolved.view, baseUrl: url };
   const profile = llm ? withRules(resolved.profile, resolved.site.rules) : resolved.profile;
   const feed = openFeed(doc, profile, { builtinExclusions: false, llm });
   const byElement = new WeakMap<Element, FeedItem>();
@@ -185,6 +180,16 @@ function startFeed({ doc, url, sites, api, llm, alive, placement }: RuntimeOptio
     );
   };
 
+  const stopSamples = watchSamples({
+    doc,
+    url,
+    siteId: resolved.site.id,
+    profile: resolved.profile,
+    feed,
+    api,
+    warn,
+  });
+
   const button = mountGhostButton(doc, {
     placement,
     resolve(el) {
@@ -226,6 +231,7 @@ function startFeed({ doc, url, sites, api, llm, alive, placement }: RuntimeOptio
     active: true,
     dispose() {
       disposed = true;
+      stopSamples();
       offAdded();
       offUpdated();
       button.destroy();

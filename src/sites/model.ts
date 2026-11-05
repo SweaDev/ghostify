@@ -1,5 +1,4 @@
 import { matchProfile, type SiteProfile } from 'feedgrab';
-import type { ItemLinks } from './links';
 
 /** Which page view a profile applies to. `any` profiles match in both views. */
 export type View = 'any' | 'loggedIn' | 'loggedOut';
@@ -15,8 +14,6 @@ export interface SiteProfileEntry {
   profile: SiteProfile;
   /** Built-in sites: `pageKey` of the shipped page this one was edited from. */
   builtinKey?: string;
-  /** Where each feed's item URL is, by feed id (automatic when missing). */
-  links?: ItemLinks;
 }
 
 /** Plain-language auto-ghostify rule (used when AI is on). */
@@ -49,7 +46,6 @@ export interface ResolvedProfile {
   site: Site;
   view: View;
   profile: SiteProfile;
-  links?: ItemLinks;
 }
 
 /** The current view per the site's login indicator, or undefined without one. */
@@ -94,5 +90,5 @@ export function resolveProfile(
   const profile = matchProfile(url, candidates);
   if (!profile) return undefined;
   const entry = entries[candidates.indexOf(profile)];
-  return entry && { site, view: entry.view, profile, links: entry.links };
+  return entry && { site, view: entry.view, profile };
 }

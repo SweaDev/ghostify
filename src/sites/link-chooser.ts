@@ -1,5 +1,5 @@
-import type { Selector } from 'feedgrab';
-import { type ItemLinks, type LinkOption, optionIndex, optionLabel, urlIn } from './links';
+import type { FeedDescriptor, PermalinkCandidate, Selector } from 'feedgrab';
+import { checkFeed, optionIndex, optionLabel, withPermalink } from './links';
 import { PANEL_CSS } from './view-chooser';
 
 const CSS = `${PANEL_CSS}
@@ -14,13 +14,15 @@ select, input { font: inherit; box-sizing: border-box; border: 1px solid #d4d4d8
 `;
 
 export interface LinkFeed {
-  feedId: string;
-  /** The feed's first item, used to preview where the selector points. */
-  item?: Element;
-  options: LinkOption[];
+  descriptor: FeedDescriptor;
+  /** feedgrab's ranked suggestions from the feed's first items. */
+  options: PermalinkCandidate[];
   /** Pre-selected selector (empty = automatic). */
   selector: Selector;
 }
+
+/** Post-link selector per feed id (empty = automatic). */
+export type LinkChoice = Record<string, Selector>;
 
 const AUTO = 'auto';
 const CUSTOM = 'custom';
@@ -41,7 +43,7 @@ export function chooseLinks(
   doc: Document,
   base: string,
   feeds: LinkFeed[],
-): Promise<ItemLinks | null> {
+): Promise<LinkChoice | null> {
   const host = doc.createElement('div');
   host.setAttribute('data-ghostify-chooser', '');
   const root = host.attachShadow({ mode: 'open' });
@@ -54,7 +56,7 @@ export function chooseLinks(
       doc,
       'p',
       {},
-      'Ghostify saves this link with each post you ghostify. The choices come from the first post in the feed. You can also edit the selector, which is relative to the post.',
+      'Ghostify saves this link with each post you ghostify and uses it to recognise the post. The choices come from the first post in the feed. You can also edit the selector, which is relative to the post.',
     ),
   );
   panel.setAttribute('role', 'dialog');
@@ -71,7 +73,7 @@ export function chooseLinks(
     });
     choice.append(
       el(doc, 'option', { value: CUSTOM }, 'Custom selector'),
-      el(doc, 'option', { value: AUTO }, 'Automatic (heading link, else the deepest link)'),
+      el(doc, 'option', { value: AUTO }, 'Automatic'),
     );
     const type = el(
       doc,
@@ -91,14 +93,16 @@ export function chooseLinks(
       choice.value = !sel.value.trim() ? AUTO : j >= 0 ? String(j) : CUSTOM;
       type.value = sel.type;
       if (!typing) input.value = sel.value;
-      if (!sel.value.trim()) {
-        opens.textContent = f.options.length
-          ? 'Ghostify picks the link itself.'
-          : 'No links found in the first post. Ghostify picks the link itself.';
-        return;
-      }
-      const url = f.item && urlIn(f.item, sel, base);
-      opens.textContent = url ? `Opens: ${url}` : 'This selector finds no link in the first post.';
+      const check = checkFeed(doc, withPermalink(f.descriptor, sel), base);
+      const url = check.items[0]?.permalink;
+      const n = check.items.length;
+      if (!sel.value.trim())
+        opens.textContent = url
+          ? `Automatic: opens ${url}`
+          : 'Automatic: no link in the first post.';
+      else if (!check.linkHits)
+        opens.textContent = `This selector finds no link in any of the ${n} posts, so the automatic link is used.`;
+      else opens.textContent = `Opens: ${url} (found in ${check.linkHits} of ${n} posts)`;
     };
     choice.addEventListener('change', () => {
       const o = f.options[Number(choice.value)];
@@ -134,18 +138,16 @@ export function chooseLinks(
   doc.documentElement.append(host);
 
   return new Promise((resolve) => {
-    const done = (v: ItemLinks | null) => {
+    const done = (v: LinkChoice | null) => {
       host.remove();
       resolve(v);
     };
     cancel.addEventListener('click', () => done(null));
     next.addEventListener('click', () => {
-      const links: ItemLinks = {};
+      const links: LinkChoice = {};
       feeds.forEach((f, i) => {
         const sel = chosen[i] as Selector;
-        const value = sel.value.trim();
-        if (value || f.options.length)
-          links[f.feedId] = { selector: { type: sel.type, value }, options: f.options };
+        links[f.descriptor.id] = { type: sel.type, value: sel.value.trim() };
       });
       done(links);
     });
