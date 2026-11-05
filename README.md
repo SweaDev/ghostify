@@ -3,8 +3,8 @@
 Ghostify is a browser extension (Chrome and Firefox) for feeds that keep showing you the same posts, or posts you probably want to deal with later. Hover a post, click the ghost, and it disappears from the site's feed. Ghostify keeps a copy so you can find them again later, snooze them, read later, run AI models on them, and many more interesting features are coming up!
 
 ## Updates
-Latest: **v1.4.6**.
-- Choose which link in a post Ghostify saves, so x.com posts keep their own URL, not the author's (v1.4.6).
+Latest: **v1.5.0**.
+- Choose which link identifies a post (x.com posts keep their own URL), and check selector edits against a saved sample of each feed (v1.5).
 - Edit any site's page selectors by hand, and restore built-in sites to how Ghostify ships them (v1.4.5).
 - Move the ghost button to any corner of a post, for all sites or per site (v1.4).
 - dev.to works logged in on every home tab (v1.3).
