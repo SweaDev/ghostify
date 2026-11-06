@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Fixed
+- One in-browser model failing to load no longer makes every other model (and semantic search) fail with the same error until the browser restarts.
 - No more "Extension context invalidated" errors on open pages after Ghostify is reloaded or updated.
 - Gemma 3 270M is offered for GPU (WebGPU) only: on the CPU it failed after downloading with "Could not find an implementation for GatherBlockQuantized". Models that can't run on the chosen device now say so and their leftover files can be deleted.
 
