@@ -1,0 +1,28 @@
+diff --git a/dist/transformers.web.js b/dist/transformers.web.js
+index 17b5141a9c536eaafca8ec311e320c1e43f465bb..e342fdd1e13c585b09d803780a9a51378c124aef 100644
+--- a/dist/transformers.web.js
++++ b/dist/transformers.web.js
+@@ -8704,14 +8704,21 @@ async function createInferenceSession(buffer_or_path, session_options, session_c
+     logSeverityLevel,
+     ...session_options
+   });
+-  const session = await (apis.IS_WEB_ENV ? webInitChain = webInitChain.then(load) : load());
++  // Ghostify patch: a failed load must not reject every later load (keep the chain settled).
++  const pending = apis.IS_WEB_ENV ? webInitChain.then(load) : load();
++  if (apis.IS_WEB_ENV) webInitChain = pending.catch(() => {});
++  const session = await pending;
+   session.config = session_config;
+   return session;
+ }
+ var webInferenceChain = Promise.resolve();
+ async function runInferenceSession(session, ortFeed) {
+   const run = () => session.run(ortFeed);
+-  return apis.IS_WEB_ENV ? webInferenceChain = webInferenceChain.then(run) : run();
++  if (!apis.IS_WEB_ENV) return run();
++  // Ghostify patch: a failed run must not reject every later run.
++  const pending = webInferenceChain.then(run);
++  webInferenceChain = pending.catch(() => {});
++  return pending;
+ }
+ function isONNXTensor(x) {
+   return x instanceof ONNX.Tensor;
