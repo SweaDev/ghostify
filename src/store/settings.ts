@@ -67,6 +67,8 @@ export interface Settings {
     /** Per-site placements (by site id) that replace `ghostButton` on that site. */
     siteGhostButtons: Record<string, ButtonPlacement>;
     sort: Sort;
+    /** Ghostify page search uses semantic (AI) search. */
+    semantic: boolean;
   };
 }
 
@@ -85,6 +87,7 @@ export const DEFAULT_SETTINGS: Settings = {
     ghostButton: { corner: 'top-right', vertical: 8, horizontal: 8 },
     siteGhostButtons: {},
     sort: { by: 'date', order: 'desc', seed: 0 },
+    semantic: false,
   },
 };
 

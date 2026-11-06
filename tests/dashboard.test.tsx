@@ -219,6 +219,24 @@ describe('dashboard semantic search', () => {
     });
     vi.restoreAllMocks();
   });
+
+  it('remembers the semantic toggle across reopening', async () => {
+    const { DEFAULT_SETTINGS, saveSettings, withDefaults } = await import('@/src/store/settings');
+    await saveSettings(
+      withDefaults({ ai: { ...DEFAULT_SETTINGS.ai, ...OLLAMA_AI, enabled: true } }),
+    );
+    render(<Dashboard />);
+    await click(await screen.findByRole('button', { name: /Semantic/ }));
+    await vi.waitFor(async () => expect((await getSettings()).ui.semantic).toBe(true));
+
+    cleanup();
+    render(<Dashboard />);
+    await vi.waitFor(() =>
+      expect(screen.getByRole('button', { name: /Semantic/ }).getAttribute('aria-pressed')).toBe(
+        'true',
+      ),
+    );
+  });
 });
 
 describe('dashboard auto items', () => {
