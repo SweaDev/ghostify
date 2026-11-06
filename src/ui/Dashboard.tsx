@@ -1,6 +1,6 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Activity, Bookmark, ExternalLink, Pause, Settings, Undo2, X } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { browser } from 'wxt/browser';
 import { sendMessage } from '../messaging';
 import type { GhostItem, ItemState } from '../store/db';
@@ -23,6 +23,7 @@ import { ItemDetail, type ViewerTab } from './ItemDetail';
 import { ItemList } from './ItemList';
 import { openUrl, viewerHash } from './open';
 import { SnoozeMenu } from './SnoozeMenu';
+import { DEFAULT_SORT, type Sort, sortItems } from './sort';
 import { Tabs } from './Tabs';
 import { useToast } from './Toast';
 import { useActiveCount, useAiPaused } from './useAi';
@@ -202,6 +203,7 @@ function Feed() {
   const [tab, setTab] = useState<ItemState>('ghost');
   const counts = useCounts();
   const [filters, setFilters] = useState<Filters>({ text: '', host: '' });
+  const [sort, setSort] = useState<Sort>(DEFAULT_SORT);
   const [openKey, setOpenKey] = useState<string>();
   const keywordItems = useItems({
     state: tab,
@@ -226,7 +228,12 @@ function Feed() {
   const onTag = (tag: string) =>
     setFilters((f) => ({ ...f, tag: f.tag === tag ? undefined : tag }));
   const hosts = useHosts();
-  const items = semanticOn ? semantic?.items : keywordItems;
+  const found = semanticOn ? semantic?.items : keywordItems;
+  const ranked = semanticOn && !semantic?.fallback;
+  const items = useMemo(
+    () => found && sortItems(found, sort, { text: filters.text, ranked }),
+    [found, sort, filters.text, ranked],
+  );
   const filtering = !!(filters.text || filters.host || filters.tag);
   // Read by key, so the viewer stays open when its item leaves the filtered list (e.g. moved to Later).
   const listed = items?.find((i) => i.key === openKey);
@@ -319,6 +326,8 @@ function Feed() {
             semanticAvailable={settings?.ai.enabled}
             value={filters}
             onChange={setFilters}
+            sort={sort}
+            onSort={setSort}
           />
           {semantic?.fallback && (
             <p className="mt-2 text-amber-600 text-xs">

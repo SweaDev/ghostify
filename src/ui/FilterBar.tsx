@@ -1,5 +1,53 @@
-import { Search, Sparkles, X } from 'lucide-react';
+import { Search, Shuffle, Sparkles, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import type { Sort, SortBy, SortOrder } from './sort';
+
+const SELECT =
+  'rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-900';
+const newSeed = () => Math.floor(Math.random() * 2 ** 31);
+
+function SortControls({ value, onChange }: { value: Sort; onChange(s: Sort): void }) {
+  const random = value.order === 'random';
+  return (
+    <div className="flex items-center gap-1">
+      <select
+        aria-label="Sort by"
+        value={value.by}
+        disabled={random}
+        title={random ? 'Random order ignores this' : 'Relevance needs a search; otherwise by date'}
+        onChange={(e) => onChange({ ...value, by: e.target.value as SortBy })}
+        className={SELECT}
+      >
+        <option value="date">Date ghostified</option>
+        <option value="relevance">Relevance</option>
+      </select>
+      <select
+        aria-label="Sort order"
+        value={value.order}
+        onChange={(e) => {
+          const order = e.target.value as SortOrder;
+          onChange({ ...value, order, seed: order === 'random' ? newSeed() : value.seed });
+        }}
+        className={SELECT}
+      >
+        <option value="desc">Descending</option>
+        <option value="asc">Ascending</option>
+        <option value="random">Random</option>
+      </select>
+      {random && (
+        <button
+          type="button"
+          aria-label="Shuffle again"
+          title="Shuffle again"
+          onClick={() => onChange({ ...value, seed: newSeed() })}
+          className="rounded-xl border border-zinc-200 bg-white p-2 text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300"
+        >
+          <Shuffle className="size-4" />
+        </button>
+      )}
+    </div>
+  );
+}
 
 export interface Filters {
   text: string;
@@ -15,6 +63,8 @@ export function FilterBar(props: {
   semanticAvailable?: boolean;
   value: Filters;
   onChange(f: Filters): void;
+  sort: Sort;
+  onSort(s: Sort): void;
 }) {
   const [text, setText] = useState(props.value.text);
   const { value, onChange } = props;
@@ -72,12 +122,13 @@ export function FilterBar(props: {
           #{value.tag} <X className="size-3.5" />
         </button>
       )}
+      <SortControls value={props.sort} onChange={props.onSort} />
       {props.hosts.length > 1 && (
         <select
           aria-label="Site"
           value={value.host}
           onChange={(e) => onChange({ ...value, host: e.target.value })}
-          className="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-800 dark:bg-zinc-900"
+          className={SELECT}
         >
           <option value="">All sites</option>
           {props.hosts.map((h) => (

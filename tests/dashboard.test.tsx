@@ -119,6 +119,33 @@ describe('dashboard search and detail', () => {
   });
 });
 
+describe('dashboard sort', () => {
+  const titles = () =>
+    screen
+      .getAllByRole('article')
+      .map((a) => a.querySelector('.min-w-0 > :first-child')?.textContent);
+
+  it('sorts by date and relevance, and shuffles', async () => {
+    await ghostify(draft('a', { title: 'Rust tips' }), 1);
+    await ghostify(draft('b', { title: 'Web news', excerpt: 'rust' }), 2);
+    render(<Dashboard />);
+    await screen.findByText('Web news');
+    expect(titles()).toEqual(['Web news', 'Rust tips']);
+
+    fireEvent.change(screen.getByLabelText('Sort order'), { target: { value: 'asc' } });
+    await vi.waitFor(() => expect(titles()).toEqual(['Rust tips', 'Web news']));
+
+    fireEvent.change(screen.getByLabelText('Sort order'), { target: { value: 'desc' } });
+    fireEvent.change(screen.getByLabelText('Sort by'), { target: { value: 'relevance' } });
+    fireEvent.change(screen.getByLabelText('Search'), { target: { value: 'rust' } });
+    await vi.waitFor(() => expect(titles()).toEqual(['Rust tips', 'Web news']));
+
+    fireEvent.change(screen.getByLabelText('Sort order'), { target: { value: 'random' } });
+    expect((screen.getByLabelText('Sort by') as HTMLSelectElement).disabled).toBe(true);
+    expect(screen.getByLabelText('Shuffle again')).toBeTruthy();
+  });
+});
+
 describe('dashboard tags', () => {
   it('shows summaries and filters by tag', async () => {
     const { updateItem } = await import('@/src/store/items');
