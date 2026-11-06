@@ -4,7 +4,7 @@ import { sendMessage } from '../messaging';
 import { hostMatches } from '../sites/model';
 import { getSites, sitesItem } from '../sites/registry';
 import { getSettings, placementFor, watchSettings } from '../store/settings';
-import { messagingApi } from './api';
+import { isContextInvalidated, messagingApi } from './api';
 import { type FeedRuntime, startFeedRuntime } from './runtime';
 
 /** feedgrab LLM calls go to the background, which holds the models and keys. */
@@ -20,7 +20,13 @@ export async function runFeedContent(ctx: ContentScriptContext): Promise<void> {
   let sig = '';
   let seq = 0;
   /** Restarts on navigation and view changes; storage changes only when they affect this page. */
-  const restart = async (force = true) => {
+  const restart = (force = true) =>
+    start(force).catch((e) => {
+      // The extension was reloaded or updated; this orphaned script can no longer reach it.
+      if (isContextInvalidated(e)) runtime?.dispose();
+      else console.warn('[ghostify]', e);
+    });
+  const start = async (force: boolean) => {
     const n = ++seq;
     const [sites, settings] = await Promise.all([getSites(), getSettings()]);
     const site = sites.find((s) => hostMatches(s.hostname, location.hostname));
