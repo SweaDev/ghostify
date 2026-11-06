@@ -215,7 +215,7 @@ function startFeed({ doc, url, sites, api, llm, alive, placement }: RuntimeOptio
           label: 'Undo',
           run: () => {
             restore(item.id);
-            void api.unghost(saved.key);
+            api.unghost(saved.key).catch(warn);
           },
         });
       } catch (e) {
