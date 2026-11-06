@@ -55,9 +55,10 @@ export async function downloadModel(spec: Spec, h: BrowserHost = host): Promise<
     if (MISSING_OP.test(error)) {
       error = `This model can't run on the ${DEVICE_LABEL[spec.device]} here (unsupported operation). Pick another model or switch where models run.`;
       // Its files are useless on this device; drop them unless another precision is in use.
+      // No unload: the relay already ended the worker that failed (`relay.ts`).
       const others = Object.keys(await downloadedItem.getValue());
       if (!others.some((k) => k.startsWith(`${spec.model}@`)))
-        await deleteModel(spec.model, h).catch(() => {});
+        await forgetModel(spec.model).catch(() => {});
     }
     await setProgress(key, { loaded: 0, total: 0, error });
     throw e;
@@ -68,6 +69,11 @@ export async function downloadModel(spec: Spec, h: BrowserHost = host): Promise<
 export async function deleteModel(model: string, h: BrowserHost = host): Promise<void> {
   if (h.open)
     await h.call({ op: 'unload', model }, { signal: AbortSignal.timeout(3000) }).catch(() => {});
+  await forgetModel(model);
+}
+
+/** Deletes a model's cached files and records (all precisions) without touching the worker. */
+async function forgetModel(model: string): Promise<void> {
   if (typeof caches !== 'undefined') {
     const cache = await caches.open(MODEL_CACHE);
     for (const req of await cache.keys())
