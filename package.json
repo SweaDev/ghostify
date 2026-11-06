@@ -57,8 +57,5 @@
     "typescript": "^7.0.2",
     "vitest": "^5.0.5",
     "wxt": "^0.21.5"
-  },
-  "patchedDependencies": {
-    "@huggingface/transformers@4.3.1": "patches/@huggingface%2Ftransformers@4.3.1.patch"
   }
 }

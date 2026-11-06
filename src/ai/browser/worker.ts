@@ -148,11 +148,15 @@ async function handle(id: string, req: HostRequest): Promise<unknown> {
   }
 }
 
+/** Ops that load or run ONNX sessions; a failure there leaves Transformers.js unusable. */
+const MODEL_OPS = new Set<HostRequest['op']>(['load', 'embed', 'generate', 'classify']);
+
 self.onmessage = async (e: MessageEvent<HostEnvelope>) => {
   const { id, req } = e.data;
   try {
     post({ id, type: 'done', result: await handle(id, req) });
   } catch (err) {
-    post({ id, type: 'error', message: (err as Error)?.message ?? String(err) });
+    const message = (err as Error)?.message ?? String(err);
+    post({ id, type: 'error', message, restart: MODEL_OPS.has(req.op) });
   }
 };

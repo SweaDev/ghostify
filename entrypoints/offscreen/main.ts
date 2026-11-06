@@ -9,47 +9,19 @@ import {
   type HostEvent,
   PORT_NAME,
 } from '@/src/ai/browser/protocol';
+import { createRelay } from '@/src/ai/browser/relay';
 
-const IDLE_MS = 10 * 60_000;
-let worker: Worker | undefined;
 let send: ((e: HostEvent) => void) | undefined;
-const inflight = new Set<string>();
-let idle: ReturnType<typeof setTimeout> | undefined;
 
-function armIdle() {
-  clearTimeout(idle);
-  if (inflight.size) return;
-  idle = setTimeout(() => {
-    worker?.terminate();
-    worker = undefined;
-    // Chrome: closing the offscreen document disconnects the background, which reopens it later.
+const relay = createRelay({
+  spawn: () =>
+    new Worker(new URL('../../src/ai/browser/worker.ts', import.meta.url), { type: 'module' }),
+  emit: (e) => send?.(e),
+  // Chrome: closing the offscreen document disconnects the background, which reopens it later.
+  onIdle: () => {
     if (window.parent === window) window.close();
-  }, IDLE_MS);
-}
-
-function relay(env: HostEnvelope) {
-  if (!worker) {
-    worker = new Worker(new URL('../../src/ai/browser/worker.ts', import.meta.url), {
-      type: 'module',
-    });
-    worker.onmessage = (e: MessageEvent<HostEvent>) => {
-      if (e.data.type === 'done' || e.data.type === 'error') {
-        inflight.delete(e.data.id);
-        armIdle();
-      }
-      send?.(e.data);
-    };
-    worker.onerror = (e) => {
-      for (const id of inflight)
-        send?.({ id, type: 'error', message: e.message || 'AI worker crashed' });
-      inflight.clear();
-      worker = undefined;
-    };
-  }
-  if (env.req.op !== 'abort') inflight.add(env.id);
-  clearTimeout(idle);
-  worker.postMessage(env);
-}
+  },
+});
 
 // Chrome: the background connects with a runtime port.
 browser.runtime.onConnect.addListener((port) => {
@@ -65,5 +37,3 @@ window.addEventListener('message', (e) => {
   send = (ev) => port.postMessage(ev);
   port.onmessage = (m) => relay(m.data as HostEnvelope);
 });
-
-armIdle();

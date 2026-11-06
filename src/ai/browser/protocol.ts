@@ -33,7 +33,8 @@ export type HostEvent =
   | { id: string; type: 'progress'; loaded: number; total: number }
   | { id: string; type: 'delta'; text: string }
   | { id: string; type: 'done'; result: unknown }
-  | { id: string; type: 'error'; message: string };
+  /** `restart`: a model load or run failed, so the relay replaces the worker (see `relay.ts`). */
+  | { id: string; type: 'error'; message: string; restart?: boolean };
 
 export interface LoadResult {
   bytes: number;
