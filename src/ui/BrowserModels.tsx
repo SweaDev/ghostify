@@ -7,7 +7,13 @@ import {
   MonitorSmartphone,
   Trash2,
 } from 'lucide-react';
-import { browserModel, type Device, specFor, specKey } from '../ai/browser/catalog';
+import {
+  browserModel,
+  type Device,
+  DeviceUnsupportedError,
+  specFor,
+  specKey,
+} from '../ai/browser/catalog';
 import { sendMessage } from '../messaging';
 import type { Purpose, Settings } from '../store/settings';
 import { btn, btnPrimary, btnQuiet, card } from './kit';
@@ -27,6 +33,8 @@ type State =
   | { kind: 'ready'; bytes: number }
   | { kind: 'downloading'; loaded: number; total: number }
   | { kind: 'failed'; error: string }
+  /** Can't be downloaded: an invalid id, or a model the chosen device can't run. */
+  | { kind: 'unavailable'; error: string; device: boolean }
   | { kind: 'missing' };
 
 /** Where a purpose's in-browser model is: on this device, downloading, failed or not yet. */
@@ -37,7 +45,8 @@ export function useModelState(settings: Settings, purpose: Purpose): State {
   try {
     key = specKey(specFor(ref.model, purpose, settings.ai.device));
   } catch (e) {
-    return { kind: 'failed', error: (e as Error).message };
+    const device = e instanceof DeviceUnsupportedError;
+    return { kind: 'unavailable', error: (e as Error).message, device };
   }
   const done = downloaded[key];
   if (done) return { kind: 'ready', bytes: done.bytes };
@@ -65,22 +74,23 @@ export function BrowserModelStatus(props: { settings: Settings; purpose: Purpose
         {info.hint && <span className="text-zinc-500">{info.hint}</span>}
         <span className="ml-auto flex items-center gap-1.5">
           {state.kind === 'ready' && (
-            <>
-              <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
-                <CheckCircle2 className="size-4" /> On this device
-                {state.bytes ? ` · ${mb(state.bytes)}` : ''}
-              </span>
-              <button
-                type="button"
-                className={`${btnQuiet} px-2 py-1 text-xs`}
-                aria-label={`Delete ${info.label}`}
-                onClick={() =>
-                  void sendMessage('browserModel', { action: 'delete', purpose, model: ref.model })
-                }
-              >
-                <Trash2 className="size-3.5" /> Delete
-              </button>
-            </>
+            <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+              <CheckCircle2 className="size-4" /> On this device
+              {state.bytes ? ` · ${mb(state.bytes)}` : ''}
+            </span>
+          )}
+          {/* A model the device can't run may still have files from an earlier download. */}
+          {(state.kind === 'ready' || (state.kind === 'unavailable' && state.device)) && (
+            <button
+              type="button"
+              className={`${btnQuiet} px-2 py-1 text-xs`}
+              aria-label={`Delete ${info.label}`}
+              onClick={() =>
+                void sendMessage('browserModel', { action: 'delete', purpose, model: ref.model })
+              }
+            >
+              <Trash2 className="size-3.5" /> Delete
+            </button>
           )}
           {state.kind === 'downloading' && (
             <span className="inline-flex items-center gap-1 text-zinc-600 dark:text-zinc-300">
@@ -106,7 +116,7 @@ export function BrowserModelStatus(props: { settings: Settings; purpose: Purpose
           <div className="h-full bg-ghost-500 transition-all" style={{ width: `${pct}%` }} />
         </div>
       )}
-      {state.kind === 'failed' && (
+      {(state.kind === 'failed' || state.kind === 'unavailable') && (
         <span className="inline-flex items-center gap-1 text-amber-600">
           <CircleAlert className="size-3.5 shrink-0" /> {state.error}
         </span>
