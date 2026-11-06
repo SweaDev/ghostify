@@ -203,7 +203,15 @@ function Feed() {
   const closeActivity = useCallback(() => setActivity(false), []);
   const [tab, setTab] = useState<ItemState>('ghost');
   const counts = useCounts();
-  const [filters, setFilters] = useState<Filters>({ text: '', host: '' });
+  const [settings, setSettings] = useSettings();
+  const [search, setSearch] = useState<Filters>({ text: '', host: '' });
+  // The semantic toggle is saved in settings so the page reopens with it.
+  const filters: Filters = { ...search, semantic: settings?.ui.semantic };
+  const setFilters = ({ semantic, ...f }: Filters) => {
+    setSearch(f);
+    if (settings && !!semantic !== settings.ui.semantic)
+      setSettings({ ...settings, ui: { ...settings.ui, semantic: !!semantic } });
+  };
   const [openKey, setOpenKey] = useState<string>();
   const keywordItems = useItems({
     state: tab,
@@ -211,7 +219,6 @@ function Feed() {
     host: filters.host || undefined,
     tag: filters.tag,
   });
-  const [settings, setSettings] = useSettings();
   const sort = settings?.ui.sort;
   const semanticOn = !!(settings?.ai.enabled && filters.semantic && filters.text.trim());
   const [semantic, setSemantic] = useState<{ items: GhostItem[]; fallback: boolean }>();
@@ -226,8 +233,7 @@ function Feed() {
       live = false;
     };
   }, [semanticOn, filters.text, filters.host, filters.tag, tab]);
-  const onTag = (tag: string) =>
-    setFilters((f) => ({ ...f, tag: f.tag === tag ? undefined : tag }));
+  const onTag = (tag: string) => setSearch((f) => ({ ...f, tag: f.tag === tag ? undefined : tag }));
   const hosts = useHosts();
   const found = semanticOn ? semantic?.items : keywordItems;
   const ranked = semanticOn && !semantic?.fallback;

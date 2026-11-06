@@ -17,6 +17,7 @@ describe('appearance settings', () => {
       ghostButton: { ...DEFAULT_SETTINGS.ui.ghostButton, corner: 'bottom-left' },
       siteGhostButtons: {},
       sort: DEFAULT_SETTINGS.ui.sort,
+      semantic: false,
     });
   });
 
