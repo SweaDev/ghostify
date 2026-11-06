@@ -39,6 +39,16 @@ export interface ButtonPlacement {
 
 export const MAX_BUTTON_MARGIN = 200;
 
+export type SortBy = 'date' | 'relevance';
+export type SortOrder = 'desc' | 'asc' | 'random';
+/** How the Ghostify page orders items. */
+export interface Sort {
+  by: SortBy;
+  order: SortOrder;
+  /** Keeps a random order stable while the list updates; a new seed reshuffles. */
+  seed: number;
+}
+
 export interface Settings {
   ai: {
     enabled: boolean;
@@ -56,6 +66,7 @@ export interface Settings {
     ghostButton: ButtonPlacement;
     /** Per-site placements (by site id) that replace `ghostButton` on that site. */
     siteGhostButtons: Record<string, ButtonPlacement>;
+    sort: Sort;
   };
 }
 
@@ -73,6 +84,7 @@ export const DEFAULT_SETTINGS: Settings = {
     theme: 'system',
     ghostButton: { corner: 'top-right', vertical: 8, horizontal: 8 },
     siteGhostButtons: {},
+    sort: { by: 'date', order: 'desc', seed: 0 },
   },
 };
 
@@ -91,6 +103,7 @@ export function withDefaults(s: Partial<Settings>): Settings {
       ...s.ui,
       ghostButton: { ...DEFAULT_SETTINGS.ui.ghostButton, ...s.ui?.ghostButton },
       siteGhostButtons: { ...s.ui?.siteGhostButtons },
+      sort: { ...DEFAULT_SETTINGS.ui.sort, ...s.ui?.sort },
     },
   };
 }

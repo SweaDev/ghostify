@@ -1,6 +1,6 @@
 import { Search, Shuffle, Sparkles, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import type { Sort, SortBy, SortOrder } from './sort';
+import type { Sort, SortBy, SortOrder } from '../store/settings';
 
 const SELECT =
   'rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-900';

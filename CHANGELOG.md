@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
-- Sort the Ghostify page by date ghostified or relevance to the search (by date without one), descending, ascending or random.
+- Sort the Ghostify page by date ghostified or relevance to the search (by date without one), descending, ascending or random. The choice is remembered.
 
 ## [1.5.0] - 2026-11-05
 ### Added
