@@ -1,4 +1,4 @@
-import { specFor, specKey } from '@/src/ai/browser/catalog';
+import { DeviceUnsupportedError, specFor, specKey } from '@/src/ai/browser/catalog';
 import { gatedFetch } from '@/src/ai/browser/gate';
 import { BrowserHost, type Channel } from '@/src/ai/browser/host';
 import type { HostEnvelope, HostEvent } from '@/src/ai/browser/protocol';
@@ -43,6 +43,12 @@ describe('browser model catalog', () => {
     });
     expect(specKey(spec)).toBe('Xenova/all-MiniLM-L6-v2@q8');
     expect(() => specFor('../etc', 'general', 'wasm')).toThrow(/Hugging Face/);
+  });
+
+  it('refuses a device a known model cannot run on', () => {
+    const gemma = 'onnx-community/gemma-3-270m-it-ONNX';
+    expect(() => specFor(gemma, 'general', 'wasm')).toThrow(DeviceUnsupportedError);
+    expect(specFor(gemma, 'general', 'webgpu').dtype).toBe('q4f16');
   });
 });
 
@@ -102,11 +108,18 @@ describe('BrowserHost', () => {
 
 describe('downloads', () => {
   it('records a finished download and the error of a failed one', async () => {
-    const { ch } = fakeChannel((m, emit) => {
+    const { ch, sent } = fakeChannel((m, emit) => {
       if (m.req.op === 'unload') return emit({ id: m.id, type: 'done', result: null });
       if (m.req.op !== 'load') return;
       if (m.req.spec.model === 'bad/model')
         return emit({ id: m.id, type: 'error', message: 'nope' });
+      if (m.req.spec.model === 'odd/model')
+        return emit({
+          id: m.id,
+          type: 'error',
+          message:
+            "Can't create a session. ERROR_CODE: 9, ERROR_MESSAGE: Could not find an implementation for GatherBlockQuantized(1) node",
+        });
       emit({ id: m.id, type: 'progress', loaded: 5, total: 10 });
       emit({ id: m.id, type: 'done', result: { bytes: 10 } });
     });
@@ -119,6 +132,12 @@ describe('downloads', () => {
     const bad = specFor('bad/model', 'general', 'wasm');
     await expect(downloadModel(bad, host)).rejects.toThrow('nope');
     expect((await downloadsItem.getValue())[specKey(bad)]?.error).toBe('nope');
+
+    // A model whose operations this device's runtime lacks: a clear message, no files kept.
+    const odd = specFor('odd/model', 'general', 'wasm');
+    await expect(downloadModel(odd, host)).rejects.toThrow();
+    expect((await downloadsItem.getValue())[specKey(odd)]?.error).toMatch(/can't run on the CPU/);
+    expect(sent.some((m) => m.req.op === 'unload' && m.req.model === 'odd/model')).toBe(true);
 
     await deleteModel('Xenova/all-MiniLM-L6-v2', host);
     expect(await isDownloaded(spec)).toBe(false);

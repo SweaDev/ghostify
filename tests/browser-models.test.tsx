@@ -2,7 +2,7 @@ import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { specFor, specKey } from '@/src/ai/browser/catalog';
 import * as messaging from '@/src/messaging';
 import { downloadedItem, downloadsItem } from '@/src/store/browser-models';
-import { getSettings } from '@/src/store/settings';
+import { getSettings, saveSettings } from '@/src/store/settings';
 import { AiSettings } from '@/src/ui/AiSettings';
 
 const key = (model: string, purpose: 'embedding' | 'general' | 'decision') =>
@@ -57,6 +57,21 @@ describe('in-browser models in AI settings', () => {
       purpose: 'embedding',
       model: 'Xenova/all-MiniLM-L6-v2',
     });
+  });
+
+  it("explains a model the device can't run, with Delete but no Download", async () => {
+    const s = await getSettings();
+    await saveSettings({
+      ...s,
+      ai: {
+        ...s.ai,
+        general: { provider: 'browser', model: 'onnx-community/gemma-3-270m-it-ONNX' },
+      },
+    });
+    render(<AiSettings />);
+    expect(await screen.findByText(/doesn't run on the CPU here/)).toBeTruthy();
+    expect(screen.getByLabelText('Delete Gemma 3 270M')).toBeTruthy();
+    expect(screen.getAllByRole('button', { name: /^Download \(/ })).toHaveLength(2);
   });
 
   it('switches where the models run', async () => {

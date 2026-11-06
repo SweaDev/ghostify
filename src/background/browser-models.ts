@@ -1,4 +1,4 @@
-import { type Spec, specKey } from '../ai/browser/catalog';
+import { DEVICE_LABEL, type Spec, specKey } from '../ai/browser/catalog';
 import { type BrowserHost, host } from '../ai/browser/host';
 import type { LoadResult } from '../ai/browser/protocol';
 import {
@@ -24,6 +24,9 @@ const setProgress = (key: string, p?: DownloadProgress) =>
     await downloadsItem.setValue(all);
   });
 
+/** ONNX Runtime has no kernel for one of the model's operations on this device. */
+const MISSING_OP = /could not find an implementation for|failed to find kernel for/i;
+
 /** Downloads a model's files into the cache (with progress) and records it as downloaded. */
 export async function downloadModel(spec: Spec, h: BrowserHost = host): Promise<void> {
   const key = specKey(spec);
@@ -48,7 +51,15 @@ export async function downloadModel(spec: Spec, h: BrowserHost = host): Promise<
     );
     await setProgress(key);
   } catch (e) {
-    await setProgress(key, { loaded: 0, total: 0, error: (e as Error).message });
+    let error = (e as Error).message;
+    if (MISSING_OP.test(error)) {
+      error = `This model can't run on the ${DEVICE_LABEL[spec.device]} here (unsupported operation). Pick another model or switch where models run.`;
+      // Its files are useless on this device; drop them unless another precision is in use.
+      const others = Object.keys(await downloadedItem.getValue());
+      if (!others.some((k) => k.startsWith(`${spec.model}@`)))
+        await deleteModel(spec.model, h).catch(() => {});
+    }
+    await setProgress(key, { loaded: 0, total: 0, error });
     throw e;
   }
 }

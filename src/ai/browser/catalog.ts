@@ -8,10 +8,10 @@ export interface BrowserModel {
   id: string;
   label: string;
   purpose: Purpose;
-  /** Weight precision per device (Transformers.js `dtype`). */
-  dtype: Record<Device, string>;
+  /** Weight precision per device (Transformers.js `dtype`); a missing device can't run it. */
+  dtype: Partial<Record<Device, string>>;
   /** Approximate download size in MB per device. */
-  mb?: Record<Device, number>;
+  mb?: Partial<Record<Device, number>>;
   hint?: string;
   /** Embeddings: how token vectors become one vector. */
   pooling?: 'mean' | 'cls';
@@ -72,9 +72,10 @@ export const BROWSER_MODELS: BrowserModel[] = [
     id: 'onnx-community/gemma-3-270m-it-ONNX',
     label: 'Gemma 3 270M',
     purpose: 'general',
-    dtype: { wasm: 'q4', webgpu: 'q4f16' },
-    mb: { wasm: 315, webgpu: 265 },
-    hint: 'Multilingual, tiny',
+    // Its embeddings use GatherBlockQuantized, which the bundled ONNX Runtime has for WebGPU only.
+    dtype: { webgpu: 'q4f16' },
+    mb: { webgpu: 265 },
+    hint: 'Multilingual, tiny; GPU only',
   },
   {
     id: 'onnx-community/Qwen2.5-0.5B-Instruct',
@@ -136,10 +137,20 @@ export interface Spec {
   pooling?: 'mean' | 'cls';
 }
 
+export const DEVICE_LABEL: Record<Device, string> = { wasm: 'CPU', webgpu: 'GPU (WebGPU)' };
+
+/** Thrown when a known model can't run on the chosen device. */
+export class DeviceUnsupportedError extends Error {}
+
 export function specFor(id: string, purpose: Purpose, device: Device): Spec {
   if (!MODEL_ID.test(id)) throw new Error(`"${id}" is not a Hugging Face model id (owner/name)`);
   const m = browserModel(id, purpose);
-  return { model: id, task: TASKS[purpose], dtype: m.dtype[device], device, pooling: m.pooling };
+  const dtype = m.dtype[device];
+  if (!dtype)
+    throw new DeviceUnsupportedError(
+      `${m.label} doesn't run on the ${DEVICE_LABEL[device]} here. Switch where models run or pick another model.`,
+    );
+  return { model: id, task: TASKS[purpose], dtype, device, pooling: m.pooling };
 }
 
 /** Downloads are tracked per model and precision (each precision is a different file). */
