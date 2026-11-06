@@ -16,6 +16,7 @@ describe('appearance settings', () => {
       theme: 'dark',
       ghostButton: { ...DEFAULT_SETTINGS.ui.ghostButton, corner: 'bottom-left' },
       siteGhostButtons: {},
+      sort: DEFAULT_SETTINGS.ui.sort,
     });
   });
 

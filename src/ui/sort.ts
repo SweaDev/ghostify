@@ -1,15 +1,5 @@
 import type { GhostItem } from '../store/db';
-
-export type SortBy = 'date' | 'relevance';
-export type SortOrder = 'desc' | 'asc' | 'random';
-export interface Sort {
-  by: SortBy;
-  order: SortOrder;
-  /** Keeps a random order stable while the list updates; a new seed reshuffles. */
-  seed: number;
-}
-
-export const DEFAULT_SORT: Sort = { by: 'date', order: 'desc', seed: 0 };
+import type { Sort } from '../store/settings';
 
 const FIELDS: [weight: number, get: (i: GhostItem) => string | undefined][] = [
   [3, (i) => i.title],

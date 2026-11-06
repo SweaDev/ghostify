@@ -14,6 +14,7 @@ import {
   unghost,
   updateItem,
 } from '../store/items';
+import { DEFAULT_SETTINGS } from '../store/settings';
 import { AiActivity } from './AiActivity';
 import { FilterBar, type Filters } from './FilterBar';
 import { timeAgo } from './format';
@@ -23,7 +24,7 @@ import { ItemDetail, type ViewerTab } from './ItemDetail';
 import { ItemList } from './ItemList';
 import { openUrl, viewerHash } from './open';
 import { SnoozeMenu } from './SnoozeMenu';
-import { DEFAULT_SORT, type Sort, sortItems } from './sort';
+import { sortItems } from './sort';
 import { Tabs } from './Tabs';
 import { useToast } from './Toast';
 import { useActiveCount, useAiPaused } from './useAi';
@@ -203,7 +204,6 @@ function Feed() {
   const [tab, setTab] = useState<ItemState>('ghost');
   const counts = useCounts();
   const [filters, setFilters] = useState<Filters>({ text: '', host: '' });
-  const [sort, setSort] = useState<Sort>(DEFAULT_SORT);
   const [openKey, setOpenKey] = useState<string>();
   const keywordItems = useItems({
     state: tab,
@@ -211,7 +211,8 @@ function Feed() {
     host: filters.host || undefined,
     tag: filters.tag,
   });
-  const [settings] = useSettings();
+  const [settings, setSettings] = useSettings();
+  const sort = settings?.ui.sort;
   const semanticOn = !!(settings?.ai.enabled && filters.semantic && filters.text.trim());
   const [semantic, setSemantic] = useState<{ items: GhostItem[]; fallback: boolean }>();
   useEffect(() => {
@@ -231,7 +232,8 @@ function Feed() {
   const found = semanticOn ? semantic?.items : keywordItems;
   const ranked = semanticOn && !semantic?.fallback;
   const items = useMemo(
-    () => found && sortItems(found, sort, { text: filters.text, ranked }),
+    // Waits for settings, so a saved sort doesn't reorder the list after it shows.
+    () => found && sort && sortItems(found, sort, { text: filters.text, ranked }),
     [found, sort, filters.text, ranked],
   );
   const filtering = !!(filters.text || filters.host || filters.tag);
@@ -326,8 +328,10 @@ function Feed() {
             semanticAvailable={settings?.ai.enabled}
             value={filters}
             onChange={setFilters}
-            sort={sort}
-            onSort={setSort}
+            sort={sort ?? DEFAULT_SETTINGS.ui.sort}
+            onSort={(s) =>
+              settings && setSettings({ ...settings, ui: { ...settings.ui, sort: s } })
+            }
           />
           {semantic?.fallback && (
             <p className="mt-2 text-amber-600 text-xs">

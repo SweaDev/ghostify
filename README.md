@@ -23,7 +23,7 @@ See [CHANGELOG.md](CHANGELOG.md) for every release.
   - **Later** is what you want to read.
   - **Snoozed** holds posts that come back later.
 - **Snooze** a post until later today, tomorrow, the weekend, next week, or a date you choose. The post stays hidden on the site, and when the time is up it shows in **Back from snooze** at the top of Ghosted.
-- **Search** your ghosts by keyword and **filter** them by site. **Sort** them by date ghostified or relevance (to the search; by date without one), descending, ascending or random (**Shuffle again** reshuffles). Long lists load 50 at a time (**Show more**), and **Unghost** on the Ghostify page has an **Undo**.
+- **Search** your ghosts by keyword and **filter** them by site. **Sort** them by date ghostified or relevance (to the search; by date without one), descending, ascending or random (**Shuffle again** reshuffles); the choice is remembered. Long lists load 50 at a time (**Show more**), and **Unghost** on the Ghostify page has an **Undo**.
 - **The viewer** opens when you click a post's title, thumbnail or excerpt. It has three tabs:
   - **Overview**: the summary, tags and excerpt.
   - **Reader**: **Load full content** fetches the post and shows its main text inside Ghostify, without the site's ads and menus (the first time, you're asked to allow access to that site). **Reload** fetches it again.

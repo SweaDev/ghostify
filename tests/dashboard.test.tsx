@@ -1,6 +1,7 @@
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { db } from '@/src/store/db';
 import { ghostify } from '@/src/store/items';
+import { getSettings } from '@/src/store/settings';
 import { Dashboard } from '@/src/ui/Dashboard';
 import { OLLAMA_AI } from './ollama-ai';
 
@@ -143,6 +144,21 @@ describe('dashboard sort', () => {
     fireEvent.change(screen.getByLabelText('Sort order'), { target: { value: 'random' } });
     expect((screen.getByLabelText('Sort by') as HTMLSelectElement).disabled).toBe(true);
     expect(screen.getByLabelText('Shuffle again')).toBeTruthy();
+  });
+
+  it('saves the sort in settings and restores it', async () => {
+    await ghostify(draft('a', { title: 'Rust tips' }), 1);
+    await ghostify(draft('b', { title: 'Web news' }), 2);
+    render(<Dashboard />);
+    await screen.findByText('Web news');
+    fireEvent.change(screen.getByLabelText('Sort order'), { target: { value: 'asc' } });
+    await vi.waitFor(async () => expect((await getSettings()).ui.sort.order).toBe('asc'));
+
+    cleanup();
+    render(<Dashboard />);
+    await screen.findByText('Web news');
+    expect(titles()).toEqual(['Rust tips', 'Web news']);
+    expect((screen.getByLabelText('Sort order') as HTMLSelectElement).value).toBe('asc');
   });
 });
 
