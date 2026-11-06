@@ -135,9 +135,16 @@ describe('downloads', () => {
 
     // A model whose operations this device's runtime lacks: a clear message, no files kept.
     const odd = specFor('odd/model', 'general', 'wasm');
+    await downloadsItem.setValue({
+      ...(await downloadsItem.getValue()),
+      'odd/model@fp32': { loaded: 0, total: 0, error: 'stale' },
+    });
     await expect(downloadModel(odd, host)).rejects.toThrow();
+    const oddKeys = Object.keys(await downloadsItem.getValue()).filter((k) => k.startsWith('odd/'));
+    expect(oddKeys).toEqual([specKey(odd)]);
     expect((await downloadsItem.getValue())[specKey(odd)]?.error).toMatch(/can't run on the CPU/);
-    expect(sent.some((m) => m.req.op === 'unload' && m.req.model === 'odd/model')).toBe(true);
+    // Its records are dropped without asking the (already ended) worker to unload it.
+    expect(sent.some((m) => m.req.op === 'unload' && m.req.model === 'odd/model')).toBe(false);
 
     await deleteModel('Xenova/all-MiniLM-L6-v2', host);
     expect(await isDownloaded(spec)).toBe(false);
