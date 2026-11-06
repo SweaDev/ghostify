@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [1.5.1] - 2026-11-06
 ### Added
 - Sort the Ghostify page by date ghostified or relevance to the search (by date without one), descending, ascending or random. The choice is remembered.
 
@@ -127,7 +129,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Search index builds in the background, with live progress.
 - Ollama setup guide in the README.
 
-[Unreleased]: https://github.com/SweaDev/ghostify/compare/v1.5.0...HEAD
+[Unreleased]: https://github.com/SweaDev/ghostify/compare/v1.5.1...HEAD
+[1.5.1]: https://github.com/SweaDev/ghostify/compare/v1.5.0...v1.5.1
 [1.5.0]: https://github.com/SweaDev/ghostify/compare/v1.4.5...v1.5.0
 [1.4.5]: https://github.com/SweaDev/ghostify/compare/v1.4.4...v1.4.5
 [1.4.4]: https://github.com/SweaDev/ghostify/compare/v1.4.3...v1.4.4
