@@ -1,7 +1,14 @@
-import { parseProfile, type Selector, serializeProfile, validateSelector } from 'feedgrab';
+import {
+  type ItemStructure,
+  parseProfile,
+  type Selector,
+  serializeProfile,
+  validateSelector,
+} from 'feedgrab';
 import { shippedPages } from './builtin';
 import { postLinkOf, withPostLink } from './links';
 import { pageKey, type Site, type View } from './model';
+import { withStructure } from './structure';
 
 /** A page's editable fields: its view, path pattern and each feed's selectors. */
 export interface PageDraft {
@@ -9,9 +16,17 @@ export interface PageDraft {
   pathPattern: string;
   /**
    * `link` (the post link) is relative to the item; empty means automatic. `params` are the link's
-   * query parameters that identify a post; unset keeps all but tracking ones.
+   * query parameters that identify a post; unset keeps all but tracking ones. `structure` lists
+   * the parts a post has (selectors relative to the item); items without a required one get no
+   * button.
    */
-  feeds: { container: Selector; item: Selector; link: Selector; params?: string[] }[];
+  feeds: {
+    container: Selector;
+    item: Selector;
+    link: Selector;
+    params?: string[];
+    structure?: ItemStructure;
+  }[];
 }
 
 export const pageDraft = (e: Site['profiles'][number]): PageDraft => ({
@@ -19,7 +34,13 @@ export const pageDraft = (e: Site['profiles'][number]): PageDraft => ({
   pathPattern: e.profile.pathPattern,
   feeds: e.profile.feeds.map((f) => {
     const { selector, params } = postLinkOf(f);
-    return { container: f.container, item: f.item, link: selector, ...(params && { params }) };
+    return {
+      container: f.container,
+      item: f.item,
+      link: selector,
+      ...(params && { params }),
+      ...(f.structure && { structure: f.structure }),
+    };
   }),
 });
 
@@ -61,7 +82,14 @@ export function editPage(
     const container = checkSelector(doc, d.container, `Container selector${n}`);
     const item = checkSelector(doc, d.item, `Item selector${n}`);
     const link = d.link.value.trim() ? checkSelector(doc, d.link, `Link selector${n}`) : d.link;
-    const linked = withPostLink(f, { selector: link, ...(d.params && { params: d.params }) });
+    const parts = (d.structure?.parts ?? []).map((p, j) => ({
+      ...p,
+      selector: checkSelector(doc, p.selector, `Part ${j + 1} selector${n}`),
+    }));
+    const linked = withStructure(
+      withPostLink(f, { selector: link, ...(d.params && { params: d.params }) }),
+      { parts },
+    );
     if (same(container, f.container) && same(item, f.item)) return linked;
     const id = `edited-${stamp}-${i}`;
     renamed[f.id] = id;

@@ -36,14 +36,15 @@ See [CHANGELOG.md](CHANGELOG.md) for every release.
   Toolbar buttons open the original post in a new tab or a new window, open the viewer as its own page (which you can also move to a new window), or widen the panel. The popup can open Ghostify in a new window.
 - **Add any site.** On a page with a feed, open the popup and click **Add this site**. Ghostify asks for access to that site only, and then:
   1. [feedgrab](https://github.com/SweaDev/feedgrab) proposes the feeds on the page, and its overlay lets you confirm them, pick containers and items, or type CSS/XPath selectors.
-  2. You choose which link opens a post, and which of its query parameters identify the post. Untick tracking or analytics ones (like YouTube's `pp` in `watch?pp=…&v=…`) so the same post is recognised every time.
-  3. You choose which page paths the feeds apply to.
-  4. You choose whether they're for the **logged-in**, the **logged-out** or **any** view. For a specific view, you can pick an element that only shows in it (for example your avatar), so Ghostify can tell the views apart.
+  2. You step to a typical **sample post** (the first item can be an ad or a heading), then choose which of its links opens a post, and which of the link's query parameters identify the post. Untick tracking or analytics ones (like YouTube's `pp` in `watch?pp=…&v=…`) so the same post is recognised every time.
+  3. You choose the **post structure**: the parts of the sample post every post has (time link, text, action buttons, …). Ghostify suggests which are required and which optional (a thumbnail only some posts have), shows how many items match and outlines the rest. The ghost button only appears on items with every required part, so ads and headings that share the item selector are skipped. When you edit a site again, the sample post starts at the first post with that structure.
+  4. You choose which page paths the feeds apply to.
+  5. You choose whether they're for the **logged-in**, the **logged-out** or **any** view. For a specific view, you can pick an element that only shows in it (for example your avatar), so Ghostify can tell the views apart.
 
   **Edit selectors** in the popup reopens the overlay on a site you already added.
 - **Settings → Sites** lists your sites with a search box, and each site opens on its own page (with a breadcrumb back to the list). It lets you:
   - turn sites on or off and delete the ones you added;
-  - see and edit each page's path pattern, view, selectors and post link with its query parameters (edited built-in selectors are kept over Ghostify's updates);
+  - see and edit each page's path pattern, view, selectors, post link with its query parameters, and post structure (required and optional parts, or suggested from the saved sample); edits are checked against a saved sample of each feed, and edited built-in selectors are kept over Ghostify's updates;
   - restore a built-in site, or one edited built-in page, to how Ghostify ships it;
   - edit the login indicator;
   - export and import your sites as JSON.

@@ -1,4 +1,10 @@
-import type { FeedDescriptor, PermalinkCandidate, Selector } from 'feedgrab';
+import {
+  type FeedDescriptor,
+  type PermalinkCandidate,
+  type Selector,
+  suggestPermalinks,
+} from 'feedgrab';
+import { HIGHLIGHT_CSS, highlighter } from './highlight';
 import {
   checkFeed,
   linkParams,
@@ -9,11 +15,12 @@ import {
   toggleParam,
   withPostLink,
 } from './links';
+import { poolAround } from './structure';
 import { PANEL_CSS } from './view-chooser';
 
 const CSS = `${PANEL_CSS}
 .panel { width: 380px; max-height: calc(100vh - 32px); overflow: auto; box-sizing: border-box; }
-fieldset { border: 1px solid #e4e4e7; border-radius: 10px; padding: 8px 10px; margin: 0 0 8px; }
+fieldset { border: 1px solid #e4e4e7; border-radius: 10px; padding: 8px 10px; margin: 0 0 8px; min-width: 0; }
 legend { font-weight: 600; padding: 0 4px; }
 select, input { font: inherit; box-sizing: border-box; border: 1px solid #d4d4d8; border-radius: 8px; padding: 5px 8px; background: #fff; color: inherit; }
 .choice { width: 100%; }
@@ -25,18 +32,42 @@ select, input { font: inherit; box-sizing: border-box; border: 1px solid #d4d4d8
 .params label { display: flex; gap: 6px; align-items: baseline; word-break: break-all; }
 .params code { font: 12px ui-monospace, monospace; }
 .params .note { color: #71717a; }
-`;
+.sample { display: flex; gap: 6px; align-items: center; margin: 0 0 6px; font-size: 12px; }
+.sample button { min-width: 28px; padding: 2px 8px; }
+.sample .which { white-space: nowrap; }
+.sample .excerpt { color: #71717a; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; flex: 1; }
+${HIGHLIGHT_CSS}`;
 
 export interface LinkFeed {
   descriptor: FeedDescriptor;
-  /** feedgrab's ranked suggestions from the feed's first items. */
-  options: PermalinkCandidate[];
-  /** Pre-selected post link (empty selector = automatic). */
-  link: PostLink;
+  /** The feed's posts on the page, in order; the sample post is one of them. */
+  items: Element[];
+  /** Index of the pre-selected sample post. */
+  reference: number;
+  /** Saved post link (empty selector = automatic); unset follows the best suggestion. */
+  link?: PostLink;
 }
 
-/** Post link per feed id (empty selector = automatic). */
-export type LinkChoice = Record<string, PostLink>;
+/** Post link (empty selector = automatic) and sample post index per feed id. */
+export type LinkChoice = Record<string, { link: PostLink; reference: number }>;
+
+/** feedgrab's ranked post links of sample post `reference`. */
+export const linkOptions = (items: Element[], reference: number, base: string) => {
+  const ref = items[reference];
+  return ref ? suggestPermalinks(poolAround(items, reference), base, { reference: ref }) : [];
+};
+
+/** The post's text with its pieces kept apart ("Ana · 3h The sunset…"), shortened. */
+function excerpt(el?: Element): string {
+  if (!el) return '';
+  const walker = el.ownerDocument.createTreeWalker(el, 4);
+  const parts: string[] = [];
+  for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+    const t = n.nodeValue?.trim();
+    if (t) parts.push(t);
+  }
+  return parts.join(' ').replace(/\s+/g, ' ').slice(0, 80);
+}
 
 const AUTO = 'auto';
 const CUSTOM = 'custom';
@@ -52,7 +83,10 @@ function el<K extends keyof HTMLElementTagNameMap>(
   return n;
 }
 
-/** Asks which link in each feed's items is the post's URL. Resolves null on cancel. */
+/**
+ * Asks for each feed's sample post (a typical one, not an ad or a heading) and which of its links
+ * is the post's URL. Resolves null on cancel.
+ */
 export function chooseLinks(
   doc: Document,
   base: string,
@@ -70,25 +104,39 @@ export function chooseLinks(
       doc,
       'p',
       {},
-      'Ghostify saves this link with each post you ghostify and uses it to recognise the post. The choices come from the first post in the feed. You can also edit the selector, which is relative to the post, and choose which of the link’s query parameters identify the post.',
+      'Ghostify saves this link with each post you ghostify and uses it to recognise the post. The choices come from the sample post (outlined on the page): step to a typical post if the first one is an ad or a heading. You can also edit the selector, which is relative to the post, and choose which of the link’s query parameters identify the post.',
     ),
   );
   panel.setAttribute('role', 'dialog');
   panel.setAttribute('aria-label', 'Ghostify: post link');
   const style = el(doc, 'style', {}, CSS);
   root.append(style, panel);
+  const marks = highlighter(doc, root);
 
-  const chosen: PostLink[] = feeds.map((f) => ({ ...f.link, selector: { ...f.link.selector } }));
+  const refs = feeds.map((f) =>
+    Math.min(Math.max(0, f.reference), Math.max(0, f.items.length - 1)),
+  );
+  const options: PermalinkCandidate[][] = feeds.map((f, i) =>
+    linkOptions(f.items, refs[i] ?? 0, base),
+  );
+  const best = (i: number): PostLink => ({
+    selector: { ...(options[i]?.[0]?.selector ?? { type: 'css', value: '' }) },
+  });
+  // Without a saved link, the link follows the best suggestion until the user picks one.
+  const following = feeds.map((f) => !f.link);
+  const chosen: PostLink[] = feeds.map((f, i) =>
+    f.link ? { ...f.link, selector: { ...f.link.selector } } : best(i),
+  );
+  const mark = () =>
+    marks.set(
+      feeds.flatMap((f, i) => {
+        const el = f.items[refs[i] ?? 0];
+        return el ? [{ el, kind: 'sample' as const }] : [];
+      }),
+    );
   feeds.forEach((f, i) => {
     const choice = el(doc, 'select', { className: 'choice' });
     choice.setAttribute('aria-label', `Post link${feeds.length > 1 ? ` (feed ${i + 1})` : ''}`);
-    f.options.forEach((o, j) => {
-      choice.append(el(doc, 'option', { value: String(j) }, optionLabel(o, base)));
-    });
-    choice.append(
-      el(doc, 'option', { value: CUSTOM }, 'Custom selector'),
-      el(doc, 'option', { value: AUTO }, 'Automatic'),
-    );
     const type = el(
       doc,
       'select',
@@ -104,7 +152,55 @@ export function chooseLinks(
     /** A new link has its own query parameters, so a selector change keeps all of them again. */
     const setSelector = (selector: Selector) => {
       chosen[i] = { selector };
+      following[i] = false;
     };
+    const fillChoices = () => {
+      choice.replaceChildren();
+      (options[i] ?? []).forEach((o, j) => {
+        choice.append(el(doc, 'option', { value: String(j) }, optionLabel(o, base)));
+      });
+      choice.append(
+        el(doc, 'option', { value: CUSTOM }, 'Custom selector'),
+        el(doc, 'option', { value: AUTO }, 'Automatic'),
+      );
+    };
+
+    const prev = el(doc, 'button', { type: 'button', className: 'prev-post' }, '‹');
+    const nextPost = el(doc, 'button', { type: 'button', className: 'next-post' }, '›');
+    prev.setAttribute('aria-label', 'Previous sample post');
+    nextPost.setAttribute('aria-label', 'Next sample post');
+    const which = el(doc, 'span', { className: 'which' });
+    const quote = el(doc, 'span', { className: 'excerpt' });
+    const sample = el(
+      doc,
+      'div',
+      { className: 'sample' },
+      el(doc, 'span', {}, 'Sample post'),
+      prev,
+      which,
+      nextPost,
+      quote,
+    );
+    const showSample = () => {
+      const r = refs[i] ?? 0;
+      which.textContent = `${r + 1} of ${f.items.length}`;
+      quote.textContent = excerpt(f.items[r]);
+      prev.disabled = r <= 0;
+      nextPost.disabled = r >= f.items.length - 1;
+    };
+    const step = (by: number) => {
+      const r = Math.min(Math.max(0, (refs[i] ?? 0) + by), f.items.length - 1);
+      refs[i] = r;
+      options[i] = linkOptions(f.items, r, base);
+      if (following[i]) chosen[i] = best(i);
+      fillChoices();
+      showSample();
+      mark();
+      f.items[r]?.scrollIntoView?.({ block: 'center' });
+      render();
+    };
+    prev.addEventListener('click', () => step(-1));
+    nextPost.addEventListener('click', () => step(1));
 
     const renderParams = (d: FeedDescriptor, items: ReturnType<typeof checkFeed>['items']) => {
       const link = chosen[i] as PostLink;
@@ -134,25 +230,29 @@ export function chooseLinks(
     const render = (typing = false) => {
       const link = chosen[i] as PostLink;
       const sel = link.selector;
-      const j = optionIndex(f.options, sel);
+      const j = optionIndex(options[i] ?? [], sel);
       choice.value = !sel.value.trim() ? AUTO : j >= 0 ? String(j) : CUSTOM;
       type.value = sel.type;
       if (!typing) input.value = sel.value;
       const d = withPostLink(f.descriptor, link);
       const check = checkFeed(doc, d, base);
       renderParams(d, check.items);
-      const url = check.items[0]?.permalink;
+      const ref = f.items[refs[i] ?? 0];
+      const url = check.items.find((it) => it.element === ref)?.permalink;
       const n = check.items.length;
       if (!sel.value.trim())
         opens.textContent = url
           ? `Automatic: opens ${url}`
-          : 'Automatic: no link in the first post.';
+          : 'Automatic: no link in the sample post.';
       else if (!check.linkHits)
         opens.textContent = `This selector finds no link in any of the ${n} posts, so the automatic link is used.`;
-      else opens.textContent = `Opens: ${url} (found in ${check.linkHits} of ${n} posts)`;
+      else
+        opens.textContent = url
+          ? `Opens: ${url} (found in ${check.linkHits} of ${n} posts)`
+          : `No link in the sample post (found in ${check.linkHits} of ${n} posts).`;
     };
     choice.addEventListener('change', () => {
-      const o = f.options[Number(choice.value)];
+      const o = options[i]?.[Number(choice.value)];
       if (choice.value === AUTO) setSelector({ type: 'css', value: '' });
       else if (o) setSelector({ ...o.selector });
       render();
@@ -170,6 +270,7 @@ export function chooseLinks(
       doc,
       'fieldset',
       {},
+      sample,
       choice,
       el(doc, 'div', { className: 'sel' }, type, input),
       opens,
@@ -177,8 +278,11 @@ export function chooseLinks(
     );
     if (feeds.length > 1) box.prepend(el(doc, 'legend', {}, `Feed ${i + 1}`));
     panel.append(box);
+    fillChoices();
+    showSample();
     render();
   });
+  mark();
 
   const cancel = el(doc, 'button', { type: 'button', className: 'cancel' }, 'Cancel');
   const next = el(doc, 'button', { type: 'button', className: 'primary next' }, 'Next');
@@ -187,6 +291,7 @@ export function chooseLinks(
 
   return new Promise((resolve) => {
     const done = (v: LinkChoice | null) => {
+      marks.destroy();
       host.remove();
       resolve(v);
     };
@@ -196,8 +301,11 @@ export function chooseLinks(
       feeds.forEach((f, i) => {
         const { selector: sel, params } = chosen[i] as PostLink;
         links[f.descriptor.id] = {
-          selector: { type: sel.type, value: sel.value.trim() },
-          ...(params && { params }),
+          link: {
+            selector: { type: sel.type, value: sel.value.trim() },
+            ...(params && { params }),
+          },
+          reference: refs[i] ?? 0,
         };
       });
       done(links);

@@ -1,8 +1,11 @@
 import { captureSample, type SiteProfile, type UnifiedFeed } from 'feedgrab';
 import type { RuntimeApi } from './api';
 
-/** feedgrab sample budget; Settings checks edited selectors against it. */
-export const SAMPLE_OPTIONS = { items: 2, maxBytes: 20000 };
+/**
+ * feedgrab sample budget; Settings checks edited selectors against it. With a structure, feedgrab
+ * includes the post most like the chosen sample post.
+ */
+export const SAMPLE_OPTIONS = { items: 4, maxBytes: 20000 };
 /** Without a second item by then, a one-item sample is saved. */
 const SETTLE_MS = 5000;
 

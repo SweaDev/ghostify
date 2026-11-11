@@ -52,7 +52,7 @@ describe('sample messages from pages', () => {
 });
 
 describe('runtime samples', () => {
-  it('saves a two-item sample of feeds that need one', async () => {
+  it('saves a sample of up to four items of feeds that need one', async () => {
     const doc = devtoDoc();
     document.body.innerHTML = doc.body.innerHTML;
     const saved: { feedId: string; html: string }[] = [];
@@ -82,7 +82,7 @@ describe('runtime samples', () => {
     }
     const stories = saved.find((x) => x.feedId === 'devto-stories')?.html ?? '';
     const copy = new DOMParser().parseFromString(stories, 'text/html');
-    expect(copy.querySelectorAll('#substories .crayons-story')).toHaveLength(2);
+    expect(copy.querySelectorAll('#substories .crayons-story')).toHaveLength(3);
     expect(stories).not.toMatch(/<script[^>]*>[^<]/);
     rt.dispose();
   });
