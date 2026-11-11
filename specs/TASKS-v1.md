@@ -38,13 +38,13 @@ Spec: `specs/SPEC-v1.md`. Plan: `specs/PLAN-v1.md`.
   Refs: specs/SPEC-v1.md L3; specs/PLAN-v1.md L111-116; specs/PLAN-v1.md L95-109
   Files: src/feed/runtime.ts, src/feed/api.ts, entrypoints/devto.content.ts, tests/runtime.test.ts
   Depends: T02, T04, T05
-  Done: runtime test on fixture doc: already-ghosted ids hidden on start; items added later (mutation) are checked; clicking ghost button calls ghostify and hides item; undo restores; dispose cleans up. Content script builds for both browsers.
+  Done: runtime test on fixture doc: already-ghostified ids hidden on start; items added later (mutation) are checked; clicking ghost button calls ghostify and hides item; undo restores; dispose cleans up. Content script builds for both browsers.
 
 - [x] T07: Popup with ghost list, README and version 0.1.0
   Refs: specs/SPEC-v1.md L8; specs/PLAN-v1.md L22-54; specs/PLAN-v1.md L144-156
   Files: entrypoints/popup/App.tsx, src/ui/ItemCard.tsx, src/ui/useItems.ts, src/ui/EmptyState.tsx, tests/ui.test.tsx, README.md, package.json
   Depends: T06
-  Done: popup lists ghosted items (newest first) with open link and un-ghost; README covers setup/build/run/load unpacked (local build and Release zip, Chrome + Firefox), T01–T07, spec coverage and what's missing; version 0.1.0; `bun run check` passes.
+  Done: popup lists ghostified items (newest first) with open link and unghostify; README covers setup/build/run/load unpacked (local build and Release zip, Chrome + Firefox), T01–T07, spec coverage and what's missing; version 0.1.0; `bun run check` passes.
 
 ## Phase 2: Ghostify UI, snooze, new tab
 
@@ -52,13 +52,13 @@ Spec: `specs/SPEC-v1.md`. Plan: `specs/PLAN-v1.md`.
   Refs: specs/SPEC-v1.md L3; specs/SPEC-v1.md L8; specs/PLAN-v1.md L22-54
   Files: entrypoints/dashboard/{index.html,main.tsx,App.tsx}, src/ui/Dashboard.tsx, src/ui/Tabs.tsx, src/ui/ItemList.tsx, src/ui/ItemCard.tsx, tests/dashboard.test.tsx
   Depends: T07
-  Done: Ghosted / Later / Snoozed tabs with counts; per-item actions: open, move to Later, back to Ghosted, remove (un-ghost); popup "Open Ghostify" opens dashboard; render test passes.
+  Done: Ghostified / Later / Snoozed tabs with counts; per-item actions: open, move to Later, back to Ghostified, remove (unghostify); popup "Open Ghostify" opens dashboard; render test passes.
 
 - [x] T09: Snooze with alarms and "Back from snooze"
   Refs: specs/PLAN-v1.md L117-120; specs/SPEC-v1.md L3
   Files: src/background/snooze.ts, entrypoints/background.ts, src/ui/SnoozeMenu.tsx, src/ui/Dashboard.tsx, tests/snooze.test.ts
   Depends: T08
-  Done: snooze presets (later today, tomorrow, next week, custom date); snoozed items absent from Ghosted until expiry; alarm + startup check expires them; "Back from snooze" group appears; tests use fakeBrowser alarms.
+  Done: snooze presets (later today, tomorrow, next week, custom date); snoozed items absent from Ghostified until expiry; alarm + startup check expires them; "Back from snooze" group appears; tests use fakeBrowser alarms.
 
 - [x] T10: Search, site filter and item detail
   Refs: specs/SPEC-v1.md L3; specs/PLAN-v1.md L95-109
@@ -140,7 +140,7 @@ Spec: `specs/SPEC-v1.md`. Plan: `specs/PLAN-v1.md`.
   Refs: specs/PLAN-v1.md L125-129; specs/PLAN-v1.md L111-115
   Files: src/ui/SitesSettings.tsx, src/feed/runtime.ts, src/store/items.ts, src/ui/ItemCard.tsx, tests/runtime.test.ts
   Depends: T21
-  Done: per-site rules editor; runtime injects enabled rules as llm-text exclusions when AI on; excluded items auto-ghostified with `auto` and hidden; "Auto" badge + "Not this" (un-ghost) in UI; tests pass.
+  Done: per-site rules editor; runtime injects enabled rules as llm-text exclusions when AI on; excluded items auto-ghostified with `auto` and hidden; "Auto" badge + "Not this" (unghostify) in UI; tests pass.
 
 - [x] T23: README and version 1.0.0
   Refs: specs/PLAN-v1.md L144-171
@@ -172,7 +172,7 @@ Spec: `specs/SPEC-v1.md`. Plan: `specs/PLAN-v1.md`.
   Refs: specs/PLAN-v1.md L215-223
   Files: src/ui/GeneralSettings.tsx, src/ui/AiSettings.tsx, src/ui/Dashboard.tsx, src/ui/ItemList.tsx, src/ui/ItemDetail.tsx, src/ui/ItemCard.tsx, src/ui/SitesSettings.tsx, src/ui/AiActivity.tsx, src/ui/Toast.tsx, src/store/items.ts, tests/dashboard.test.tsx
   Depends: T26
-  Done: live settings hook; Ollama URL saved on blur; dashboard unghost has Undo; "Show more" paging; viewer survives filter changes; focus moves into drawers and back; site delete confirms; tests pass.
+  Done: live settings hook; Ollama URL saved on blur; dashboard Unghostify has Undo; "Show more" paging; viewer survives filter changes; focus moves into drawers and back; site delete confirms; tests pass.
 
 - [x] T28: In-browser model host (offscreen page + Transformers.js worker)
   Refs: specs/PLAN-v1.md L224-239

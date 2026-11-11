@@ -56,7 +56,7 @@ function Overview(props: {
       <div className="flex flex-col gap-3 p-5">
         <h2 className="font-semibold text-xl leading-snug">{item.title}</h2>
         <p className="text-sm text-zinc-500 dark:text-zinc-400">
-          {[item.author, item.host, `ghosted ${timeAgo(item.createdAt)}`]
+          {[item.author, item.host, `ghostified ${timeAgo(item.createdAt)}`]
             .filter(Boolean)
             .join(' · ')}
         </p>
@@ -80,7 +80,7 @@ function Overview(props: {
         )}
         {item.auto && (
           <p className="rounded-lg bg-zinc-50 px-3 py-2 text-xs text-zinc-600 dark:bg-zinc-900 dark:text-zinc-300">
-            Auto-ghosted by the rule “{item.auto.criteria}” (
+            Auto-ghostified by the rule “{item.auto.criteria}” (
             {Math.round(item.auto.confidence * 100)}% sure).
           </p>
         )}

@@ -19,14 +19,14 @@ See [CHANGELOG.md](CHANGELOG.md) for every release.
 ## Features
 - **The dev.to home feeds, logged in or out** (Relevant `/`, Latest `/latest`, Top `/top/*`, and when logged in also `/discover`, `/following`, `/following/latest`, `/curated` and `/latest_less_filtered`) are recognized automatically, through [feedgrab](https://github.com/SweaDev/feedgrab).
 - **The ghost button** shows on the post under your pointer. Clicking it hides the post and saves it, and an **Undo** toast lets you take it back. If it covers something on a site, move it in **Settings → Appearance** to any corner of the post, with its distance from the edges in px, for all sites or just one.
-- **Ghosted posts stay hidden** when you reload, and also when they come back later through infinite scroll.
-- **The popup** lists your recent ghosts. From there you can open one, **unghost** it so it shows on the site again, or open the full Ghostify page.
+- **Ghostified posts stay hidden** when you reload, and also when they come back later through infinite scroll.
+- **The popup** lists your recent ghosts. From there you can open one, **unghostify** it so it shows on the site again, or open the full Ghostify page.
 - **The Ghostify page** has three tabs:
-  - **Ghosted** is everything you hid.
+  - **Ghostified** is everything you hid.
   - **Later** is what you want to read.
   - **Snoozed** holds posts that come back later.
-- **Snooze** a post until later today, tomorrow, the weekend, next week, or a date you choose. The post stays hidden on the site, and when the time is up it shows in **Back from snooze** at the top of Ghosted.
-- **Search** your ghosts by keyword and **filter** them by site. **Sort** them by date ghostified or relevance (to the search; by date without one), descending, ascending or random (**Shuffle again** reshuffles); the choice is remembered. Long lists load 50 at a time (**Show more**), and **Unghost** on the Ghostify page has an **Undo**.
+- **Snooze** a post until later today, tomorrow, the weekend, next week, or a date you choose. The post stays hidden on the site, and when the time is up it shows in **Back from snooze** at the top of Ghostified.
+- **Search** your ghosts by keyword and **filter** them by site. **Sort** them by date ghostified or relevance (to the search; by date without one), descending, ascending or random (**Shuffle again** reshuffles); the choice is remembered. Long lists load 50 at a time (**Show more**), and **Unghostify** on the Ghostify page has an **Undo**.
 - **The viewer** opens when you click a post's title, thumbnail or excerpt. It has three tabs:
   - **Overview**: the summary, tags and excerpt.
   - **Reader**: **Load full content** fetches the post and shows its main text inside Ghostify, without the site's ads and menus (the first time, you're asked to allow access to that site). **Reload** fetches it again.
@@ -50,10 +50,10 @@ See [CHANGELOG.md](CHANGELOG.md) for every release.
 - **The view switches** as soon as you log in or out, without a reload.
 - **The new-tab flavor** (`ghostify-newtab-*` zips) puts the Ghostify page on every new tab. Install either the regular flavor or the new-tab flavor, not both.
 - **AI is optional and off by default.** Turn it on in **Settings → AI** and download the in-browser models (or pick another provider) to get:
-  - **summaries and tags** for each ghosted post, written by the general model. Click a tag to filter by it.
+  - **summaries and tags** for each ghostified post, written by the general model. Click a tag to filter by it.
   - **semantic search**: turn on **Semantic** next to the search box and describe what you remember.
   - **summaries of the full content and answers to your questions** in the viewer's **Ask AI** tab;
-  - **auto-ghostify rules**: in **Settings → Sites**, write plain-language rules per site, such as "crypto hype" or "posts that are mostly self-promotion". The decision model checks new feed items against them and ghosts the matches. Auto-ghosted posts are labelled with their rule. **Not this** brings a post back, and that rule never hides it again.
+  - **auto-ghostify rules**: in **Settings → Sites**, write plain-language rules per site, such as "crypto hype" or "posts that are mostly self-promotion". The decision model checks new feed items against them and ghostifies the matches. Auto-ghostified posts are labelled with their rule. **Not this** brings a post back, and that rule never hides it again.
 - **AI activity** (the pulse button in the Ghostify page header, or **Settings → AI activity**) lists every AI request: summaries, tags, indexing, rule checks, searches, model tests and questions. Expand a row to see its model, prompt, input, output and error. Each job can be paused, resumed or stopped, and **Pause all**, **Resume all** and **Stop all** act on everything at once. A pause lasts across browser restarts. While AI is paused, searches fall back to keywords and auto-ghostify rules don't run.
 - **Settings → Prompts** lets you change what Ghostify asks the AI: the summary-and-tags prompt, the **Summarize** and **Ask** prompts, and the rule question sent to System One decision models. **Reset to default** restores the original prompt.
 - Everything stays local in your browser (IndexedDB), with no account and no sync. With in-browser models or Ollama, AI stays on your machine too.
@@ -196,7 +196,7 @@ git push origin v1.0.0
   - custom feed selectors through feedgrab;
   - separate logged-in and logged-out views with their own selectors;
   - the ghost icon on recognized items;
-  - removing ghosted items from the feed and keeping them in the extension;
+  - removing ghostified items from the feed and keeping them in the extension;
   - viewing later, snoozing, and the Ghostified tab until you remove an item;
   - keyword filtering;
   - the UI;
@@ -205,7 +205,7 @@ git push origin v1.0.0
 - Phase 5 (T24–T31) came out of a security, performance and UI audit, and added in-browser models:
   - security: the background accepts only the feed messages from web pages, and only about that page's site. Saved posts keep only http(s) links, and their text is capped. Imported sites are validated. Full-content loads are limited to 5 MB of HTML within 20 s. Model lists time out. The extension's content security policy allows no remote code;
   - performance: indexed, limited item lists; search reads only the current model's vectors; a single backlog per indexing run; fewer content-script restarts; a throttled login-view watcher; and a ghost button placed once per frame;
-  - UI: Undo for unghosting, paged lists, a viewer that stays open when its post moves tabs, settings that stay in sync across pages, focus handling for drawers, and a confirmation before deleting a site;
+  - UI: Undo for unghostifying, paged lists, a viewer that stays open when its post moves tabs, settings that stay in sync across pages, focus handling for drawers, and a confirmation before deleting a site;
   - in-browser models, which are now the default AI provider (see [AI setup](#ai-setup)).
 
 ## Known limits

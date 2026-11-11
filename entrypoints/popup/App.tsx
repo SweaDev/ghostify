@@ -18,7 +18,7 @@ export function App() {
         <h1 className="font-semibold text-base">Ghostify</h1>
         {counts && (
           <span className="ml-auto rounded-full bg-ghost-50 px-2 py-0.5 font-medium text-ghost-700 text-xs dark:bg-ghost-900/50 dark:text-ghost-200">
-            {counts.ghost} ghosted
+            {counts.ghost} ghostified
           </span>
         )}
         <IconButton label="Settings" onClick={() => void browser.runtime.openOptionsPage()}>
@@ -28,7 +28,7 @@ export function App() {
       <CurrentSite />
       <section className="flex-1 overflow-y-auto p-2">
         {items?.length === 0 && (
-          <EmptyState title="Nothing ghosted yet">
+          <EmptyState title="Nothing ghostified yet">
             Hover a post on dev.to and click the ghost to hide it here.
           </EmptyState>
         )}

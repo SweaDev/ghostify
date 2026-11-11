@@ -20,7 +20,7 @@ afterEach(cleanup);
 describe('popup', () => {
   it('shows an empty state', async () => {
     render(<App />);
-    expect(await screen.findByText('Nothing ghosted yet')).toBeTruthy();
+    expect(await screen.findByText('Nothing ghostified yet')).toBeTruthy();
   });
 
   it('lists ghosted items newest first and unghosts', async () => {
@@ -29,7 +29,7 @@ describe('popup', () => {
     render(<App />);
     const links = await screen.findAllByRole('link');
     expect(links.map((l) => l.textContent)).toEqual(['Post b', 'Post a']);
-    expect(screen.getByText('2 ghosted')).toBeTruthy();
+    expect(screen.getByText('2 ghostified')).toBeTruthy();
     const [unghostB] = screen.getAllByLabelText(/Unghost/);
     await act(async () => {
       fireEvent.click(unghostB as HTMLElement);

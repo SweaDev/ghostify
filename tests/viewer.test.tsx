@@ -90,7 +90,7 @@ describe('viewer', () => {
     expect(await screen.findByRole('main', { name: 'Rust ownership' })).toBeTruthy();
     expect(screen.getByRole('tab', { name: /Ask AI/ }).getAttribute('aria-selected')).toBe('true');
     await click(screen.getByLabelText('Back to Ghostify'));
-    expect(await screen.findByRole('tab', { name: /Ghosted/ })).toBeTruthy();
+    expect(await screen.findByRole('tab', { name: /Ghostified/ })).toBeTruthy();
   });
 
   it('opens the original in a new window', async () => {
