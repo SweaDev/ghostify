@@ -1,24 +1,26 @@
 import { parseProfile, type Selector, serializeProfile, validateSelector } from 'feedgrab';
 import { shippedPages } from './builtin';
-import { permalinkOf, withPermalink } from './links';
+import { postLinkOf, withPostLink } from './links';
 import { pageKey, type Site, type View } from './model';
 
 /** A page's editable fields: its view, path pattern and each feed's selectors. */
 export interface PageDraft {
   view: View;
   pathPattern: string;
-  /** `link` (the post link) is relative to the item; empty means automatic. */
-  feeds: { container: Selector; item: Selector; link: Selector }[];
+  /**
+   * `link` (the post link) is relative to the item; empty means automatic. `params` are the link's
+   * query parameters that identify a post; unset keeps all but tracking ones.
+   */
+  feeds: { container: Selector; item: Selector; link: Selector; params?: string[] }[];
 }
 
 export const pageDraft = (e: Site['profiles'][number]): PageDraft => ({
   view: e.view,
   pathPattern: e.profile.pathPattern,
-  feeds: e.profile.feeds.map((f) => ({
-    container: f.container,
-    item: f.item,
-    link: permalinkOf(f),
-  })),
+  feeds: e.profile.feeds.map((f) => {
+    const { selector, params } = postLinkOf(f);
+    return { container: f.container, item: f.item, link: selector, ...(params && { params }) };
+  }),
 });
 
 const same = (a: Selector, b: Selector) => a.type === b.type && a.value === b.value;
@@ -59,7 +61,7 @@ export function editPage(
     const container = checkSelector(doc, d.container, `Container selector${n}`);
     const item = checkSelector(doc, d.item, `Item selector${n}`);
     const link = d.link.value.trim() ? checkSelector(doc, d.link, `Link selector${n}`) : d.link;
-    const linked = withPermalink(f, link);
+    const linked = withPostLink(f, { selector: link, ...(d.params && { params: d.params }) });
     if (same(container, f.container) && same(item, f.item)) return linked;
     const id = `edited-${stamp}-${i}`;
     renamed[f.id] = id;

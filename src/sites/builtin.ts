@@ -1,5 +1,6 @@
 import type { Selector } from 'feedgrab';
 import { DEFAULT_SITES } from './defaults';
+import { samePostLink } from './links';
 import { pageKey, type Site, type SiteProfileEntry } from './model';
 
 /** The shipped version of a built-in site. */
@@ -37,10 +38,7 @@ export function isPageCustomized(e: SiteProfileEntry, shipped: SiteProfileEntry)
     a.feeds.some((f, i) => {
       const g = b.feeds[i];
       return (
-        !g ||
-        !sameSel(f.container, g.container) ||
-        !sameSel(f.item, g.item) ||
-        (f.permalink?.value ?? '') !== (g.permalink?.value ?? '')
+        !g || !sameSel(f.container, g.container) || !sameSel(f.item, g.item) || !samePostLink(f, g)
       );
     })
   );

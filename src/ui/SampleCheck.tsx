@@ -1,7 +1,7 @@
 import type { FeedDescriptor } from 'feedgrab';
 import { useEffect, useMemo, useState } from 'react';
 import { extractItem } from '../feed/extract';
-import { checkFeed } from '../sites/links';
+import { checkFeed, samePostLink } from '../sites/links';
 import type { SampleRow } from '../store/db';
 import { getSamples } from '../store/samples';
 
@@ -66,7 +66,7 @@ export function SampleStatus(props: {
   const total = checkFeed(doc, saved, row.url).items.length;
   const check = checkFeed(doc, draft, row.url);
   const n = check.items.length;
-  const changedLink = (saved.permalink?.value ?? '') !== (draft.permalink?.value ?? '');
+  const changedLink = !samePostLink(saved, draft);
   const first = check.items[0];
   const title =
     first &&

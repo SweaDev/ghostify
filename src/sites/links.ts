@@ -4,20 +4,94 @@ import {
   matchSelector,
   openFeed,
   type PermalinkCandidate,
+  type PermalinkParam,
   type Selector,
+  suggestPermalinkParams,
 } from 'feedgrab';
 
 export const NO_SELECTOR: Selector = { type: 'css', value: '' };
 
-/** A feed's post-link selector, or the empty (automatic) one. */
-export const permalinkOf = (f: FeedDescriptor): Selector => f.permalink ?? NO_SELECTOR;
-
-/** The descriptor with `sel` as its post link (removed when empty). */
-export function withPermalink(f: FeedDescriptor, sel: Selector): FeedDescriptor {
-  const { permalink: _, ...rest } = f;
-  const value = sel.value.trim();
-  return value ? { ...rest, permalink: { type: sel.type, value } } : rest;
+/**
+ * A feed's post link: its selector (empty = automatic) and the URL query parameters that identify
+ * a post (unset = all but tracking ones, `[]` = none).
+ */
+export interface PostLink {
+  selector: Selector;
+  params?: string[];
 }
+
+/** A feed's post link. */
+export const postLinkOf = (f: FeedDescriptor): PostLink => ({
+  selector: f.permalink ?? NO_SELECTOR,
+  ...(f.permalinkParams && { params: f.permalinkParams }),
+});
+
+/** The descriptor with `link` as its post link (empty selector and unset params removed). */
+export function withPostLink(f: FeedDescriptor, link: PostLink): FeedDescriptor {
+  const { permalink: _, permalinkParams: __, ...rest } = f;
+  const { selector: sel, params } = link;
+  const value = sel.value.trim();
+  return {
+    ...rest,
+    ...(value && { permalink: { type: sel.type, value } }),
+    ...(params && { permalinkParams: [...params].sort() }),
+  };
+}
+
+/** Whether two descriptors have the same post link (selector and query parameters). */
+export const samePostLink = (a: FeedDescriptor, b: FeedDescriptor) =>
+  (a.permalink?.type ?? 'css') === (b.permalink?.type ?? 'css') &&
+  (a.permalink?.value ?? '') === (b.permalink?.value ?? '') &&
+  (a.permalinkParams?.join('&') ?? null) === (b.permalinkParams?.join('&') ?? null);
+
+/** A query parameter offered for a post link, and whether it is kept. */
+export interface ParamOption {
+  name: string;
+  /** Example value from the posts (unset when no post link has it). */
+  value?: string;
+  note: string;
+  kept: boolean;
+}
+
+function paramNote(p?: PermalinkParam): string {
+  if (!p) return 'not in these posts';
+  const notes = [p.coverage < 1 && 'only in some posts'];
+  if (p.uniqueness === 1) notes.push('different in each post');
+  else if (p.uniqueness > 0) notes.push('repeats across posts');
+  return notes.filter(Boolean).join(', ');
+}
+
+/** Query parameters found in the posts' links plus the saved ones, sorted by name. */
+export function paramOptions(found: PermalinkParam[], params?: string[]): ParamOption[] {
+  const names = [...new Set([...found.map((p) => p.name), ...(params ?? [])])].sort();
+  return names.map((name) => {
+    const p = found.find((f) => f.name === name);
+    return {
+      name,
+      ...(p && { value: p.value }),
+      note: paramNote(p),
+      kept: params ? params.includes(name) : true,
+    };
+  });
+}
+
+/** The params after keeping or dropping `name`; unset again once every offered one is kept. */
+export function toggleParam(
+  options: ParamOption[],
+  name: string,
+  kept: boolean,
+): string[] | undefined {
+  const next = options.filter((o) => (o.name === name ? kept : o.kept)).map((o) => o.name);
+  return next.length === options.length ? undefined : next;
+}
+
+/** Query parameters of the post links `d` finds in `items` (its selector, else automatic). */
+export const linkParams = (items: FeedItem[], d: FeedDescriptor, baseUrl: string) =>
+  suggestPermalinkParams(
+    items.slice(0, 20).map((i) => i.element),
+    baseUrl,
+    d.permalink,
+  );
 
 /** Index of the candidate whose selector equals `sel`, or -1. */
 export const optionIndex = (options: PermalinkCandidate[], sel: Selector) =>
@@ -77,7 +151,7 @@ export function migrateLinks<E extends { profile: { feeds: FeedDescriptor[] } }>
   if (!links) return e;
   const feeds = e.profile.feeds.map((f) => {
     const sel = links[f.id]?.selector;
-    return sel && !f.permalink ? withPermalink(f, sel) : f;
+    return sel && !f.permalink ? withPostLink(f, { ...postLinkOf(f), selector: sel }) : f;
   });
   return { ...rest, profile: { ...e.profile, feeds } } as unknown as E;
 }

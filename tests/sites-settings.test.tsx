@@ -172,7 +172,7 @@ describe('SitesSettings', () => {
     });
     const post = (u: string, id: string) =>
       `<article><a href="/${u}"><img alt=""></a><a href="/${u}" role="link">${u}</a>` +
-      `<a href="/${u}/status/${id}"><time>3h</time></a><h3>Hello from ${u}</h3></article>`;
+      `<a href="/${u}/status/${id}?s=20&lang=en"><time>3h</time></a><h3>Hello from ${u}</h3></article>`;
     await saveSample({
       siteId: 'xs',
       feedId: 'fd_x',
@@ -186,18 +186,30 @@ describe('SitesSettings', () => {
     const status = await within(form).findByRole('status');
     expect(status.textContent).toMatch(/finds 2 of 2 posts/);
     expect(status.textContent).toContain('Hello from alice');
-    expect(status.textContent).toContain('https://social.example/alice/status/1');
+    expect(status.textContent).toContain('https://social.example/alice/status/1?lang=en&s=20');
+    const keepS = within(form).getByLabelText('Link selector: keep s') as HTMLInputElement;
+    expect(keepS.checked).toBe(true);
+    await click(keepS);
+    expect(keepS.checked).toBe(false);
+    expect(status.querySelector('.font-mono')?.textContent).toBe(
+      'https://social.example/alice/status/1?lang=en',
+    );
+    expect(status.textContent).toMatch(/may show again/);
+    await click(keepS);
+    expect(status.textContent).not.toMatch(/may show again/);
+    await click(within(form).getByLabelText('Link selector: keep lang'));
 
     const choice = within(form).getByLabelText('Link selector choice') as HTMLSelectElement;
     const input = within(form).getByLabelText('Link selector') as HTMLInputElement;
     expect(choice.value).toBe('auto');
     const labels = [...choice.options].map((o) => o.text);
-    expect(labels[0]).toBe('/alice/status/1 · 3h');
+    expect(labels[0]).toBe('/alice/status/1?lang=en&s=20 · 3h');
     expect(labels).toContain('/alice');
     fireEvent.change(choice, { target: { value: String(labels.indexOf('/alice')) } });
     expect(input.value).not.toBe('');
     expect(status.textContent).toContain('https://social.example/alice');
     expect(status.textContent).not.toContain('status/1');
+    expect(within(form).queryByLabelText('Link selector: keep lang')).toBeNull();
     expect(status.textContent).toMatch(/may show again/);
 
     fireEvent.change(within(form).getByLabelText('Item selector'), {

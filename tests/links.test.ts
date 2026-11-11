@@ -1,6 +1,16 @@
 import { type FeedDescriptor, suggestPermalinks } from 'feedgrab';
 import { chooseLinks } from '@/src/sites/link-chooser';
-import { checkFeed, migrateLinks, optionLabel, withPermalink } from '@/src/sites/links';
+import {
+  checkFeed,
+  linkParams,
+  migrateLinks,
+  optionLabel,
+  paramOptions,
+  postLinkOf,
+  samePostLink,
+  toggleParam,
+  withPostLink,
+} from '@/src/sites/links';
 
 const BASE = 'https://x.example/home';
 const feed: FeedDescriptor = {
@@ -41,12 +51,16 @@ describe('links', () => {
     ]);
     const author = checkFeed(
       doc,
-      withPermalink(feed, { type: 'css', value: 'a[role="link"]' }),
+      withPostLink(feed, { selector: { type: 'css', value: 'a[role="link"]' } }),
       BASE,
     );
     expect(author.items[0]?.permalink).toBe('https://x.example/alice');
     expect(author.linkHits).toBe(2);
-    const none = checkFeed(doc, withPermalink(feed, { type: 'css', value: '.nope' }), BASE);
+    const none = checkFeed(
+      doc,
+      withPostLink(feed, { selector: { type: 'css', value: '.nope' } }),
+      BASE,
+    );
     expect(none.linkHits).toBe(0);
     expect(none.items[0]?.permalink).toBe('https://x.example/alice/status/1');
     expect(checkFeed(doc, { ...feed, item: { type: 'css', value: 'a[' } }, BASE).items).toEqual([]);
@@ -58,7 +72,10 @@ describe('links', () => {
     expect(optionLabel(top, BASE)).toBe('/alice/status/1 · 3h');
     expect(optionLabel({ ...top, url: 'https://t.co/a' }, BASE)).toBe('https://t.co/a · 3h');
     expect(
-      withPermalink({ ...feed, permalink: top.selector }, { type: 'css', value: ' ' }),
+      withPostLink(
+        { ...feed, permalink: top.selector, permalinkParams: ['v'] },
+        { selector: { type: 'css', value: ' ' } },
+      ),
     ).toEqual(feed);
 
     const entry = { view: 'any', profile: { feeds: [feed] } };
@@ -66,6 +83,42 @@ describe('links', () => {
     const moved = migrateLinks({ ...entry, links: { f: { selector: sel } } });
     expect(moved).toEqual({ view: 'any', profile: { feeds: [{ ...feed, permalink: sel }] } });
     expect(migrateLinks(entry)).toBe(entry);
+  });
+
+  it('keeps only the chosen query parameters in post links', () => {
+    document.body.innerHTML = `<main>${['a', 'b', 'c']
+      .map(
+        (v, i) =>
+          `<article><h3><a href="/watch?pp=${i ? 'x' : 'y'}&v=${v}">${v}</a></h3></article>`,
+      )
+      .join('')}</main>`;
+    const all = checkFeed(document, feed, BASE);
+    expect(all.items[0]?.permalink).toBe('https://x.example/watch?pp=y&v=a');
+    const found = linkParams(all.items, feed, BASE);
+    expect(found.map((p) => p.name)).toEqual(['pp', 'v']);
+
+    const options = paramOptions(found);
+    expect(options).toEqual([
+      { name: 'pp', value: 'y', note: 'repeats across posts', kept: true },
+      { name: 'v', value: 'a', note: 'different in each post', kept: true },
+    ]);
+    const params = toggleParam(options, 'pp', false);
+    expect(params).toEqual(['v']);
+    const d = withPostLink(feed, { selector: { type: 'css', value: '' }, params });
+    expect(d).toEqual({ ...feed, permalinkParams: ['v'] });
+    expect(postLinkOf(d)).toEqual({ selector: { type: 'css', value: '' }, params: ['v'] });
+    expect(samePostLink(d, feed)).toBe(false);
+    expect(samePostLink(d, { ...feed, permalinkParams: ['v'] })).toBe(true);
+    expect(checkFeed(document, d, BASE).items.map((i) => i.permalink)).toEqual([
+      'https://x.example/watch?v=a',
+      'https://x.example/watch?v=b',
+      'https://x.example/watch?v=c',
+    ]);
+    expect(toggleParam(paramOptions(found, ['v']), 'pp', true)).toBeUndefined();
+    expect(toggleParam(options, 'v', false)).toEqual(['pp']);
+    expect(paramOptions([], ['id'])).toEqual([
+      { name: 'id', note: 'not in these posts', kept: true },
+    ]);
   });
 });
 
@@ -79,7 +132,7 @@ describe('chooseLinks', () => {
     const doc = page();
     const options = suggestPermalinks([...doc.querySelectorAll('article')], BASE);
     const selector = options[0]?.selector ?? { type: 'css' as const, value: '' };
-    const p = chooseLinks(doc, BASE, [{ descriptor: feed, options, selector }]);
+    const p = chooseLinks(doc, BASE, [{ descriptor: feed, options, link: { selector } }]);
     const root = doc.querySelector('[data-ghostify-chooser]')?.shadowRoot as ShadowRoot;
     const $ = <T extends Element>(s: string) => root.querySelector(s) as T;
     return { p, options, $ };
@@ -104,7 +157,7 @@ describe('chooseLinks', () => {
     input.value = ' a[role="link"] ';
     input.dispatchEvent(new Event('input'));
     $<HTMLButtonElement>('.next').click();
-    expect(await p).toEqual({ f: { type: 'css', value: 'a[role="link"]' } });
+    expect(await p).toEqual({ f: { selector: { type: 'css', value: 'a[role="link"]' } } });
   });
 
   it('saves automatic as an empty selector and resolves null on cancel', async () => {
@@ -115,10 +168,45 @@ describe('chooseLinks', () => {
     expect(a.$<HTMLInputElement>('input').value).toBe('');
     expect(a.$('.opens').textContent).toBe('Automatic: opens https://x.example/alice/status/1');
     a.$<HTMLButtonElement>('.next').click();
-    expect(await a.p).toEqual({ f: { type: 'css', value: '' } });
+    expect(await a.p).toEqual({ f: { selector: { type: 'css', value: '' } } });
 
     const b = open();
     b.$<HTMLButtonElement>('.cancel').click();
     expect(await b.p).toBeNull();
+  });
+
+  it('lets the user untick query parameters and resets them for a new link', async () => {
+    document.body.innerHTML = `<main>${['a', 'b']
+      .map(
+        (v) =>
+          `<article><a href="/u/${v}">u</a><h3><a href="/watch?pp=z&v=${v}">${v}</a></h3></article>`,
+      )
+      .join('')}</main>`;
+    const options = suggestPermalinks([...document.querySelectorAll('article')], BASE);
+    const selector = options[0]?.selector ?? { type: 'css' as const, value: '' };
+    const p = chooseLinks(document, BASE, [{ descriptor: feed, options, link: { selector } }]);
+    const root = document.querySelector('[data-ghostify-chooser]')?.shadowRoot as ShadowRoot;
+    const $ = <T extends Element>(s: string) => root.querySelector(s) as T;
+    const box = (name: string) => $<HTMLInputElement>(`input[aria-label="Keep ${name}"]`);
+    expect($('.params').textContent).toContain('v=adifferent in each post');
+    expect(box('pp').checked).toBe(true);
+    box('pp').checked = false;
+    box('pp').dispatchEvent(new Event('change'));
+    expect(box('pp').checked).toBe(false);
+    expect(root.activeElement).toBe(box('pp'));
+    expect($('.opens').textContent).toContain('Opens: https://x.example/watch?v=a ');
+
+    const choice = $<HTMLSelectElement>('select.choice');
+    const other = [...choice.options].findIndex((o) => o.text.startsWith('/u/a'));
+    choice.value = String(other);
+    choice.dispatchEvent(new Event('change'));
+    expect($('.params').textContent).toBe('');
+    choice.value = '0';
+    choice.dispatchEvent(new Event('change'));
+    expect(box('pp').checked).toBe(true);
+    box('pp').checked = false;
+    box('pp').dispatchEvent(new Event('change'));
+    $<HTMLButtonElement>('.next').click();
+    expect(await p).toEqual({ f: { selector, params: ['v'] } });
   });
 });

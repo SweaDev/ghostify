@@ -1,6 +1,7 @@
 import {
   type FeedDescriptor,
   type PermalinkCandidate,
+  type PermalinkParam,
   type Selector,
   suggestPermalinks,
 } from 'feedgrab';
@@ -24,7 +25,15 @@ import {
 } from '../sites/builtin';
 import { editPage, type PageDraft, pageDraft } from '../sites/edit';
 import { mergeSites, parseSitesJson, serializeSites } from '../sites/io';
-import { checkFeed, optionIndex, optionLabel, withPermalink } from '../sites/links';
+import {
+  checkFeed,
+  linkParams,
+  optionIndex,
+  optionLabel,
+  paramOptions,
+  toggleParam,
+  withPostLink,
+} from '../sites/links';
 import {
   type LoginIndicator,
   pageKey,
@@ -248,14 +257,52 @@ function LinkField(props: {
   );
 }
 
-/** feedgrab's post-link suggestions for the items the edited selectors find in the sample. */
-function sampleOptions(sample: Sample | undefined, d: FeedDescriptor): PermalinkCandidate[] {
-  if (!sample) return [];
-  const { items } = checkFeed(sample.doc, d, sample.row.url);
-  return suggestPermalinks(
-    items.map((i) => i.element),
-    sample.row.url,
+/** Checkboxes for the post link's query parameters that identify a post. */
+function ParamsField(props: {
+  label: string;
+  found: PermalinkParam[];
+  params?: string[];
+  onChange(params?: string[]): void;
+}) {
+  const options = paramOptions(props.found, props.params);
+  if (!options.length) return null;
+  return (
+    <fieldset className="flex flex-col gap-1 text-xs">
+      <legend className="mb-0.5 text-zinc-500">
+        Query parameters that identify a post (untick tracking ones)
+      </legend>
+      {options.map((o) => (
+        <label key={o.name} className="flex items-baseline gap-1.5 break-all">
+          <input
+            type="checkbox"
+            aria-label={`${props.label}: keep ${o.name}`}
+            checked={o.kept}
+            onChange={(e) => props.onChange(toggleParam(options, o.name, e.target.checked))}
+          />
+          <code className="font-mono">
+            {o.value === undefined ? o.name : `${o.name}=${o.value}`}
+          </code>
+          {o.note && <span className="text-zinc-500">{o.note}</span>}
+        </label>
+      ))}
+    </fieldset>
   );
+}
+
+/** feedgrab's post-link suggestions and link query parameters for the sample's items under `d`. */
+function sampleLinks(
+  sample: Sample | undefined,
+  d: FeedDescriptor,
+): { options: PermalinkCandidate[]; found: PermalinkParam[] } {
+  if (!sample) return { options: [], found: [] };
+  const { items } = checkFeed(sample.doc, d, sample.row.url);
+  return {
+    options: suggestPermalinks(
+      items.map((i) => i.element),
+      sample.row.url,
+    ),
+    found: linkParams(items, d, sample.row.url),
+  };
 }
 
 function PageForm(props: { site: Site; index: number; entry: SiteProfileEntry; onDone(): void }) {
@@ -264,11 +311,18 @@ function PageForm(props: { site: Site; index: number; entry: SiteProfileEntry; o
   const [error, setError] = useState<string>();
   const many = entry.profile.feeds.length > 1;
   const samples = useSamples(site.id);
+  type DraftFeed = PageDraft['feeds'][number];
+  const updateFeed = (i: number, fn: (f: DraftFeed) => DraftFeed) =>
+    setDraft((d) => ({ ...d, feeds: d.feeds.map((f, j) => (j === i ? fn(f) : f)) }));
+  // A new post link has its own query parameters, so changing it keeps all of them again.
   const setFeed = (i: number, part: 'container' | 'item' | 'link', sel: Selector) =>
-    setDraft((d) => ({
-      ...d,
-      feeds: d.feeds.map((f, j) => (j === i ? { ...f, [part]: sel } : f)),
+    updateFeed(i, ({ params, ...f }) => ({
+      ...f,
+      [part]: sel,
+      ...(part !== 'link' && params && { params }),
     }));
+  const setParams = (i: number, next?: string[]) =>
+    updateFeed(i, ({ params: _, ...f }) => ({ ...f, ...(next && { params: next }) }));
   const save = async () => {
     try {
       const { site: next, renamed } = editPage(site, index, draft);
@@ -319,8 +373,11 @@ function PageForm(props: { site: Site; index: number; entry: SiteProfileEntry; o
         const d = draft.feeds[i];
         if (!d) return null;
         const sample = samples?.get(f.id);
-        const edited = withPermalink({ ...f, container: d.container, item: d.item }, d.link);
-        const options = sampleOptions(sample, edited);
+        const edited = withPostLink(
+          { ...f, container: d.container, item: d.item },
+          { selector: d.link, ...(d.params && { params: d.params }) },
+        );
+        const { options, found } = sampleLinks(sample, edited);
         const name = (part: string) =>
           many
             ? `Feed ${i + 1} ${part} selector`
@@ -354,6 +411,12 @@ function PageForm(props: { site: Site; index: number; entry: SiteProfileEntry; o
               options={options}
               base={sample?.row.url ?? `https://${site.hostname}/`}
               onChange={(s) => setFeed(i, 'link', s)}
+            />
+            <ParamsField
+              label={name('link')}
+              found={found}
+              params={d.params}
+              onChange={(p) => setParams(i, p)}
             />
             {samples && (
               <SampleStatus sample={sample} saved={f} draft={edited} host={site.hostname} />
@@ -457,6 +520,8 @@ function PageItem(props: {
               <li key={f.id}>
                 {f.container.value} → {f.item.value}
                 {f.permalink?.value && ` → link: ${f.permalink.value}`}
+                {f.permalinkParams &&
+                  ` (query: ${f.permalinkParams.length ? f.permalinkParams.join(', ') : 'none'})`}
               </li>
             ))}
           </ul>
