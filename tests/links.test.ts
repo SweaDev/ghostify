@@ -130,9 +130,9 @@ describe('chooseLinks', () => {
 
   const open = () => {
     const doc = page();
-    const options = suggestPermalinks([...doc.querySelectorAll('article')], BASE);
-    const selector = options[0]?.selector ?? { type: 'css' as const, value: '' };
-    const p = chooseLinks(doc, BASE, [{ descriptor: feed, options, link: { selector } }]);
+    const items = [...doc.querySelectorAll('article')];
+    const options = suggestPermalinks(items, BASE);
+    const p = chooseLinks(doc, BASE, [{ descriptor: feed, items, reference: 0 }]);
     const root = doc.querySelector('[data-ghostify-chooser]')?.shadowRoot as ShadowRoot;
     const $ = <T extends Element>(s: string) => root.querySelector(s) as T;
     return { p, options, $ };
@@ -157,7 +157,9 @@ describe('chooseLinks', () => {
     input.value = ' a[role="link"] ';
     input.dispatchEvent(new Event('input'));
     $<HTMLButtonElement>('.next').click();
-    expect(await p).toEqual({ f: { selector: { type: 'css', value: 'a[role="link"]' } } });
+    expect(await p).toEqual({
+      f: { link: { selector: { type: 'css', value: 'a[role="link"]' } }, reference: 0 },
+    });
   });
 
   it('saves automatic as an empty selector and resolves null on cancel', async () => {
@@ -168,7 +170,9 @@ describe('chooseLinks', () => {
     expect(a.$<HTMLInputElement>('input').value).toBe('');
     expect(a.$('.opens').textContent).toBe('Automatic: opens https://x.example/alice/status/1');
     a.$<HTMLButtonElement>('.next').click();
-    expect(await a.p).toEqual({ f: { selector: { type: 'css', value: '' } } });
+    expect(await a.p).toEqual({
+      f: { link: { selector: { type: 'css', value: '' } }, reference: 0 },
+    });
 
     const b = open();
     b.$<HTMLButtonElement>('.cancel').click();
@@ -182,9 +186,12 @@ describe('chooseLinks', () => {
           `<article><a href="/u/${v}">u</a><h3><a href="/watch?pp=z&v=${v}">${v}</a></h3></article>`,
       )
       .join('')}</main>`;
-    const options = suggestPermalinks([...document.querySelectorAll('article')], BASE);
-    const selector = options[0]?.selector ?? { type: 'css' as const, value: '' };
-    const p = chooseLinks(document, BASE, [{ descriptor: feed, options, link: { selector } }]);
+    const items = [...document.querySelectorAll('article')];
+    const selector = suggestPermalinks(items, BASE)[0]?.selector ?? {
+      type: 'css' as const,
+      value: '',
+    };
+    const p = chooseLinks(document, BASE, [{ descriptor: feed, items, reference: 0 }]);
     const root = document.querySelector('[data-ghostify-chooser]')?.shadowRoot as ShadowRoot;
     const $ = <T extends Element>(s: string) => root.querySelector(s) as T;
     const box = (name: string) => $<HTMLInputElement>(`input[aria-label="Keep ${name}"]`);
@@ -207,6 +214,54 @@ describe('chooseLinks', () => {
     box('pp').checked = false;
     box('pp').dispatchEvent(new Event('change'));
     $<HTMLButtonElement>('.next').click();
-    expect(await p).toEqual({ f: { selector, params: ['v'] } });
+    expect(await p).toEqual({ f: { link: { selector, params: ['v'] }, reference: 0 } });
+  });
+
+  it('steps through sample posts; suggestions follow until a link is picked', async () => {
+    const post = (id: string) =>
+      `<article><a href="/u">u</a><a href="/u/status/${id}"><time>3h</time></a><p>Post ${id}</p></article>`;
+    document.body.innerHTML = `<main><article><a href="https://ads.test/buy">Buy now</a></article>${post('1')}${post('2')}</main>`;
+    const items = [...document.querySelectorAll('article')];
+    const p = chooseLinks(document, BASE, [{ descriptor: feed, items, reference: 0 }]);
+    const root = document.querySelector('[data-ghostify-chooser]')?.shadowRoot as ShadowRoot;
+    const $ = <T extends Element>(s: string) => root.querySelector(s) as T;
+    expect($('.which').textContent).toBe('1 of 3');
+    expect($('.excerpt').textContent).toBe('Buy now');
+    expect($<HTMLButtonElement>('.prev-post').disabled).toBe(true);
+    expect($('.opens').textContent).toBe('Opens: https://ads.test/buy (found in 2 of 2 posts)');
+    expect(root.querySelectorAll('.hl.sample').length).toBe(1);
+
+    $<HTMLButtonElement>('.next-post').click();
+    expect($('.which').textContent).toBe('2 of 3');
+    expect($('.opens').textContent).toBe(
+      'Opens: https://x.example/u/status/1 (found in 2 of 3 posts)',
+    );
+    // Once the user picks a link, stepping keeps it.
+    const choice = $<HTMLSelectElement>('select.choice');
+    choice.value = 'auto';
+    choice.dispatchEvent(new Event('change'));
+    $<HTMLButtonElement>('.next-post').click();
+    expect($('.which').textContent).toBe('3 of 3');
+    expect($<HTMLButtonElement>('.next-post').disabled).toBe(true);
+    expect(choice.value).toBe('auto');
+    $<HTMLButtonElement>('.next').click();
+    expect(await p).toEqual({
+      f: { link: { selector: { type: 'css', value: '' } }, reference: 2 },
+    });
+    expect(document.querySelector('[data-ghostify-chooser]')).toBeNull();
+  });
+
+  it('starts from a saved link', async () => {
+    const doc = page();
+    const items = [...doc.querySelectorAll('article')];
+    const saved = { selector: { type: 'css' as const, value: 'a[role="link"]' } };
+    const p = chooseLinks(doc, BASE, [{ descriptor: feed, items, reference: 1, link: saved }]);
+    const root = doc.querySelector('[data-ghostify-chooser]')?.shadowRoot as ShadowRoot;
+    expect(root.querySelector('.which')?.textContent).toBe('2 of 2');
+    expect(root.querySelector('.opens')?.textContent).toBe(
+      'Opens: https://x.example/bob (found in 2 of 2 posts)',
+    );
+    (root.querySelector('.next') as HTMLButtonElement).click();
+    expect(await p).toEqual({ f: { link: saved, reference: 1 } });
   });
 });

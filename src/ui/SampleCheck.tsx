@@ -2,6 +2,7 @@ import type { FeedDescriptor } from 'feedgrab';
 import { useEffect, useMemo, useState } from 'react';
 import { extractItem } from '../feed/extract';
 import { checkFeed, samePostLink } from '../sites/links';
+import { defaultReference, hasRequired, offStructure, sameStructure } from '../sites/structure';
 import type { SampleRow } from '../store/db';
 import { getSamples } from '../store/samples';
 
@@ -67,10 +68,14 @@ export function SampleStatus(props: {
   const check = checkFeed(doc, draft, row.url);
   const n = check.items.length;
   const changedLink = !samePostLink(saved, draft);
-  const first = check.items[0];
+  // The sample post: the one most like the structure (the post chosen in the picker), else the first.
+  const posts = check.items.map((i) => i.element);
+  const first = check.items[defaultReference(posts, draft.structure)];
   const title =
     first &&
     extractItem(first, { host, siteId: '', view: 'any', baseUrl: row.url }).title.slice(0, 80);
+  const shaped = hasRequired(draft.structure);
+  const fit = check.items.filter((i) => !offStructure(i)).length;
   return (
     <div className="flex flex-col gap-1" role="status">
       {n === 0 ? (
@@ -80,9 +85,19 @@ export function SampleStatus(props: {
         </Line>
       ) : (
         <Line kind={n < total ? 'warn' : 'ok'}>
-          Sample from {date}: finds {n} of {Math.max(total, n)} posts. First: “{title}” →{' '}
+          Sample from {date}: finds {n} of {Math.max(total, n)} posts. Sample post: “{title}” →{' '}
           <span className="break-all font-mono">{first?.permalink ?? 'no link'}</span>
         </Line>
+      )}
+      {n > 0 && shaped && (
+        <Line kind={fit === 0 ? 'warn' : 'ok'}>
+          {fit === 0
+            ? 'No sample post has every required part, so the button would show nowhere. Make some parts optional.'
+            : `${fit} of ${n} sample posts have every required part and get the button.`}
+        </Line>
+      )}
+      {n > 0 && !shaped && !sameStructure(saved.structure, draft.structure) && (
+        <Line kind="muted">No part is required, so every item gets the button.</Line>
       )}
       {n > 0 && draft.permalink && check.linkHits === 0 && (
         <Line kind="warn">

@@ -1,5 +1,5 @@
 import type { RuntimeApi } from '@/src/feed/api';
-import { startFeedRuntime } from '@/src/feed/runtime';
+import { STRUCTURE_CHECK_MS, startFeedRuntime } from '@/src/feed/runtime';
 import { DEVTO_SITE } from '@/src/sites/defaults';
 import type { GhostDraft, GhostItem } from '@/src/store/db';
 import { devtoDoc } from './devto-fixture';
@@ -195,6 +195,60 @@ describe('feed runtime', () => {
     const root = document.querySelector('[data-ghostify]')?.shadowRoot;
     expect(root?.querySelector('.toast')?.textContent).toMatch(/Reload this page/);
     rt.dispose();
+  });
+});
+
+describe('post structure', () => {
+  beforeEach(() => devtoDoc());
+  afterEach(() => vi.useRealTimers());
+
+  /** dev.to with every feed requiring `css`. */
+  const shaped = (css: string) => ({
+    ...DEVTO_SITE,
+    profiles: DEVTO_SITE.profiles.map((e) => ({
+      ...e,
+      profile: {
+        ...e.profile,
+        feeds: e.profile.feeds.map((f) => ({
+          ...f,
+          structure: {
+            parts: [{ selector: { type: 'css' as const, value: css }, required: true }],
+          },
+        })),
+      },
+    })),
+  });
+  const run = (site = shaped('h2.ok')) =>
+    startFeedRuntime({ doc: document, url: 'https://dev.to/', sites: [site], api: fakeApi().api });
+  const toast = () =>
+    document.querySelector('[data-ghostify]')?.shadowRoot?.querySelector('.toast')?.textContent;
+
+  it('offers the button only on items with every required part', async () => {
+    const [ad, post] = stories() as [HTMLElement, HTMLElement];
+    for (const s of stories().slice(1)) s.querySelector('h2')?.classList.add('ok');
+    const rt = run();
+    const over = (el: HTMLElement) =>
+      el.querySelector('h2')?.dispatchEvent(new Event('pointerover', { bubbles: true }));
+    await vi.waitFor(() => {
+      over(post);
+      expect(button().classList.contains('on')).toBe(true);
+    });
+    over(ad);
+    expect(button().classList.contains('on')).toBe(false);
+    rt.dispose();
+  });
+
+  it('warns once when no item has the saved structure', () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    const rt = run(shaped('.nope'));
+    vi.advanceTimersByTime(STRUCTURE_CHECK_MS);
+    expect(toast()).toMatch(/no post here has every required part/);
+    rt.dispose();
+
+    const ok = run(shaped('h2'));
+    vi.advanceTimersByTime(STRUCTURE_CHECK_MS);
+    expect(toast()).toBeUndefined();
+    ok.dispose();
   });
 });
 

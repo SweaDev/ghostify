@@ -3,9 +3,9 @@ import {
   createProfile,
   detectFeeds,
   type FeedDescriptor,
+  type ItemStructure,
   openFeed,
   type SiteProfile,
-  suggestPermalinks,
 } from 'feedgrab';
 import { openOverlay, pickElement } from 'feedgrab/overlay';
 import { SAMPLE_OPTIONS } from '../feed/samples';
@@ -16,11 +16,16 @@ import { detectView } from './model';
 import { existingEntry, findSite, mergePicked } from './picker';
 import { getSites, saveSite } from './registry';
 import { selectorFor } from './selector';
+import { defaultReference, startingParts, withStructure } from './structure';
+import { chooseStructure } from './structure-chooser';
 import { chooseView, notice } from './view-chooser';
 
 const THEME = { colors: { accent: '#7c5cff', feed: '#7c5cff', item: '#3b82f6' } };
 
-/** Detect → confirm/edit in feedgrab's overlay → choose view → save → reload. */
+/**
+ * Detect → confirm/edit in feedgrab's overlay → sample post and post link → post structure →
+ * choose view → save → reload.
+ */
 export async function runPicker(): Promise<void> {
   if (document.querySelector('[data-feedgrab-overlay], [data-ghostify-chooser]')) return;
   const url = location.href;
@@ -47,11 +52,25 @@ export async function runPicker(): Promise<void> {
     notice(document, 'No feed was ticked, so nothing was saved. Open the picker again to retry.');
     return;
   }
-  const links = await chooseLinks(document, url, linkFeeds(profile, url, entry?.profile));
+  const feeds = linkFeeds(profile, entry?.profile);
+  const links = await chooseLinks(document, url, feeds);
   if (!links) return;
+  const refOf = (f: LinkFeed) => links[f.descriptor.id]?.reference ?? f.reference;
+  const shapes = await chooseStructure(
+    document,
+    feeds.map((f) => ({
+      descriptor: f.descriptor,
+      items: f.items,
+      reference: refOf(f),
+      parts: startingParts(f.items, refOf(f), f.structure),
+    })),
+  );
+  if (!shapes) return;
   const linked = {
     ...profile,
-    feeds: profile.feeds.map((f) => withPostLink(f, links[f.id] ?? { selector: NO_SELECTOR })),
+    feeds: profile.feeds.map((f) =>
+      withStructure(withPostLink(f, links[f.id]?.link ?? { selector: NO_SELECTOR }), shapes[f.id]),
+    ),
   };
   const choice = await chooseView(document, {
     indicator: site?.loginIndicator,
@@ -67,25 +86,41 @@ export async function runPicker(): Promise<void> {
   await saveSite(saved);
   await Promise.all(
     linked.feeds.map((f) => {
-      const html = captureSample(document, f, SAMPLE_OPTIONS);
+      const lf = feeds.find((x) => x.descriptor.id === f.id);
+      const reference = lf?.items[refOf(lf)];
+      const html = captureSample(document, f, {
+        ...SAMPLE_OPTIONS,
+        ...(reference && { reference }),
+      });
       return html && sendMessage('saveSample', { siteId: saved.id, feedId: f.id, url, html });
     }),
   ).catch(console.warn);
   location.reload();
 }
 
-/** Each feed's suggested post links (best first) and the link to start from. */
-function linkFeeds(profile: SiteProfile, url: string, before?: SiteProfile): LinkFeed[] {
+/**
+ * Each feed's posts, the sample post to start from (the first one like the saved structure,
+ * else the first) and its saved post link and structure, if any.
+ */
+function linkFeeds(
+  profile: SiteProfile,
+  before?: SiteProfile,
+): (LinkFeed & { structure?: ItemStructure })[] {
   const feed = openFeed(document, profile, { builtinExclusions: false, live: false });
   const items = feed.items();
   feed.dispose();
   return profile.feeds.map((f) => {
     const els = items.filter((i) => i.feedId === f.id).map((i) => i.element);
-    const options = suggestPermalinks(els.slice(0, 20), url);
+    const old = before?.feeds.find((b) => b.id === f.id);
     const has = (d?: FeedDescriptor) => !!(d?.permalink || d?.permalinkParams);
-    const prev = has(f) ? f : before?.feeds.find((b) => b.id === f.id);
-    const link =
-      prev && has(prev) ? postLinkOf(prev) : { selector: options[0]?.selector ?? NO_SELECTOR };
-    return { descriptor: f, options, link };
+    const prev = has(f) ? f : old;
+    const structure = f.structure ?? old?.structure;
+    return {
+      descriptor: f,
+      items: els,
+      reference: defaultReference(els, structure),
+      ...(prev && has(prev) && { link: postLinkOf(prev) }),
+      ...(structure && { structure }),
+    };
   });
 }

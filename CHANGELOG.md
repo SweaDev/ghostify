@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- Choose a sample post (not an ad or a heading) when adding a site or editing its selectors; post-link suggestions come from it.
+- Post structure: the parts every post has, suggested from the sample post as required or optional. The ghost button skips items without a required part, and you can edit the parts in Settings → Sites.
+- A notice when no post on a page has the saved structure.
+
+### Changed
+- feedgrab 0.4.0.
+- Feed samples keep up to four posts, including the sample post, and Settings checks edits against the sample post instead of the first one.
 
 ## [1.6.0] - 2026-11-11
 ### Added

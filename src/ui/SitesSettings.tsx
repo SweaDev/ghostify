@@ -1,9 +1,10 @@
-import {
-  type FeedDescriptor,
-  type PermalinkCandidate,
-  type PermalinkParam,
-  type Selector,
-  suggestPermalinks,
+import type {
+  FeedDescriptor,
+  ItemStructure,
+  PermalinkCandidate,
+  PermalinkParam,
+  Selector,
+  StructurePart,
 } from 'feedgrab';
 import {
   ChevronRight,
@@ -25,6 +26,7 @@ import {
 } from '../sites/builtin';
 import { editPage, type PageDraft, pageDraft } from '../sites/edit';
 import { mergeSites, parseSitesJson, serializeSites } from '../sites/io';
+import { linkOptions } from '../sites/link-chooser';
 import {
   checkFeed,
   linkParams,
@@ -42,6 +44,7 @@ import {
   type View,
 } from '../sites/model';
 import { deleteSite, getSites, saveSite, sitesItem } from '../sites/registry';
+import { defaultReference, partCoverage, suggestParts, withStructure } from '../sites/structure';
 import { deleteSamples, renameSamples } from '../store/samples';
 import { IconButton } from './ItemCard';
 import { btn, btnDanger, btnPrimary, card, field } from './kit';
@@ -289,20 +292,102 @@ function ParamsField(props: {
   );
 }
 
-/** feedgrab's post-link suggestions and link query parameters for the sample's items under `d`. */
+/**
+ * The sample's posts under `d`, feedgrab's post-link suggestions for its sample post (the one
+ * most like `d`'s structure) and the post links' query parameters.
+ */
 function sampleLinks(
   sample: Sample | undefined,
   d: FeedDescriptor,
-): { options: PermalinkCandidate[]; found: PermalinkParam[] } {
-  if (!sample) return { options: [], found: [] };
+): { posts: Element[]; options: PermalinkCandidate[]; found: PermalinkParam[] } {
+  if (!sample) return { posts: [], options: [], found: [] };
   const { items } = checkFeed(sample.doc, d, sample.row.url);
+  const posts = items.map((i) => i.element);
   return {
-    options: suggestPermalinks(
-      items.map((i) => i.element),
-      sample.row.url,
-    ),
+    posts,
+    options: linkOptions(posts, defaultReference(posts, d.structure), sample.row.url),
     found: linkParams(items, d, sample.row.url),
   };
+}
+
+/**
+ * The parts a post has. Items without a required part get no ghostify button, which keeps it
+ * off ads and headings that share the item selector.
+ */
+function StructureField(props: {
+  label: string;
+  structure?: ItemStructure;
+  /** The sample's posts (empty without a sample). */
+  posts: Element[];
+  onChange(s?: ItemStructure): void;
+}) {
+  const { label, structure, posts, onChange } = props;
+  const parts = structure?.parts ?? [];
+  const set = (next: StructurePart[]) => onChange(next.length ? { parts: next } : undefined);
+  const update = (j: number, p: StructurePart) => set(parts.with(j, p));
+  return (
+    <fieldset className="flex flex-col gap-1.5">
+      <legend className="sr-only">{label}s</legend>
+      {parts.length === 0 && (
+        <p className="text-xs text-zinc-500">
+          No parts saved, so every item gets the button.
+          {posts.length > 0 && ' Suggest them from the sample, or add your own.'}
+        </p>
+      )}
+      {parts.map((p, j) => {
+        const name = `${label} ${j + 1}`;
+        return (
+          // biome-ignore lint/suspicious/noArrayIndexKey: parts have no id and are edited in place
+          <div key={j} className="flex flex-col gap-1">
+            <div className="flex items-center gap-2 text-xs">
+              <label className="flex items-center gap-1.5">
+                <input
+                  type="checkbox"
+                  aria-label={`${name} required`}
+                  checked={p.required}
+                  onChange={(e) => update(j, { ...p, required: e.target.checked })}
+                />
+                Required
+              </label>
+              <span className="font-medium">{p.label ?? 'part'}</span>
+              {posts.length > 0 && (
+                <span className="text-zinc-500">
+                  in {partCoverage(posts, p)} of {posts.length} sample posts
+                </span>
+              )}
+              <span className="flex-1" />
+              <IconButton label={`Remove ${name}`} onClick={() => set(parts.toSpliced(j, 1))}>
+                <Trash2 className="size-3.5" />
+              </IconButton>
+            </div>
+            <SelectorField
+              label={`${name} selector`}
+              value={p.selector}
+              onChange={(selector) => update(j, { ...p, selector })}
+            />
+          </div>
+        );
+      })}
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          className={`${btn} text-xs`}
+          onClick={() => set([...parts, { selector: { type: 'css', value: '' }, required: true }])}
+        >
+          <Plus className="size-3.5" /> Add part
+        </button>
+        {posts.length > 0 && (
+          <button
+            type="button"
+            className={`${btn} text-xs`}
+            onClick={() => set(suggestParts(posts, defaultReference(posts, structure)))}
+          >
+            Suggest from sample
+          </button>
+        )}
+      </div>
+    </fieldset>
+  );
 }
 
 function PageForm(props: { site: Site; index: number; entry: SiteProfileEntry; onDone(): void }) {
@@ -323,6 +408,8 @@ function PageForm(props: { site: Site; index: number; entry: SiteProfileEntry; o
     }));
   const setParams = (i: number, next?: string[]) =>
     updateFeed(i, ({ params: _, ...f }) => ({ ...f, ...(next && { params: next }) }));
+  const setStructure = (i: number, next?: ItemStructure) =>
+    updateFeed(i, ({ structure: _, ...f }) => ({ ...f, ...(next && { structure: next }) }));
   const save = async () => {
     try {
       const { site: next, renamed } = editPage(site, index, draft);
@@ -373,11 +460,14 @@ function PageForm(props: { site: Site; index: number; entry: SiteProfileEntry; o
         const d = draft.feeds[i];
         if (!d) return null;
         const sample = samples?.get(f.id);
-        const edited = withPostLink(
-          { ...f, container: d.container, item: d.item },
-          { selector: d.link, ...(d.params && { params: d.params }) },
+        const edited = withStructure(
+          withPostLink(
+            { ...f, container: d.container, item: d.item },
+            { selector: d.link, ...(d.params && { params: d.params }) },
+          ),
+          d.structure,
         );
-        const { options, found } = sampleLinks(sample, edited);
+        const { posts, options, found } = sampleLinks(sample, edited);
         const name = (part: string) =>
           many
             ? `Feed ${i + 1} ${part} selector`
@@ -417,6 +507,16 @@ function PageForm(props: { site: Site; index: number; entry: SiteProfileEntry; o
               found={found}
               params={d.params}
               onChange={(p) => setParams(i, p)}
+            />
+            <span className="text-xs text-zinc-500">
+              Post structure (parts inside each item; the button skips items without a required
+              part, like ads and headings)
+            </span>
+            <StructureField
+              label={many ? `Feed ${i + 1} part` : 'Part'}
+              structure={d.structure}
+              posts={posts}
+              onChange={(st) => setStructure(i, st)}
             />
             {samples && (
               <SampleStatus sample={sample} saved={f} draft={edited} host={site.hostname} />

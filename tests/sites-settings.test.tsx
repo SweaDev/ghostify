@@ -225,6 +225,71 @@ describe('SitesSettings', () => {
     });
   });
 
+  it('edits the post structure and checks it against the sample post', async () => {
+    const time = { selector: { type: 'css' as const, value: 'time' }, required: true };
+    const feed = {
+      id: 'fd_s',
+      container: { type: 'css' as const, value: 'main > section' },
+      item: { type: 'css' as const, value: ':scope > article' },
+      exclude: [],
+      include: [],
+      source: 'manual' as const,
+      confidence: 1,
+      confirmed: true,
+      structure: { parts: [time] },
+    };
+    const profile = { version: 1, hostname: 'shape.example', pathPattern: '/', feeds: [feed] };
+    await saveSite({
+      id: 'sh',
+      hostname: 'shape.example',
+      label: 'Shape',
+      enabled: true,
+      builtin: false,
+      rules: [],
+      profiles: [{ view: 'any', profile }],
+    });
+    const post = (u: string, id: string) =>
+      `<article><a href="/${u}/status/${id}"><time>3h</time></a><h3>Hello from ${u}</h3></article>`;
+    await saveSample({
+      siteId: 'sh',
+      feedId: 'fd_s',
+      url: 'https://shape.example/',
+      html: `<html><body><main><section><article><a href="https://ads.example/x">Sponsored offer here</a></article>${post('alice', '1')}${post('bob', '2')}${post('carol', '3')}</section></main></body></html>`,
+    });
+
+    render(<SitesSettings sub="sh" />);
+    await click(await screen.findByLabelText('Edit /'));
+    const form = screen.getByRole('form', { name: 'Edit /' });
+    const status = await within(form).findByRole('status');
+    // The sample post is the first one with the structure, not the ad.
+    expect(status.textContent).toContain('Sample post: “Hello from alice”');
+    expect(status.textContent).toContain('3 of 4 sample posts have every required part');
+    expect(within(form).getByText('in 3 of 4 sample posts')).toBeTruthy();
+
+    const required = within(form).getByLabelText('Part 1 required') as HTMLInputElement;
+    await click(required);
+    expect(status.textContent).toContain('No part is required, so every item gets the button.');
+    await click(required);
+
+    await click(within(form).getByText('Add part'));
+    await act(async () => void fireEvent.submit(form));
+    expect(within(form).getByRole('alert').textContent).toBe('Part 2 selector is empty.');
+    fireEvent.change(within(form).getByLabelText('Part 2 selector'), {
+      target: { value: '.nope' },
+    });
+    expect(status.textContent).toMatch(/No sample post has every required part/);
+    await click(within(form).getByLabelText('Remove Part 2'));
+
+    await click(within(form).getByText('Suggest from sample'));
+    expect(within(form).getByLabelText('Part 1 selector')).toBeTruthy();
+    expect(status.textContent).toContain('3 of 4 sample posts have every required part');
+    await act(async () => void fireEvent.submit(form));
+    await vi.waitFor(async () => {
+      const f = (await getSites()).find((x) => x.id === 'sh')?.profiles[0]?.profile.feeds[0];
+      expect(f?.structure?.parts.some((p) => p.required && p.selector.value === 'time')).toBe(true);
+    });
+  });
+
   it('says when a feed has no sample yet', async () => {
     await saveSite(custom);
     render(<SitesSettings sub="ex" />);

@@ -7,11 +7,17 @@ import {
   type SiteProfile,
 } from 'feedgrab';
 import { detectView, resolveProfile, type Site, type SiteRule, siteForUrl } from '../sites/model';
+import { hasRequired, offStructure } from '../sites/structure';
 import type { ButtonPlacement } from '../store/settings';
 import { isContextInvalidated, type RuntimeApi } from './api';
 import { extractItem } from './extract';
 import { mountGhostButton } from './ghost-button';
 import { watchSamples } from './samples';
+
+/** Time after which a feed whose items all lack its structure gets a warning. */
+export const STRUCTURE_CHECK_MS = 4000;
+/** Items a feed must show before it can be said to match none. */
+const STRUCTURE_MIN_ITEMS = 3;
 
 export interface FeedRuntime {
   /** False when no enabled site profile matches the page. */
@@ -200,7 +206,7 @@ function startFeed({ doc, url, sites, api, llm, alive, placement }: RuntimeOptio
       }
       for (let n: Element | null = el; n; n = n.parentElement) {
         const item = byElement.get(n);
-        if (item && item.element === n && !hidden.has(item.id)) return n;
+        if (item && item.element === n && !hidden.has(item.id) && !offStructure(item)) return n;
       }
       return undefined;
     },
@@ -227,10 +233,30 @@ function startFeed({ doc, url, sites, api, llm, alive, placement }: RuntimeOptio
     },
   });
 
+  // A site redesign can leave no item with the saved structure: say so instead of a silent page.
+  const shaped = profile.feeds.filter((f) => hasRequired(f.structure)).map((f) => f.id);
+  const structureTimer =
+    shaped.length > 0
+      ? setTimeout(() => {
+          if (disposed || orphaned) return;
+          const lost = shaped.some((id) => {
+            const items = feed.items().filter((i) => i.feedId === id && i.connected);
+            return items.length >= STRUCTURE_MIN_ITEMS && items.every(offStructure);
+          });
+          if (lost)
+            button.toast(
+              'Ghostify: no post here has every required part saved for this page, so the button is off. Click Edit selectors in the Ghostify popup to update the post structure.',
+              undefined,
+              15000,
+            );
+        }, STRUCTURE_CHECK_MS)
+      : undefined;
+
   return {
     active: true,
     dispose() {
       disposed = true;
+      clearTimeout(structureTimer);
       stopSamples();
       offAdded();
       offUpdated();
