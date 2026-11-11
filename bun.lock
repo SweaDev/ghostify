@@ -17,7 +17,7 @@
         "dexie": "^4.4.7",
         "dexie-react-hooks": "^4.4.0",
         "dompurify": "^3.4.17",
-        "feedgrab": "https://github.com/SweaDev/feedgrab/releases/download/v0.4.0/feedgrab-0.4.0.tgz",
+        "feedgrab": "https://github.com/SweaDev/feedgrab/releases/download/v0.4.1/feedgrab-0.4.1.tgz",
         "lucide-react": "^1.66.0",
         "react": "^19.3.1",
         "react-dom": "^19.3.1",
@@ -484,7 +484,7 @@
 
     "fdir": ["fdir@6.5.0", "", { "peerDependencies": { "picomatch": "^3 || ^4" }, "optionalPeers": ["picomatch"] }, "sha512-tIbYtZbucOs0BRGqPJkshJUYdL+SDH7dVM8gjy+ERp3WAUjLEFJE+02kanyHtwjWOnwrKYBiwAmM0p4kLJAnXg=="],
 
-    "feedgrab": ["feedgrab@https://github.com/SweaDev/feedgrab/releases/download/v0.4.0/feedgrab-0.4.0.tgz", { "dependencies": { "ai": "^7.0.157", "xpath": "^0.0.36", "zod": "^4.6.7" }, "peerDependencies": { "@ai-sdk/google": ">=4", "@ai-sdk/openai": ">=4", "@ai-sdk/openai-compatible": ">=3", "@openrouter/ai-sdk-provider": ">=3", "happy-dom": ">=21" }, "optionalPeers": ["@ai-sdk/google", "@ai-sdk/openai", "@ai-sdk/openai-compatible", "@openrouter/ai-sdk-provider", "happy-dom"] }, "sha512-X+2TYNv6xAredZFlNeoUOIpKJnyMlCuYcBpXgNt/EQxpu9z32bDhBGpYMPVgZE0aRyHw9krUKvYl7HiT3U2D5g=="],
+    "feedgrab": ["feedgrab@https://github.com/SweaDev/feedgrab/releases/download/v0.4.1/feedgrab-0.4.1.tgz", { "dependencies": { "ai": "^7.0.157", "xpath": "^0.0.36", "zod": "^4.6.7" }, "peerDependencies": { "@ai-sdk/google": ">=4", "@ai-sdk/openai": ">=4", "@ai-sdk/openai-compatible": ">=3", "@openrouter/ai-sdk-provider": ">=3", "happy-dom": ">=21" }, "optionalPeers": ["@ai-sdk/google", "@ai-sdk/openai", "@ai-sdk/openai-compatible", "@openrouter/ai-sdk-provider", "happy-dom"] }, "sha512-txvFzpfSEpDWKN5BstXgdZ9rknAgM/rqPlTv4MCx5AEFAfEeFrqt0UFlV5x25zwQbB4v0OM8ve6vDp0h52cRNQ=="],
 
     "filesize": ["filesize@11.0.29", "", {}, "sha512-+Mkmp8keoklLzAnvP/RQGDUEWEpjGmhvm4d4U739C1ZnkqxqoSqdLHnjv9/4QX6lltKSRk6qzQI7+94JVDtuCA=="],
 
