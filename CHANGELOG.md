@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [1.6.0] - 2026-11-11
 ### Added
 - Choose which query parameters of a post link identify the post, when adding a site or editing its selectors.
 
@@ -148,7 +150,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Search index builds in the background, with live progress.
 - Ollama setup guide in the README.
 
-[Unreleased]: https://github.com/SweaDev/ghostify/compare/v1.5.4...HEAD
+[Unreleased]: https://github.com/SweaDev/ghostify/compare/v1.6.0...HEAD
+[1.6.0]: https://github.com/SweaDev/ghostify/compare/v1.5.4...v1.6.0
 [1.5.4]: https://github.com/SweaDev/ghostify/compare/v1.5.3...v1.5.4
 [1.5.3]: https://github.com/SweaDev/ghostify/compare/v1.5.2...v1.5.3
 [1.5.2]: https://github.com/SweaDev/ghostify/compare/v1.5.1...v1.5.2
