@@ -2,6 +2,7 @@ import {
   captureSample,
   createProfile,
   detectFeeds,
+  type FeedDescriptor,
   openFeed,
   type SiteProfile,
   suggestPermalinks,
@@ -10,7 +11,7 @@ import { openOverlay, pickElement } from 'feedgrab/overlay';
 import { SAMPLE_OPTIONS } from '../feed/samples';
 import { sendMessage } from '../messaging';
 import { chooseLinks, type LinkFeed } from './link-chooser';
-import { NO_SELECTOR, withPermalink } from './links';
+import { NO_SELECTOR, postLinkOf, withPostLink } from './links';
 import { detectView } from './model';
 import { existingEntry, findSite, mergePicked } from './picker';
 import { getSites, saveSite } from './registry';
@@ -50,7 +51,7 @@ export async function runPicker(): Promise<void> {
   if (!links) return;
   const linked = {
     ...profile,
-    feeds: profile.feeds.map((f) => withPermalink(f, links[f.id] ?? NO_SELECTOR)),
+    feeds: profile.feeds.map((f) => withPostLink(f, links[f.id] ?? { selector: NO_SELECTOR })),
   };
   const choice = await chooseView(document, {
     indicator: site?.loginIndicator,
@@ -73,7 +74,7 @@ export async function runPicker(): Promise<void> {
   location.reload();
 }
 
-/** Each feed's suggested post links (best first) and the selector to start from. */
+/** Each feed's suggested post links (best first) and the link to start from. */
 function linkFeeds(profile: SiteProfile, url: string, before?: SiteProfile): LinkFeed[] {
   const feed = openFeed(document, profile, { builtinExclusions: false, live: false });
   const items = feed.items();
@@ -81,7 +82,10 @@ function linkFeeds(profile: SiteProfile, url: string, before?: SiteProfile): Lin
   return profile.feeds.map((f) => {
     const els = items.filter((i) => i.feedId === f.id).map((i) => i.element);
     const options = suggestPermalinks(els.slice(0, 20), url);
-    const kept = f.permalink ?? before?.feeds.find((b) => b.id === f.id)?.permalink;
-    return { descriptor: f, options, selector: kept ?? options[0]?.selector ?? NO_SELECTOR };
+    const has = (d?: FeedDescriptor) => !!(d?.permalink || d?.permalinkParams);
+    const prev = has(f) ? f : before?.feeds.find((b) => b.id === f.id);
+    const link =
+      prev && has(prev) ? postLinkOf(prev) : { selector: options[0]?.selector ?? NO_SELECTOR };
+    return { descriptor: f, options, link };
   });
 }

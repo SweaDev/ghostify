@@ -47,6 +47,12 @@ describe('built-in restore', () => {
     const site = applyPageEdit(shipped, top, d);
     expect(builtinStatus(site)?.customized).toBe(true);
     expect(restorePage(site, top).profiles[top]?.profile.feeds[0]?.permalink).toBeUndefined();
+    d.feeds[0] = { ...first, params: ['id'] };
+    const params = applyPageEdit(shipped, top, d);
+    expect(builtinStatus(params)?.customized).toBe(true);
+    expect(restorePage(params, top).profiles[top]?.profile.feeds[0]).not.toHaveProperty(
+      'permalinkParams',
+    );
   });
 
   it('flags a changed indicator or a removed shipped page', () => {

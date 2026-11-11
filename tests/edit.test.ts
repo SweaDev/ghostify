@@ -88,6 +88,27 @@ describe('applyPageEdit', () => {
     expect(cleared).not.toHaveProperty('permalink');
   });
 
+  it('saves and clears the post link query parameters without renaming the feed', () => {
+    const id = entry.profile.feeds[0]?.id ?? '';
+    const d = pageDraft(entry);
+    const [first] = d.feeds;
+    if (!first) throw new Error('no feed');
+    expect(first).not.toHaveProperty('params');
+    d.feeds[0] = { ...first, params: ['v', 'list'] };
+    const kept = editPage(site, top, d);
+    expect(kept.renamed).toEqual({});
+    const feed = kept.site.profiles[top]?.profile.feeds[0];
+    expect(feed).toMatchObject({ id, permalinkParams: ['list', 'v'] });
+    expect(feed).not.toHaveProperty('permalink');
+    expect(pageDraft(kept.site.profiles[top] ?? entry).feeds[0]?.params).toEqual(['list', 'v']);
+    d.feeds[0] = { ...first, params: [] };
+    const none = applyPageEdit(site, top, d).profiles[top]?.profile.feeds[0];
+    expect(none?.permalinkParams).toEqual([]);
+    d.feeds[0] = first;
+    const reset = applyPageEdit(kept.site, top, d).profiles[top]?.profile.feeds[0];
+    expect(reset).not.toHaveProperty('permalinkParams');
+  });
+
   it('survives the built-in selector refresh on startup', async () => {
     const d = pageDraft(entry);
     const [first] = d.feeds;
