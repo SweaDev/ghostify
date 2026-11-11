@@ -28,7 +28,7 @@ describe('dashboard', () => {
     await ghostify(draft('b'), 2);
     render(<Dashboard />);
     await screen.findByText('Post b');
-    await vi.waitFor(() => expect(tab(/Ghosted/).textContent).toContain('2'));
+    await vi.waitFor(() => expect(tab(/Ghostified/).textContent).toContain('2'));
 
     const card = screen.getByText('Post a').closest('article') as HTMLElement;
     await click(within(card).getByLabelText('Read later'));
@@ -37,7 +37,7 @@ describe('dashboard', () => {
 
     await click(tab(/Later/));
     await screen.findByText('Post a');
-    await click(screen.getByLabelText('Back to Ghosted'));
+    await click(screen.getByLabelText('Back to Ghostified'));
     await vi.waitFor(() => expect(screen.getByText('Nothing saved for later')).toBeTruthy());
   });
 
@@ -240,11 +240,11 @@ describe('dashboard semantic search', () => {
 });
 
 describe('dashboard auto items', () => {
-  it('labels auto-ghosted items and rescues them', async () => {
+  it('labels auto-ghostified items and rescues them', async () => {
     const { db: database } = await import('@/src/store/db');
     await ghostify(draft('a', { auto: { ruleId: 'r', criteria: 'crypto hype', confidence: 1 } }));
     render(<Dashboard />);
-    expect(await screen.findByText('Auto-ghosted: crypto hype')).toBeTruthy();
+    expect(await screen.findByText('Auto-ghostified: crypto hype')).toBeTruthy();
     await click(screen.getByLabelText(/Not this/));
     await screen.findByText('No ghosts here');
     expect(await database.kept.get('dev.to:a')).toBeTruthy();

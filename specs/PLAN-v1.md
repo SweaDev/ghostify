@@ -27,7 +27,7 @@ entrypoints/
   feed.content.ts       same runtime; registered at runtime for user-added sites
   picker.content.ts     unlisted script injected on demand to add/edit a site (feedgrab overlay)
   popup/                compact list of recent ghosts, counts, "Add this site", open dashboard
-  dashboard/            full UI: tabs Ghosted / Later / Snoozed, search, filters, detail
+  dashboard/            full UI: tabs Ghostified / Later / Snoozed, search, filters, detail
   options/              settings: Sites, AI, General
   newtab/               dashboard mounted as new tab (newtab flavor only)
 src/
@@ -136,7 +136,7 @@ startFeedRuntime(opts: { doc: Document; url: string; sites: Site[]; api: Runtime
 - Vitest runs through `bun run test` with the `happy-dom` environment and `WxtVitest()`. `fake-indexeddb/auto` is imported in `tests/setup.ts`.
 - Unit tests:
   - extract (fixture), site/view resolution, the items repository and snooze expiry;
-  - the runtime (fixture doc, fake `RuntimeApi`): already-ghosted items are hidden, clicking ghostifies, auto rules apply;
+  - the runtime (fixture doc, fake `RuntimeApi`): already-ghostified items are hidden, clicking ghostifies, auto rules apply;
   - the model factory, the d3 parser, the decision fallback, cosine ranking.
 - UI components get light render tests with `@testing-library/react`.
 - Phase check: `bun run check` (lint + typecheck + test), then `bun run build`, `bun run build:firefox`, `bun run zip`, `bun run zip:firefox`.
@@ -180,13 +180,13 @@ The zip names come from `zip.artifactTemplate` and `zip.sourcesTemplate`, and in
 - D8: React + Tailwind was picked for the UI. It is the best-supported WXT module, and Tailwind keeps the styling consistent across the popup, dashboard, options and new tab.
 - D9: feedgrab's happy-dom `parseHtml` truncates the full dev.to page. Tests use a trimmed fixture built with `document.body.innerHTML`.
 - D10: Content scripts only pass proxy backends to feedgrab. `build/feedgrab-proxy-only.ts` stubs feedgrab's lazy AI SDK model runner, which keeps `ai` out of the content-script bundle (380 KB → 71 KB).
-- D11: The runtime re-checks re-mounted items (feedgrab `item:updated` with a new element), so items ghosted in another tab stay hidden after re-renders.
+- D11: The runtime re-checks re-mounted items (feedgrab `item:updated` with a new element), so items ghostified in another tab stay hidden after re-renders.
 - D12: Newtab-flavor builds go to `.output/<browser>-mv3-newtab` (`outDirTemplate`), so they never overwrite the default flavor's build.
 - D13: `picker.content.ts` starts the picker without returning its promise. `scripting.executeScript` awaits a returned promise, and holding it open while the user works in the overlay tore the tab down in Chromium.
 - D14: For a new page, the picker pre-accepts feedgrab's best proposal by passing it as the overlay's `existing` profile. Saving with no feeds ticked shows a notice and saves nothing.
 - D15: API keys live in a Dexie `secrets` table (extension origin), not in `storage.local`, because content scripts can read `storage.local`. `Settings.ai` holds no keys; `getKeys()` is used only by the background and the options page.
 - D16: Embeddings use no task prefixes. The embeddinggemma-2 page doesn't document the prefix syntax. Each stored embedding is tagged `provider:model`; ranking ignores other models' vectors, and Settings → AI → Reindex fills the gaps.
-- D17: "Not this" on an auto-ghosted item unghosts it and records its key in a Dexie `kept` table, so rules never auto-ghostify it again (manual ghostifying still works). Rules apply only when AI is on; content scripts get feedgrab's proxy backend, never a model or key.
+- D17: "Not this" on an auto-ghostified item unghostifies it and records its key in a Dexie `kept` table, so rules never auto-ghostify it again (manual ghostifying still works). Rules apply only when AI is on; content scripts get feedgrab's proxy backend, never a model or key.
 - D18: The embedding backfill runs by itself: when the service worker wakes, when settings change, and on a 5-minute alarm. It embeds one item at a time and only after the AI queue is empty, so new ghosts and searches go first. "Idle" means the extension's AI queue, not system CPU: no cross-browser API reports CPU load, and `chrome.idle` tracks user input. Progress is counted live from IndexedDB through a new `model` index on `embeddings` (Dexie v4), and the run state and last error are kept in `storage.session`. Each iteration reads storage, which keeps the MV3 service worker alive. If the worker is stopped anyway, the next alarm resumes the work.
 - D19: Settings → AI model fields are dropdowns filled from each provider's list endpoint (`src/ai/catalog.ts`), with an "Other…" entry for any id and the old suggestions as a fallback when listing fails or finds nothing. Kinds come from what the API declares: Gemini `supportedGenerationMethods` (embedContent / generateContent), OpenRouter `architecture.output_modalities` (`embeddings` / `text` / `decisions`, fetched with `output_modalities=all`), Ollama `/api/show` `capabilities` (`embedding` / `completion` / `decision`, with a name guess for servers that send none). OpenAI's list has no type field, so its kinds come from the id. The Decision dropdown lists the provider's decision models first, when it has any, and then every chat model. Gemini and OpenAI declare no decision models today. If a provider adds them later (for example a Gemini method or a model id with "decision" in it), they show up without a code change. Routing is unchanged: only Ollama `d3*` models use `/v1/systemone`. Any other decision model goes through the chat path, and if that fails, through the general model.
 - D20: The decision model goes through System One (`/v1/systemone`: `model`, `state`, typed `questions`) when its provider declares it a decision model. On Ollama that means `/api/show` lists the `decision` capability (d3, d1-omni), with a d3/Jev name guess for servers that report no capabilities. On OpenRouter it means the model list (`architecture.output_modalities` has `decisions`) marked the model when it was picked in Settings, saved as `ModelRef.systemOne` so the background never fetches the list; a typed id falls back to a Jev name match. The request goes to `https://openrouter.ai/api/v1/systemone` with the key (Jev). This replaces the d3-only name check. Settings → AI → Test sends one real System One question.
@@ -215,7 +215,7 @@ The zip names come from `zip.artifactTemplate` and `zip.sourcesTemplate`, and in
 - D29: UI:
   - `useSettings` follows storage, so pages stop overwriting each other with stale copies.
   - The Ollama URL saves on blur, not on every keystroke.
-  - Unghosting in the dashboard shows "Undo", which restores the item, its embedding and its content.
+  - Unghostifying in the dashboard shows "Undo", which restores the item, its embedding and its content.
   - The viewer keeps its item when it leaves the filtered list.
   - Drawers move focus in and back out.
   - Deleting a site asks for confirmation.
@@ -258,3 +258,4 @@ The zip names come from `zip.artifactTemplate` and `zip.sourcesTemplate`, and in
 - D48: Transformers.js 4.3.x (browser build) serializes session creation and runs on shared promise chains (`webInitChain = webInitChain.then(load)`), so after one failed load or run the chain stays rejected and every later model in the worker fails with that same error. Patched with `bun patch` (`patches/@huggingface%2Ftransformers@4.3.1.patch`) to keep the chains settled; `tests/transformers-patch.test.ts` fails if an upgrade drops it. Drop the patch once upstream fixes it.
 - D49: Replaces D48's dependency patch (removed). The worker flags errors from `load`/`embed`/`generate`/`classify` with `restart`; the offscreen relay (`src/ai/browser/relay.ts`, moved out of the entrypoint) then ends that worker, fails its other in-flight requests, and the next request starts a fresh worker with a clean Transformers.js chain. Loaded models reload from the cache after a failure. Upstream fix: huggingface/transformers.js#1780 (for #1767).
 - D50: D47's cleanup after a missing-kernel download failure deletes the cached files and records only (`forgetModel`), without D33's `unload`: with D49 the failed worker is already gone, and an `unload` would start a fresh worker just to idle.
+- D51: UI wording: the first tab and every label or message that names it say **Ghostified** (was Ghosted), and the remove action says **Unghostify** / **Unghostified** (was Unghost / Unghosted). Mid-sentence uses are lowercase ("2 ghostified", "Auto-ghostified: <rule>", "ghostified 3h ago"). Code identifiers (`isGhosted`, `ghostedIds`, `unghost`, `onUnghost`, state `'ghost'`), older `CHANGELOG.md` entries and `submission/POST.md` keep the old words. Spec and plan lines that use the words in prose were reworded in place, with no lines added or removed.

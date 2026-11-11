@@ -55,10 +55,13 @@ const EMPTY: Record<ItemState, { title: string; hint: string }> = {
     title: 'No ghosts here',
     hint: 'Hover a post on a supported site and click the ghost to hide it.',
   },
-  later: { title: 'Nothing saved for later', hint: 'Move ghosted posts here to read them later.' },
+  later: {
+    title: 'Nothing saved for later',
+    hint: 'Move ghostified posts here to read them later.',
+  },
   snoozed: {
     title: 'Nothing snoozed',
-    hint: 'Snoozed posts come back to Ghosted when time is up.',
+    hint: 'Snoozed posts come back to Ghostified when time is up.',
   },
 };
 
@@ -156,7 +159,7 @@ function ViewerPage(props: { itemKey: string; tab?: ViewerTab; onBack(): void })
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-3 text-zinc-500">
         <GhostIcon className="size-12 opacity-60 grayscale" />
-        This ghost is gone (it was unghosted).
+        This ghost is gone (it was unghostified).
         <button type="button" className="text-ghost-600 hover:underline" onClick={props.onBack}>
           Back to Ghostify
         </button>
@@ -253,7 +256,7 @@ function Feed() {
     const snap = await snapshot(item.key);
     await unghost(item.key);
     if (snap)
-      toast.show('Unghosted. It shows on the site again.', {
+      toast.show('Unghostified. It shows on the site again.', {
         label: 'Undo',
         run: () => void restore(snap),
       });
@@ -291,7 +294,7 @@ function Feed() {
         </IconButton>
       )}
       {item.state !== 'ghost' && (
-        <IconButton label="Back to Ghosted" onClick={() => move(item, 'ghost')}>
+        <IconButton label="Back to Ghostified" onClick={() => move(item, 'ghost')}>
           <GhostIcon className="size-4" />
         </IconButton>
       )}
@@ -311,7 +314,7 @@ function Feed() {
               active={tab}
               onChange={setTab}
               tabs={[
-                { key: 'ghost', label: 'Ghosted', count: counts?.ghost },
+                { key: 'ghost', label: 'Ghostified', count: counts?.ghost },
                 { key: 'later', label: 'Later', count: counts?.later },
                 { key: 'snoozed', label: 'Snoozed', count: counts?.snoozed },
               ]}
@@ -389,7 +392,7 @@ function Feed() {
             i.state === 'snoozed' && i.snoozeUntil
               ? `Back ${timeAgo(i.snoozeUntil, now)}`
               : i.auto
-                ? `Auto-ghosted: ${i.auto.criteria}`
+                ? `Auto-ghostified: ${i.auto.criteria}`
                 : null
           }
           onUnghost={(i) => void remove(i)}

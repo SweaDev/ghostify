@@ -8,7 +8,7 @@ import { Tags } from './Tags';
 export interface ItemCardProps {
   item: GhostItem;
   compact?: boolean;
-  /** Extra action buttons, rendered before "Unghost". */
+  /** Extra action buttons, rendered before "Unghostify". */
   actions?: ReactNode;
   /** Extra line under the meta line (e.g. snooze time). */
   note?: ReactNode;
@@ -91,7 +91,7 @@ export function ItemCard(props: ItemCardProps) {
       >
         {actions}
         {onUnghost && (
-          <IconButton label="Unghost (show on the site again)" onClick={() => onUnghost(item)}>
+          <IconButton label="Unghostify (show on the site again)" onClick={() => onUnghost(item)}>
             <Eye className="size-4" />
           </IconButton>
         )}
