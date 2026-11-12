@@ -8,6 +8,7 @@ import {
   type SiteProfile,
 } from 'feedgrab';
 import { openOverlay, pickElement } from 'feedgrab/overlay';
+import { setPicking } from '../feed/reveal';
 import { SAMPLE_OPTIONS } from '../feed/samples';
 import { sendMessage } from '../messaging';
 import { chooseLinks, type LinkFeed } from './link-chooser';
@@ -28,6 +29,16 @@ const THEME = { colors: { accent: '#7c5cff', feed: '#7c5cff', item: '#3b82f6' } 
  */
 export async function runPicker(): Promise<void> {
   if (document.querySelector('[data-feedgrab-overlay], [data-ghostify-chooser]')) return;
+  // Ghostified items show (veiled) while picking, so a feed of only ghostified items is found.
+  setPicking(document, true);
+  try {
+    await pick();
+  } finally {
+    setPicking(document, false);
+  }
+}
+
+async function pick(): Promise<void> {
   const url = location.href;
   const host = location.hostname;
   const site = findSite(await getSites(), host);

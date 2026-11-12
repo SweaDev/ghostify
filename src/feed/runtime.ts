@@ -12,6 +12,7 @@ import type { ButtonPlacement } from '../store/settings';
 import { isContextInvalidated, type RuntimeApi } from './api';
 import { extractItem } from './extract';
 import { mountGhostButton } from './ghost-button';
+import { isPicking, onPicking, type Veil, veil } from './reveal';
 import { watchSamples } from './samples';
 
 /** Time after which a feed whose items all lack its structure gets a warning. */
@@ -107,17 +108,26 @@ function startFeed({ doc, url, sites, api, llm, alive, placement }: RuntimeOptio
   const profile = llm ? withRules(resolved.profile, resolved.site.rules) : resolved.profile;
   const feed = openFeed(doc, profile, { builtinExclusions: false, llm });
   const byElement = new WeakMap<Element, FeedItem>();
-  const hidden = new Map<string, RemovalHandle>();
+  const hidden = new Map<string, { item: FeedItem; handle: RemovalHandle }>();
   let queue: FeedItem[] = [];
   let disposed = false;
   let orphaned = false;
+  // While the picker runs, ghostified items stay on the page under a veil instead of hidden.
+  let picking = false;
+  let veiled: Veil | undefined;
+  const shown = new Map<string, FeedItem>();
+  const drawVeil = () => veiled?.set([...shown.values()].map((i) => i.element));
 
   const hide = (item: FeedItem) => {
-    if (!hidden.has(item.id)) hidden.set(item.id, removeItem(item));
+    if (picking) {
+      shown.set(item.id, item);
+      drawVeil();
+    } else if (!hidden.has(item.id)) hidden.set(item.id, { item, handle: removeItem(item) });
   };
   const restore = (id: string) => {
-    hidden.get(id)?.restore();
+    hidden.get(id)?.handle.restore();
     hidden.delete(id);
+    if (shown.delete(id)) drawVeil();
   };
 
   const flush = async () => {
@@ -199,7 +209,7 @@ function startFeed({ doc, url, sites, api, llm, alive, placement }: RuntimeOptio
   const button = mountGhostButton(doc, {
     placement,
     resolve(el) {
-      if (orphaned) return undefined;
+      if (orphaned || picking) return undefined;
       if (alive?.() === false) {
         orphan();
         return undefined;
@@ -233,6 +243,29 @@ function startFeed({ doc, url, sites, api, llm, alive, placement }: RuntimeOptio
     },
   });
 
+  const setPickingMode = (on: boolean) => {
+    if (on === picking) return;
+    picking = on;
+    if (on) {
+      button.hide();
+      veiled = veil(doc);
+      for (const [id, { item, handle }] of hidden) {
+        handle.restore();
+        shown.set(id, item);
+      }
+      hidden.clear();
+      drawVeil();
+    } else {
+      veiled?.destroy();
+      veiled = undefined;
+      const items = [...shown.values()];
+      shown.clear();
+      for (const item of items) hide(item);
+    }
+  };
+  const stopPicking = onPicking(doc, setPickingMode);
+  setPickingMode(isPicking(doc));
+
   // A site redesign can leave no item with the saved structure: say so instead of a silent page.
   const shaped = profile.feeds.filter((f) => hasRequired(f.structure)).map((f) => f.id);
   const structureTimer =
@@ -257,6 +290,8 @@ function startFeed({ doc, url, sites, api, llm, alive, placement }: RuntimeOptio
     dispose() {
       disposed = true;
       clearTimeout(structureTimer);
+      stopPicking();
+      veiled?.destroy();
       stopSamples();
       offAdded();
       offUpdated();

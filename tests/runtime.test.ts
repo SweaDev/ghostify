@@ -1,4 +1,5 @@
 import type { RuntimeApi } from '@/src/feed/api';
+import { setPicking } from '@/src/feed/reveal';
 import { STRUCTURE_CHECK_MS, startFeedRuntime } from '@/src/feed/runtime';
 import { DEVTO_SITE } from '@/src/sites/defaults';
 import type { GhostDraft, GhostItem } from '@/src/store/db';
@@ -59,6 +60,7 @@ async function ghostViaButton(el: Element) {
 
 describe('feed runtime', () => {
   beforeEach(() => devtoDoc());
+  afterEach(() => setPicking(document, false));
 
   it('is inactive on pages without a profile', () => {
     expect(start(fakeApi().api, 'https://dev.to/someone/post-1').active).toBe(false);
@@ -150,6 +152,46 @@ describe('feed runtime', () => {
     document.querySelector('#substories')?.append(fresh);
     await vi.waitFor(() => expect(isHidden(fresh)).toBe(true));
     rt2.dispose();
+  });
+
+  it('shows ghostified items under a labelled veil while the picker runs', async () => {
+    const { api, state } = fakeApi();
+    state.ghostAll = true;
+    const rt = start(api);
+    await vi.waitFor(() => expect(stories().every(isHidden)).toBe(true));
+    const veil = () =>
+      document.querySelector('[data-ghostify-veil]')?.shadowRoot?.querySelectorAll('.hl.ghost');
+
+    setPicking(document, true);
+    expect(stories().some(isHidden)).toBe(false);
+    expect(veil()?.length).toBeGreaterThanOrEqual(stories().length);
+    expect(veil()?.[0]?.textContent).toBe('Ghostified');
+    stories()[0]
+      ?.querySelector('h2')
+      ?.dispatchEvent(new Event('pointerover', { bubbles: true }));
+    expect(button().classList.contains('on')).toBe(false);
+
+    setPicking(document, false);
+    expect(stories().every(isHidden)).toBe(true);
+    expect(document.querySelector('[data-ghostify-veil]')).toBeNull();
+    rt.dispose();
+  });
+
+  it('starts veiled when the picker is already open', async () => {
+    const { api, state } = fakeApi();
+    state.ghostAll = true;
+    setPicking(document, true);
+    const rt = start(api);
+    await vi.waitFor(() =>
+      expect(
+        document.querySelector('[data-ghostify-veil]')?.shadowRoot?.querySelectorAll('.hl.ghost')
+          .length,
+      ).toBeGreaterThanOrEqual(stories().length),
+    );
+    expect(stories().some(isHidden)).toBe(false);
+    setPicking(document, false);
+    expect(stories().every(isHidden)).toBe(true);
+    rt.dispose();
   });
 
   it('asks for a reload when the extension context is invalidated', async () => {
