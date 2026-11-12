@@ -209,7 +209,10 @@ describe('SitesSettings', () => {
     expect(input.value).not.toBe('');
     expect(status.textContent).toContain('https://social.example/alice');
     expect(status.textContent).not.toContain('status/1');
-    expect(within(form).queryByLabelText('Link selector: keep lang')).toBeNull();
+    // lang is ignored site-wide now, so it is still offered (unticked) for the new link.
+    expect(
+      (within(form).getByLabelText('Link selector: keep lang') as HTMLInputElement).checked,
+    ).toBe(false);
     expect(status.textContent).toMatch(/may show again/);
 
     fireEvent.change(within(form).getByLabelText('Item selector'), {
@@ -221,8 +224,66 @@ describe('SitesSettings', () => {
       const f = (await getSites()).find((x) => x.id === 'xs')?.profiles[0]?.profile.feeds[0];
       expect(f?.item.value).toBe(':scope > div');
       expect(f?.permalink?.value).toBe(input.value);
+      expect(f?.permalinkParams).toBeUndefined();
+      expect((await getSites()).find((x) => x.id === 'xs')?.ignoreParams).toEqual(['lang']);
       expect((await getSamples('xs')).map((r) => r.feedId)).toEqual([f?.id]);
     });
+  });
+
+  it('edits the site’s ignored query parameters and a feed’s own choice', async () => {
+    const feed = {
+      id: 'fd_y',
+      container: { type: 'css' as const, value: 'main' },
+      item: { type: 'css' as const, value: ':scope > article' },
+      exclude: [],
+      include: [],
+      source: 'manual' as const,
+      confidence: 1,
+      confirmed: true,
+    };
+    const profile = { version: 1, hostname: 'video.example', pathPattern: '/', feeds: [feed] };
+    await saveSite({
+      id: 'yt',
+      hostname: 'video.example',
+      label: 'Video',
+      enabled: true,
+      builtin: false,
+      rules: [],
+      profiles: [{ view: 'any', profile }],
+    });
+    const site = async () => (await getSites()).find((x) => x.id === 'yt');
+    render(<SitesSettings sub="yt" />);
+    const field = await screen.findByLabelText('Query parameter to ignore');
+    fireEvent.change(field, { target: { value: 'pp, si pp' } });
+    await act(async () => void fireEvent.submit(field.closest('form') as HTMLFormElement));
+    await vi.waitFor(async () => expect((await site())?.ignoreParams).toEqual(['pp', 'si']));
+    await click(await screen.findByLabelText('Stop ignoring si'));
+    await vi.waitFor(async () => expect((await site())?.ignoreParams).toEqual(['pp']));
+
+    await saveSample({
+      siteId: 'yt',
+      feedId: 'fd_y',
+      url: 'https://video.example/',
+      html: `<html><body><main>${['a', 'b']
+        .map((v) => `<article><a href="/watch?v=${v}&pp=x"><time>1h</time></a> ${v}</article>`)
+        .join('')}</main></body></html>`,
+    });
+    await click(await screen.findByLabelText('Edit /'));
+    const form = screen.getByRole('form', { name: 'Edit /' });
+    const keepPp = (await within(form).findByLabelText(
+      'Link selector: keep pp',
+    )) as HTMLInputElement;
+    expect(keepPp.checked).toBe(false);
+    expect(form.textContent).toContain('on video.example');
+    await click(within(form).getByLabelText('Link selector: only this feed'));
+    expect(form.textContent).toContain('in this feed');
+    await act(async () => void fireEvent.submit(form));
+    await vi.waitFor(async () =>
+      expect((await site())?.profiles[0]?.profile.feeds[0]?.permalinkParams).toEqual(['v']),
+    );
+    expect((await site())?.ignoreParams).toEqual(['pp']);
+    expect(await screen.findByText(/Feeds with their own choice/)).toBeTruthy();
+    expect(screen.getByText(/Feeds with their own choice/).textContent).toContain('/ keeps v');
   });
 
   it('edits the post structure and checks it against the sample post', async () => {

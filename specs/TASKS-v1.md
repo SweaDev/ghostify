@@ -242,11 +242,11 @@ Spec: `specs/SPEC-v1.md`. Plan: `specs/PLAN-v1.md`.
   Depends: T36, T37
   Done: version 0.5.0 everywhere feedgrab's AGENTS.md lists; feedgrab `bun run check` passes; committed; the user pushes tag v0.5.0 to publish the tarball.
 
-- [ ] T39: Site-wide ignored query parameters in Ghostify
+- [x] T39: Site-wide ignored query parameters in Ghostify
   Refs: specs/PLAN-v1.md L270; specs/PLAN-v1.md L272
   Files: package.json, bun.lock, src/sites/model.ts, src/sites/links.ts, src/sites/link-chooser.ts, src/sites/run-picker.ts, src/sites/io.ts, src/feed/runtime.ts, src/feed/extract.ts, src/store/db.ts, src/ui/SitesSettings.tsx, src/ui/SampleCheck.tsx, tests/links.test.ts, tests/runtime.test.ts, tests/sites-settings.test.tsx
   Depends: T38
-  Done: feedgrab 0.5.0 tarball; `Site.ignoreParams` saved, imported and exported; added to every feed without its own choice at runtime and in sample checks; the chooser defaults unticks to the site list with "Only this feed"; Settings edits the list and marks overrides; the feedgrab overlay position is remembered; new items store `feedId`; tests pass. ⚠ BLOCKED: needs the feedgrab v0.5.0 release tarball (the user tags and pushes feedgrab v0.5.0)
+  Done: feedgrab 0.5.0 tarball; `Site.ignoreParams` saved, imported and exported; added to every feed without its own choice at runtime and in sample checks; the chooser defaults unticks to the site list with "Only this feed"; Settings edits the list and marks overrides; the feedgrab overlay position is remembered; new items store `feedId`; tests pass.
 
 - [ ] T40: Re-key Ghostified items after identity rules change
   Refs: specs/PLAN-v1.md L271

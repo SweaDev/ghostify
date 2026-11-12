@@ -53,6 +53,8 @@ describe('draft cleaning', () => {
     expect(
       cleanDraft({ ...draft, auto: { ruleId: 'r', criteria: 'c', confidence: 7 } }).auto,
     ).toEqual({ ruleId: 'r', criteria: 'c', confidence: 1 });
+    expect(cleanDraft({ ...draft, feedId: 'f'.repeat(500) }).feedId).toHaveLength(200);
+    expect('feedId' in cleanDraft(draft)).toBe(false);
   });
 });
 
@@ -66,5 +68,14 @@ describe('site import validation', () => {
     expect(parseSitesJson(site({ rules: [{ id: 'r', criteria: ' x ' }] }))[0]?.rules).toEqual([
       { id: 'r', criteria: 'x', enabled: true },
     ]);
+  });
+
+  it('validates and cleans the ignored query parameters', () => {
+    expect(() => parseSitesJson(site({ ignoreParams: 'pp' }))).toThrow(/ignoreParams/);
+    expect(() => parseSitesJson(site({ ignoreParams: [1] }))).toThrow(/ignoreParams/);
+    expect(
+      parseSitesJson(site({ ignoreParams: [' si', 'pp', 'a&b', 'pp'] }))[0]?.ignoreParams,
+    ).toEqual(['pp', 'si']);
+    expect('ignoreParams' in (parseSitesJson(site({ ignoreParams: [] }))[0] ?? {})).toBe(false);
   });
 });

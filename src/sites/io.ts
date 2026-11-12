@@ -1,5 +1,5 @@
 import { parseProfile, serializeProfile } from 'feedgrab';
-import { migrateLinks } from './links';
+import { cleanParams, migrateLinks } from './links';
 import type { Site, View } from './model';
 
 const VIEWS: View[] = ['any', 'loggedIn', 'loggedOut'];
@@ -49,7 +49,16 @@ export function parseSite(raw: unknown): Site {
       };
     }),
     rules: parseRules(s.rules),
+    ...parseIgnore(s.ignoreParams),
   };
+}
+
+function parseIgnore(raw: unknown): Pick<Site, 'ignoreParams'> {
+  if (raw === undefined) return {};
+  if (!Array.isArray(raw) || !raw.every((n) => typeof n === 'string' && n.length <= 100))
+    fail('site.ignoreParams must be a list of parameter names');
+  const names = cleanParams(raw as string[]);
+  return names.length ? { ignoreParams: names } : {};
 }
 
 function parseRules(raw: unknown): Site['rules'] {

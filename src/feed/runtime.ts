@@ -6,6 +6,7 @@ import {
   removeItem,
   type SiteProfile,
 } from 'feedgrab';
+import { withSiteParams } from '../sites/links';
 import { detectView, resolveProfile, type Site, type SiteRule, siteForUrl } from '../sites/model';
 import { hasRequired, offStructure } from '../sites/structure';
 import type { ButtonPlacement } from '../store/settings';
@@ -105,7 +106,8 @@ function startFeed({ doc, url, sites, api, llm, alive, placement }: RuntimeOptio
 
   const host = new URL(url).hostname;
   const ctx = { host, siteId: resolved.site.id, view: resolved.view, baseUrl: url };
-  const profile = llm ? withRules(resolved.profile, resolved.site.rules) : resolved.profile;
+  const params = withSiteParams(resolved.profile, resolved.site.ignoreParams);
+  const profile = llm ? withRules(params, resolved.site.rules) : params;
   const feed = openFeed(doc, profile, { builtinExclusions: false, llm });
   const byElement = new WeakMap<Element, FeedItem>();
   const hidden = new Map<string, { item: FeedItem; handle: RemovalHandle }>();

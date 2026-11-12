@@ -51,6 +51,7 @@ export function cleanDraft(d: GhostDraft): GhostDraft {
     host: clip(d.host, 253),
     siteId: clip(d.siteId, MAX.id),
     view: d.view === 'loggedIn' || d.view === 'loggedOut' ? d.view : 'any',
+    ...(d.feedId && { feedId: clip(d.feedId, MAX.id) }),
     title: clip(d.title, MAX.title) || 'Untitled',
     excerpt: clip(d.excerpt, MAX.excerpt),
     url: safeUrl(d.url),

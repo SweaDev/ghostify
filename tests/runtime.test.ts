@@ -1,3 +1,4 @@
+import { permalinkId } from 'feedgrab';
 import type { RuntimeApi } from '@/src/feed/api';
 import { setPicking } from '@/src/feed/reveal';
 import { STRUCTURE_CHECK_MS, startFeedRuntime } from '@/src/feed/runtime';
@@ -87,6 +88,26 @@ describe('feed runtime', () => {
     expect(api.unghost).toHaveBeenCalledWith(`dev.to:${drafts[0]?.id}`);
     rt.dispose();
     expect(document.querySelector('[data-ghostify]')).toBeNull();
+  });
+
+  it('drops the site’s ignored query parameters from post links and saves the feed id', async () => {
+    for (const a of stories()[0]?.querySelectorAll('a') ?? [])
+      if (a.href.startsWith('https://dev.to/')) a.href = `${a.href}?pp=x&q=1`;
+    const { api, drafts } = fakeApi();
+    const rt = startFeedRuntime({
+      doc: document,
+      url: 'https://dev.to/',
+      sites: [{ ...DEVTO_SITE, ignoreParams: ['pp'] }],
+      api,
+    });
+    await vi.waitFor(async () => {
+      await ghostViaButton(stories()[0] as HTMLElement);
+      expect(drafts).toHaveLength(1);
+    });
+    expect(drafts[0]?.url).toMatch(/\?q=1$/);
+    expect(drafts[0]?.id).toBe(permalinkId(drafts[0]?.url ?? ''));
+    expect(drafts[0]?.feedId).toBe(DEVTO_SITE.profiles[0]?.profile.feeds[0]?.id);
+    rt.dispose();
   });
 
   it('tracks stories that infinite scroll appends inside nested paged-stories wrappers', async () => {

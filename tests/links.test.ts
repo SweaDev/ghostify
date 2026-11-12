@@ -2,13 +2,16 @@ import { type FeedDescriptor, suggestPermalinks } from 'feedgrab';
 import { chooseLinks } from '@/src/sites/link-chooser';
 import {
   checkFeed,
+  cleanParams,
   linkParams,
   migrateLinks,
   optionLabel,
   paramOptions,
   postLinkOf,
   samePostLink,
+  toggleIgnored,
   toggleParam,
+  withIgnore,
   withPostLink,
 } from '@/src/sites/links';
 
@@ -114,10 +117,29 @@ describe('links', () => {
       'https://x.example/watch?v=b',
       'https://x.example/watch?v=c',
     ]);
-    expect(toggleParam(paramOptions(found, ['v']), 'pp', true)).toBeUndefined();
+    expect(toggleParam(paramOptions(found, ['v']), 'pp', true)).toEqual(['pp', 'v']);
     expect(toggleParam(options, 'v', false)).toEqual(['pp']);
     expect(paramOptions([], ['id'])).toEqual([
       { name: 'id', note: 'not in these posts', kept: true },
+    ]);
+
+    // The site's ignored params: unticked, dropped from ids unless the feed chose its own.
+    expect(paramOptions(found, undefined, ['pp', 'si']).map((o) => [o.name, o.kept])).toEqual([
+      ['pp', false],
+      ['si', false],
+      ['v', true],
+    ]);
+    expect(toggleIgnored(['pp'], 'si', false)).toEqual(['pp', 'si']);
+    expect(toggleIgnored(['pp', 'si'], 'pp', true)).toEqual(['si']);
+    expect(cleanParams([' pp', 'pp', '', 'a=b', 'si'])).toEqual(['pp', 'si']);
+    const site = withIgnore(feed, ['pp']);
+    expect(site.permalinkIgnore).toEqual(['pp']);
+    expect(withIgnore(site, [])).toEqual(feed);
+    expect(withIgnore(d, ['pp']).permalinkIgnore).toBeUndefined();
+    expect(checkFeed(document, site, BASE).items.map((i) => i.permalink)).toEqual([
+      'https://x.example/watch?v=a',
+      'https://x.example/watch?v=b',
+      'https://x.example/watch?v=c',
     ]);
   });
 });
@@ -158,7 +180,8 @@ describe('chooseLinks', () => {
     input.dispatchEvent(new Event('input'));
     $<HTMLButtonElement>('.next').click();
     expect(await p).toEqual({
-      f: { link: { selector: { type: 'css', value: 'a[role="link"]' } }, reference: 0 },
+      links: { f: { link: { selector: { type: 'css', value: 'a[role="link"]' } }, reference: 0 } },
+      ignore: [],
     });
   });
 
@@ -171,7 +194,8 @@ describe('chooseLinks', () => {
     expect(a.$('.opens').textContent).toBe('Automatic: opens https://x.example/alice/status/1');
     a.$<HTMLButtonElement>('.next').click();
     expect(await a.p).toEqual({
-      f: { link: { selector: { type: 'css', value: '' } }, reference: 0 },
+      links: { f: { link: { selector: { type: 'css', value: '' } }, reference: 0 } },
+      ignore: [],
     });
 
     const b = open();
@@ -179,11 +203,11 @@ describe('chooseLinks', () => {
     expect(await b.p).toBeNull();
   });
 
-  it('lets the user untick query parameters and resets them for a new link', async () => {
+  it('unticks query parameters for the whole site, or keeps a feed’s own choice', async () => {
     document.body.innerHTML = `<main>${['a', 'b']
       .map(
         (v) =>
-          `<article><a href="/u/${v}">u</a><h3><a href="/watch?pp=z&v=${v}">${v}</a></h3></article>`,
+          `<article><a href="/u/${v}">u</a><h3><a href="/watch?pp=z&v=${v}&t=1">${v}</a></h3></article>`,
       )
       .join('')}</main>`;
     const items = [...document.querySelectorAll('article')];
@@ -191,11 +215,14 @@ describe('chooseLinks', () => {
       type: 'css' as const,
       value: '',
     };
-    const p = chooseLinks(document, BASE, [{ descriptor: feed, items, reference: 0 }]);
+    const p = chooseLinks(document, BASE, [{ descriptor: feed, items, reference: 0 }], ['t']);
     const root = document.querySelector('[data-ghostify-chooser]')?.shadowRoot as ShadowRoot;
     const $ = <T extends Element>(s: string) => root.querySelector(s) as T;
     const box = (name: string) => $<HTMLInputElement>(`input[aria-label="Keep ${name}"]`);
+    const own = () => $<HTMLInputElement>('label.own input');
+    expect($('.params').textContent).toContain('on x.example');
     expect($('.params').textContent).toContain('v=adifferent in each post');
+    expect(box('t').checked).toBe(false);
     expect(box('pp').checked).toBe(true);
     box('pp').checked = false;
     box('pp').dispatchEvent(new Event('change'));
@@ -203,18 +230,28 @@ describe('chooseLinks', () => {
     expect(root.activeElement).toBe(box('pp'));
     expect($('.opens').textContent).toContain('Opens: https://x.example/watch?v=a ');
 
+    // Another link has none of these params, but the site's choice stays.
     const choice = $<HTMLSelectElement>('select.choice');
     const other = [...choice.options].findIndex((o) => o.text.startsWith('/u/a'));
     choice.value = String(other);
     choice.dispatchEvent(new Event('change'));
-    expect($('.params').textContent).toBe('');
+    expect(box('pp').checked).toBe(false);
+    expect($('.params').textContent).toContain('not in these posts');
     choice.value = '0';
     choice.dispatchEvent(new Event('change'));
-    expect(box('pp').checked).toBe(true);
-    box('pp').checked = false;
-    box('pp').dispatchEvent(new Event('change'));
+    expect(box('pp').checked).toBe(false);
+
+    own().checked = true;
+    own().dispatchEvent(new Event('change'));
+    expect($('.params').textContent).toContain('in this feed');
+    box('t').checked = true;
+    box('t').dispatchEvent(new Event('change'));
+    expect($('.opens').textContent).toContain('Opens: https://x.example/watch?t=1&v=a ');
     $<HTMLButtonElement>('.next').click();
-    expect(await p).toEqual({ f: { link: { selector, params: ['v'] }, reference: 0 } });
+    expect(await p).toEqual({
+      links: { f: { link: { selector, params: ['t', 'v'] }, reference: 0 } },
+      ignore: ['pp', 't'],
+    });
   });
 
   it('steps through sample posts; suggestions follow until a link is picked', async () => {
@@ -246,7 +283,8 @@ describe('chooseLinks', () => {
     expect(choice.value).toBe('auto');
     $<HTMLButtonElement>('.next').click();
     expect(await p).toEqual({
-      f: { link: { selector: { type: 'css', value: '' } }, reference: 2 },
+      links: { f: { link: { selector: { type: 'css', value: '' } }, reference: 2 } },
+      ignore: [],
     });
     expect(document.querySelector('[data-ghostify-chooser]')).toBeNull();
   });
@@ -262,6 +300,6 @@ describe('chooseLinks', () => {
       'Opens: https://x.example/bob (found in 2 of 2 posts)',
     );
     (root.querySelector('.next') as HTMLButtonElement).click();
-    expect(await p).toEqual({ f: { link: saved, reference: 1 } });
+    expect(await p).toEqual({ links: { f: { link: saved, reference: 1 } }, ignore: [] });
   });
 });

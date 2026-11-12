@@ -57,6 +57,14 @@ const positions = storage.defineItem<Record<string, Position>>('local:pickerPane
   fallback: {},
 });
 
+/** Where a picker panel was last left (`key`: the site, plus the panel for feedgrab's). */
+export const panelPosition = async (key: string): Promise<Position | undefined> =>
+  (await positions.getValue())[key];
+
+export async function savePanelPosition(key: string, p: Position): Promise<void> {
+  await positions.setValue({ ...(await positions.getValue()), [key]: p });
+}
+
 const clamp = (v: number, min: number, max: number) => Math.min(Math.max(v, min), max);
 /** Pixels an arrow key moves the panel. */
 const STEP_PX = 24;
@@ -98,16 +106,12 @@ export function framePanel(panel: HTMLElement, step: string): () => void {
   };
   const save = () => {
     const r = panel.getBoundingClientRect();
-    positions
-      .getValue()
-      .then((all) => positions.setValue({ ...all, [site]: { left: r.left, top: r.top } }))
-      .catch(() => {}); // orphaned content script: the position just isn't kept
+    // An orphaned content script can't save: the position just isn't kept.
+    savePanelPosition(site, { left: r.left, top: r.top }).catch(() => {});
   };
   let moved = false;
-  positions
-    .getValue()
-    .then((all) => {
-      const p = all[site];
+  panelPosition(site)
+    .then((p) => {
       if (p && !moved) place(p.left, p.top);
     })
     .catch(() => {});

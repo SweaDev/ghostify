@@ -38,6 +38,8 @@ export interface PickResult {
   profile: SiteProfile;
   view: View;
   indicator?: LoginIndicator;
+  /** The site's ignored query parameters, as chosen in the link step. */
+  ignoreParams?: string[];
 }
 
 /**
@@ -63,8 +65,11 @@ export function mergePicked(sites: Site[], host: string, label: string, r: PickR
   const profiles = site.profiles.filter(
     (e) => !(e.view === r.view && e.profile.pathPattern === profile.pathPattern),
   );
+  const { ignoreParams: _, ...rest } = site;
+  const ignore = r.ignoreParams ?? site.ignoreParams;
   return {
-    ...site,
+    ...rest,
+    ...(ignore?.length && { ignoreParams: ignore }),
     enabled: true,
     loginIndicator: r.indicator ?? site.loginIndicator,
     profiles: [...profiles, { view: r.view, profile }],

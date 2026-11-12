@@ -14,6 +14,7 @@ import { sendMessage } from '../messaging';
 import { chooseLinks, type LinkFeed } from './link-chooser';
 import { NO_SELECTOR, postLinkOf, withPostLink } from './links';
 import { detectView } from './model';
+import { panelPosition, savePanelPosition } from './panel';
 import { existingEntry, findSite, mergePicked } from './picker';
 import { getSites, saveSite } from './registry';
 import { selectorFor } from './selector';
@@ -51,10 +52,15 @@ async function pick(): Promise<void> {
   const [best, ...rest] = proposals;
   const seed = existing ?? (best && createProfile({ url, feeds: [best] }));
   let profile: Awaited<ReturnType<typeof openOverlay>>;
+  const panelKey = `${host} feeds`;
+  const position = await panelPosition(panelKey).catch(() => undefined);
   try {
     profile = await openOverlay(document, existing || !best ? proposals : rest, {
       existing: seed,
       theme: THEME,
+      title: 'Step 1 of 4 · Feeds',
+      ...(position && { position }),
+      onMove: (p) => void savePanelPosition(panelKey, p).catch(() => {}),
     });
   } catch {
     return; // cancelled
@@ -64,8 +70,9 @@ async function pick(): Promise<void> {
     return;
   }
   const feeds = linkFeeds(profile, entry?.profile);
-  const links = await chooseLinks(document, url, feeds);
-  if (!links) return;
+  const picked = await chooseLinks(document, url, feeds, site?.ignoreParams);
+  if (!picked) return;
+  const { links, ignore } = picked;
   const refOf = (f: LinkFeed) => links[f.descriptor.id]?.reference ?? f.reference;
   const shapes = await chooseStructure(
     document,
@@ -93,7 +100,11 @@ async function pick(): Promise<void> {
       .split(/\s[|–—-]\s/)
       .at(-1)
       ?.trim() ?? host;
-  const saved = mergePicked(await getSites(), host, title, { profile: linked, ...choice });
+  const saved = mergePicked(await getSites(), host, title, {
+    profile: linked,
+    ...choice,
+    ignoreParams: ignore,
+  });
   await saveSite(saved);
   await Promise.all(
     linked.feeds.map((f) => {
