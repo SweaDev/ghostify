@@ -212,7 +212,7 @@ Spec: `specs/SPEC-v1.md`. Plan: `specs/PLAN-v1.md`.
   Depends: none
   Done: link, structure and view choosers use one panel with a step label, drag handle (kept in the viewport), collapse, and a position remembered per site in `local:pickerPanel`; existing chooser tests and new panel tests pass.
 
-- [ ] T34: Ghostified items shown blurred while picking
+- [x] T34: Ghostified items shown blurred while picking
   Refs: specs/PLAN-v1.md L273
   Files: src/feed/runtime.ts, src/feed/reveal.ts, src/sites/run-picker.ts, tests/runtime.test.ts
   Depends: T33
