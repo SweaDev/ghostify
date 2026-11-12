@@ -197,3 +197,65 @@ Spec: `specs/SPEC-v1.md`. Plan: `specs/PLAN-v1.md`.
   Files: README.md, package.json
   Depends: T27, T30
   Done: README covers browser models (download, sizes, CPU/GPU, privacy), hardening notes, T24–T31; version 1.2.0; `bun run check` and all builds/zips pass.
+
+## Phase 6: Backups, site-wide ignored parameters, picker usability
+
+- [ ] T32: Data backups and full snapshots
+  Refs: specs/PLAN-v1.md L264-269
+  Files: src/store/backup.ts, src/store/snapshots.ts, src/ui/BackupSettings.tsx, src/ui/GeneralSettings.tsx, tests/backup.test.ts
+  Depends: none
+  Done: data backup has only items and kept and merges on restore (newer `updatedAt` wins); full snapshot has every table but secrets plus sites and settings and replaces them on restore; snapshots live in `ghostify-snapshots`, automatic ones capped at 5; a restore takes a `before-restore` snapshot first; a newer-schema main database (VersionError) can be reset and restored; Settings → General → Backups lists, downloads, restores and deletes; tests pass.
+
+- [ ] T33: Draggable chooser panels
+  Refs: specs/PLAN-v1.md L273
+  Files: src/sites/panel.ts, src/sites/link-chooser.ts, src/sites/structure-chooser.ts, src/sites/view-chooser.ts, tests/panel.test.ts
+  Depends: none
+  Done: link, structure and view choosers use one panel with a step label, drag handle (kept in the viewport), collapse, and a position remembered per site in `local:pickerPanel`; existing chooser tests and new panel tests pass.
+
+- [ ] T34: Ghostified items shown blurred while picking
+  Refs: specs/PLAN-v1.md L273
+  Files: src/feed/runtime.ts, src/feed/reveal.ts, src/sites/run-picker.ts, tests/runtime.test.ts
+  Depends: T33
+  Done: `ghostify:picking` start restores hidden items, turns the ghost button off and draws labelled blurred boxes in the runtime's shadow root that follow scroll and resize; stop hides them again; the picker reveals before `detectFeeds`; tests pass.
+
+- [ ] T35: Docs and version 1.8.0
+  Refs: specs/PLAN-v1.md L264-273
+  Files: CHANGELOG.md, README.md, package.json
+  Depends: T32, T34
+  Done: CHANGELOG 1.8.0 section and links; README Updates and Latest; version 1.8.0; `bun run check`, builds and zips pass; tag v1.8.0.
+
+- [ ] T36: feedgrab: site-wide ignored query parameters and id exports
+  Refs: specs/PLAN-v1.md L270
+  Files: ../feedgrab/src/types.ts, ../feedgrab/src/profile/schema.ts, ../feedgrab/src/detect/permalink.ts, ../feedgrab/src/feed/item-id.ts, ../feedgrab/src/feed/unified-feed.ts, ../feedgrab/src/index.ts, ../feedgrab/tests/unit/*
+  Depends: none
+  Done: `FeedDescriptor.permalinkIgnore` is validated and dropped from ids when `permalinkParams` is unset; `suggestPermalinkParams` leaves them out; `canonicalUrl` and `permalinkId` exported; feedgrab `bun run check` passes; committed in feedgrab.
+
+- [ ] T37: feedgrab: draggable overlay panel and scroll to feed
+  Refs: specs/PLAN-v1.md L272
+  Files: ../feedgrab/src/overlay/*, ../feedgrab/tests/unit/*
+  Depends: T36
+  Done: panel drags by its header within the viewport and collapses; `position`/`onMove` options; "Feed N" scrolls the feed's first item to the top below a fixed/sticky header and outlines it; feedgrab `bun run check` passes; committed in feedgrab.
+
+- [ ] T38: feedgrab: version 0.5.0
+  Refs: specs/PLAN-v1.md L270-272
+  Files: ../feedgrab/package.json, ../feedgrab/src/index.ts, ../feedgrab/tests/unit/smoke.test.ts, ../feedgrab/README.md, ../feedgrab/CHANGELOG.md
+  Depends: T36, T37
+  Done: version 0.5.0 everywhere feedgrab's AGENTS.md lists; feedgrab `bun run check` passes; committed; the user pushes tag v0.5.0 to publish the tarball.
+
+- [ ] T39: Site-wide ignored query parameters in Ghostify
+  Refs: specs/PLAN-v1.md L270; specs/PLAN-v1.md L272
+  Files: package.json, bun.lock, src/sites/model.ts, src/sites/links.ts, src/sites/link-chooser.ts, src/sites/run-picker.ts, src/sites/io.ts, src/feed/runtime.ts, src/feed/extract.ts, src/store/db.ts, src/ui/SitesSettings.tsx, src/ui/SampleCheck.tsx, tests/links.test.ts, tests/runtime.test.ts, tests/sites-settings.test.tsx
+  Depends: T38
+  Done: feedgrab 0.5.0 tarball; `Site.ignoreParams` saved, imported and exported; added to every feed without its own choice at runtime and in sample checks; the chooser defaults unticks to the site list with "Only this feed"; Settings edits the list and marks overrides; the feedgrab overlay position is remembered; new items store `feedId`; tests pass.
+
+- [ ] T40: Re-key Ghostified items after identity rules change
+  Refs: specs/PLAN-v1.md L271
+  Files: src/store/rekey.ts, src/ui/RekeyBanner.tsx, src/ui/Dashboard.tsx, tests/rekey.test.ts
+  Depends: T32, T39
+  Done: dry run counts movable items per host; Update takes a `before-rekey` snapshot and moves items, kept, embeddings, contents and AI job keys in one transaction; collisions merge as D56 says; text-id items untouched; banner render test and rekey tests pass.
+
+- [ ] T41: Docs and version 1.9.0
+  Refs: specs/PLAN-v1.md L264-273
+  Files: CHANGELOG.md, README.md, package.json
+  Depends: T39, T40
+  Done: CHANGELOG 1.9.0 section and links; README covers backups, ignored parameters and re-keying; README Updates and Latest; version 1.9.0; phase check from a clean state passes; tag v1.9.0.
