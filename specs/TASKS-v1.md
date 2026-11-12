@@ -206,7 +206,7 @@ Spec: `specs/SPEC-v1.md`. Plan: `specs/PLAN-v1.md`.
   Depends: none
   Done: data backup has only items and kept and merges on restore (newer `updatedAt` wins); full snapshot has every table but secrets plus sites and settings and replaces them on restore; snapshots live in `ghostify-snapshots`, automatic ones capped at 5; a restore takes a `before-restore` snapshot first; Settings → General → Backups lists, downloads, restores and deletes; tests pass.
 
-- [ ] T33: Draggable chooser panels
+- [x] T33: Draggable chooser panels
   Refs: specs/PLAN-v1.md L273
   Files: src/sites/panel.ts, src/sites/link-chooser.ts, src/sites/structure-chooser.ts, src/sites/view-chooser.ts, tests/panel.test.ts
   Depends: none

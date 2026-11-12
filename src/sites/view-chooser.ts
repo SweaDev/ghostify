@@ -1,23 +1,5 @@
 import type { LoginIndicator, View } from './model';
-
-export const PANEL_CSS = `
-:host { all: initial; }
-.panel {
-  position: fixed; z-index: 2147483647; top: 16px; right: 16px; width: 320px;
-  font: 13px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; color: #18181b;
-  background: #fff; border: 1px solid #d6ccff; border-radius: 14px; padding: 16px;
-  box-shadow: 0 16px 40px rgba(30, 27, 75, .25);
-}
-h2 { margin: 0 0 4px; font-size: 15px; }
-p { margin: 0 0 10px; color: #52525b; }
-label { display: flex; gap: 8px; align-items: center; padding: 6px 8px; border-radius: 8px; cursor: pointer; }
-label:hover { background: #f4f2ff; }
-.ind { margin-top: 8px; padding: 8px; border-radius: 8px; background: #fafafa; }
-.ind code { word-break: break-all; font-size: 12px; }
-.row { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }
-button { font: inherit; border-radius: 8px; padding: 6px 12px; cursor: pointer; border: 1px solid #d4d4d8; background: #fff; }
-button.primary { background: #7c5cff; border-color: #7c5cff; color: #fff; }
-`;
+import { framePanel, PANEL_CSS } from './panel';
 
 export interface ViewChoice {
   view: View;
@@ -55,6 +37,7 @@ export function chooseView(doc: Document, opts: ChooserOptions = {}): Promise<Vi
   </div>
 </div>`;
   doc.documentElement.append(host);
+  const unframe = framePanel(root.querySelector('.panel') as HTMLElement, 'Step 4 of 4 · View');
 
   let indicator = opts.indicator;
   const $ = <T extends Element>(s: string) => root.querySelector(s) as T;
@@ -74,6 +57,7 @@ export function chooseView(doc: Document, opts: ChooserOptions = {}): Promise<Vi
 
   return new Promise((resolve) => {
     const done = (v: ViewChoice | null) => {
+      unframe();
       host.remove();
       resolve(v);
     };
@@ -97,7 +81,7 @@ export function notice(doc: Document, message: string, ms = 6000): void {
   const host = doc.createElement('div');
   host.setAttribute('data-ghostify-chooser', '');
   const root = host.attachShadow({ mode: 'open' });
-  root.innerHTML = `<style>${PANEL_CSS}</style><div class="panel" role="status"><p></p></div>`;
+  root.innerHTML = `<style>${PANEL_CSS}</style><div class="panel plain" role="status"><p></p></div>`;
   (root.querySelector('p') as HTMLElement).textContent = message;
   doc.documentElement.append(host);
   setTimeout(() => host.remove(), ms);

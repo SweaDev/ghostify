@@ -1,5 +1,6 @@
 import type { FeedDescriptor, ItemStructure, StructurePart } from 'feedgrab';
 import { HIGHLIGHT_CSS, type HighlightKind, highlighter } from './highlight';
+import { framePanel, PANEL_CSS } from './panel';
 import {
   countMatching,
   hasRequired,
@@ -8,18 +9,17 @@ import {
   partText,
   suggestParts,
 } from './structure';
-import { PANEL_CSS } from './view-chooser';
 
 const CSS = `${PANEL_CSS}
-.panel { width: 400px; max-height: calc(100vh - 32px); overflow: auto; box-sizing: border-box; }
-fieldset { border: 1px solid #e4e4e7; border-radius: 10px; padding: 8px 10px; margin: 0 0 8px; min-width: 0; }
+.panel { width: 400px; }
+fieldset { border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; margin: 0 0 8px; min-width: 0; }
 legend { font-weight: 600; padding: 0 4px; }
 .parts { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
 .parts label { display: grid; grid-template-columns: auto 1fr; gap: 0 8px; align-items: baseline; font-size: 12px; padding: 3px 4px; border-radius: 6px; }
-.parts label:hover, .parts label:focus-within { background: #f4f4f5; }
+.parts label:hover, .parts label:focus-within { background: var(--hover); }
 .parts .what { font-weight: 600; }
-.parts code { font: 11px ui-monospace, monospace; word-break: break-all; color: #52525b; }
-.parts .text, .parts .cover { grid-column: 2; color: #71717a; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.parts code { font: 11px ui-monospace, monospace; word-break: break-all; color: var(--muted); }
+.parts .text, .parts .cover { grid-column: 2; color: var(--faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .matches { margin: 6px 0 0; font-size: 12px; }
 .matches.warn { color: #b45309; }
 .again { margin-top: 6px; font-size: 12px; padding: 3px 8px; }
@@ -75,6 +75,7 @@ export function chooseStructure(
   panel.setAttribute('role', 'dialog');
   panel.setAttribute('aria-label', 'Ghostify: post structure');
   root.append(el(doc, 'style', {}, CSS), panel);
+  const unframe = framePanel(panel, 'Step 3 of 4 · Post structure');
   const marks = highlighter(doc, root);
 
   const parts: StructurePart[][] = feeds.map((f) => f.parts.map((p) => ({ ...p })));
@@ -182,6 +183,7 @@ export function chooseStructure(
 
   return new Promise((resolve) => {
     const done = (v: StructureChoice | null) => {
+      unframe();
       marks.destroy();
       host.remove();
       resolve(v);

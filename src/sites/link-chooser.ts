@@ -15,14 +15,14 @@ import {
   toggleParam,
   withPostLink,
 } from './links';
+import { framePanel, PANEL_CSS } from './panel';
 import { poolAround } from './structure';
-import { PANEL_CSS } from './view-chooser';
 
 const CSS = `${PANEL_CSS}
-.panel { width: 380px; max-height: calc(100vh - 32px); overflow: auto; box-sizing: border-box; }
-fieldset { border: 1px solid #e4e4e7; border-radius: 10px; padding: 8px 10px; margin: 0 0 8px; min-width: 0; }
+.panel { width: 380px; }
+fieldset { border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; margin: 0 0 8px; min-width: 0; }
 legend { font-weight: 600; padding: 0 4px; }
-select, input { font: inherit; box-sizing: border-box; border: 1px solid #d4d4d8; border-radius: 8px; padding: 5px 8px; background: #fff; color: inherit; }
+select, input { font: inherit; box-sizing: border-box; border: 1px solid var(--line); border-radius: 8px; padding: 5px 8px; background: var(--field); color: inherit; }
 .choice { width: 100%; }
 .sel { display: flex; gap: 6px; margin-top: 6px; }
 .sel input { flex: 1; min-width: 0; font: 12px ui-monospace, monospace; }
@@ -31,11 +31,11 @@ select, input { font: inherit; box-sizing: border-box; border: 1px solid #d4d4d8
 .params p { margin: 0 0 2px; }
 .params label { display: flex; gap: 6px; align-items: baseline; word-break: break-all; }
 .params code { font: 12px ui-monospace, monospace; }
-.params .note { color: #71717a; }
+.params .note { color: var(--faint); }
 .sample { display: flex; gap: 6px; align-items: center; margin: 0 0 6px; font-size: 12px; }
 .sample button { min-width: 28px; padding: 2px 8px; }
 .sample .which { white-space: nowrap; }
-.sample .excerpt { color: #71717a; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; flex: 1; }
+.sample .excerpt { color: var(--faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; flex: 1; }
 ${HIGHLIGHT_CSS}`;
 
 export interface LinkFeed {
@@ -111,6 +111,7 @@ export function chooseLinks(
   panel.setAttribute('aria-label', 'Ghostify: post link');
   const style = el(doc, 'style', {}, CSS);
   root.append(style, panel);
+  const unframe = framePanel(panel, 'Step 2 of 4 · Post link');
   const marks = highlighter(doc, root);
 
   const refs = feeds.map((f) =>
@@ -291,6 +292,7 @@ export function chooseLinks(
 
   return new Promise((resolve) => {
     const done = (v: LinkChoice | null) => {
+      unframe();
       marks.destroy();
       host.remove();
       resolve(v);
