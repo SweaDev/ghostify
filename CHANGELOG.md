@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.9.0] - 2026-11-12
+### Added
+- Query parameters ignored across a whole site (like YouTube's `pp`): unticking one when adding or editing selectors applies to every page of the site, and **Only this feed** keeps a feed's own choice. Settings → Sites lists and edits the site's ignored parameters and shows which feeds have their own.
+- A banner on the Ghostify page offers to update Ghostified items to a site's new query parameter choice, so they stay hidden; it takes a snapshot first.
+- New Ghostified items remember which feed they came from.
+
+### Changed
+- feedgrab 0.5.0. Its feed panel (the picker's first step) can be dragged and collapsed and opens where you left it, and **Feed N** scrolls to that feed's first post.
+
 ## [1.8.0] - 2026-11-12
 ### Added
 - Backups in Settings → General: download a data backup of your Ghostified items, or take full snapshots (everything but API keys) and restore one in one click. A snapshot is taken before every restore.
@@ -168,7 +177,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Search index builds in the background, with live progress.
 - Ollama setup guide in the README.
 
-[Unreleased]: https://github.com/SweaDev/ghostify/compare/v1.8.0...HEAD
+[Unreleased]: https://github.com/SweaDev/ghostify/compare/v1.9.0...HEAD
+[1.9.0]: https://github.com/SweaDev/ghostify/compare/v1.8.0...v1.9.0
 [1.8.0]: https://github.com/SweaDev/ghostify/compare/v1.7.0...v1.8.0
 [1.7.0]: https://github.com/SweaDev/ghostify/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/SweaDev/ghostify/compare/v1.5.4...v1.6.0
