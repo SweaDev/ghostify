@@ -236,7 +236,7 @@ Spec: `specs/SPEC-v1.md`. Plan: `specs/PLAN-v1.md`.
   Depends: T36
   Done: panel drags by its header within the viewport and collapses; `position`/`onMove` options; "Feed N" scrolls the feed's first item to the top below a fixed/sticky header and outlines it; feedgrab `bun run check` passes; committed in feedgrab.
 
-- [ ] T38: feedgrab: version 0.5.0
+- [x] T38: feedgrab: version 0.5.0
   Refs: specs/PLAN-v1.md L270-272
   Files: ../feedgrab/package.json, ../feedgrab/src/index.ts, ../feedgrab/tests/unit/smoke.test.ts, ../feedgrab/README.md
   Depends: T36, T37
@@ -246,7 +246,7 @@ Spec: `specs/SPEC-v1.md`. Plan: `specs/PLAN-v1.md`.
   Refs: specs/PLAN-v1.md L270; specs/PLAN-v1.md L272
   Files: package.json, bun.lock, src/sites/model.ts, src/sites/links.ts, src/sites/link-chooser.ts, src/sites/run-picker.ts, src/sites/io.ts, src/feed/runtime.ts, src/feed/extract.ts, src/store/db.ts, src/ui/SitesSettings.tsx, src/ui/SampleCheck.tsx, tests/links.test.ts, tests/runtime.test.ts, tests/sites-settings.test.tsx
   Depends: T38
-  Done: feedgrab 0.5.0 tarball; `Site.ignoreParams` saved, imported and exported; added to every feed without its own choice at runtime and in sample checks; the chooser defaults unticks to the site list with "Only this feed"; Settings edits the list and marks overrides; the feedgrab overlay position is remembered; new items store `feedId`; tests pass.
+  Done: feedgrab 0.5.0 tarball; `Site.ignoreParams` saved, imported and exported; added to every feed without its own choice at runtime and in sample checks; the chooser defaults unticks to the site list with "Only this feed"; Settings edits the list and marks overrides; the feedgrab overlay position is remembered; new items store `feedId`; tests pass. ⚠ BLOCKED: needs the feedgrab v0.5.0 release tarball (the user tags and pushes feedgrab v0.5.0)
 
 - [ ] T40: Re-key Ghostified items after identity rules change
   Refs: specs/PLAN-v1.md L271
