@@ -254,7 +254,7 @@ Spec: `specs/SPEC-v1.md`. Plan: `specs/PLAN-v1.md`.
   Depends: T32, T39
   Done: dry run counts movable items per host; Update takes a `before-rekey` snapshot and moves items, kept, embeddings, contents and AI job keys in one transaction; collisions merge as D56 says; text-id items untouched; banner render test and rekey tests pass.
 
-- [ ] T41: Docs and version 1.9.0
+- [x] T41: Docs and version 1.9.0
   Refs: specs/PLAN-v1.md L264-273
   Files: CHANGELOG.md, README.md, package.json
   Depends: T39, T40

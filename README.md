@@ -3,8 +3,9 @@
 Ghostify is a browser extension (Chrome and Firefox) for feeds that keep showing you the same posts, or posts you probably want to deal with later. Hover a post, click the ghost, and it disappears from the site's feed. Ghostify keeps a copy so you can find them again later, snooze them, read later, run AI models on them, and many more interesting features are coming up!
 
 ## Updates
-Latest: [**v1.8.0**](https://github.com/SweaDev/ghostify/tree/v1.8.0) ([release](https://github.com/SweaDev/ghostify/releases/tag/v1.8.0)) | [DEV Challenge Submission](https://dev.to/fm/from-a-simple-mark-as-seen-to-feedgrab-ghostify-story-of-my-life-33dl) Entry: [**v1.0.0**](https://github.com/SweaDev/ghostify/tree/v1.0.0) ([release](https://github.com/SweaDev/ghostify/releases/tag/v1.0.0)) 
+Latest: [**v1.9.0**](https://github.com/SweaDev/ghostify/tree/v1.9.0) ([release](https://github.com/SweaDev/ghostify/releases/tag/v1.9.0)) | [DEV Challenge Submission](https://dev.to/fm/from-a-simple-mark-as-seen-to-feedgrab-ghostify-story-of-my-life-33dl) Entry: [**v1.0.0**](https://github.com/SweaDev/ghostify/tree/v1.0.0) ([release](https://github.com/SweaDev/ghostify/releases/tag/v1.0.0)) 
 
+- Ignore a query parameter (like YouTube's `pp`) on every page of a site, and update already Ghostified posts to match (v1.9).
 - Back up your Ghostified posts, or take full snapshots and restore one in one click; the picker's panels can be dragged out of the way, and ghostified posts show blurred while you edit selectors (v1.8).
 - Pick a typical sample post and the parts every post has; the ghost button skips ads and headings that lack them (v1.7).
 - Choose which query parameters of a post link identify the post, e.g. YouTube's `v` but not `pp` (v1.6).
@@ -37,8 +38,8 @@ See [CHANGELOG.md](CHANGELOG.md) for every release.
 
   Toolbar buttons open the original post in a new tab or a new window, open the viewer as its own page (which you can also move to a new window), or widen the panel. The popup can open Ghostify in a new window.
 - **Add any site.** On a page with a feed, open the popup and click **Add this site**. Ghostify asks for access to that site only, and then:
-  1. [feedgrab](https://github.com/SweaDev/feedgrab) proposes the feeds on the page, and its overlay lets you confirm them, pick containers and items, or type CSS/XPath selectors.
-  2. You step to a typical **sample post** (the first item can be an ad or a heading), then choose which of its links opens a post, and which of the link's query parameters identify the post. Untick tracking or analytics ones (like YouTube's `pp` in `watch?pp=…&v=…`) so the same post is recognised every time.
+  1. [feedgrab](https://github.com/SweaDev/feedgrab) proposes the feeds on the page, and its overlay lets you confirm them, pick containers and items, or type CSS/XPath selectors. **Feed N** scrolls to that feed's first post.
+  2. You step to a typical **sample post** (the first item can be an ad or a heading), then choose which of its links opens a post, and which of the link's query parameters identify the post. Untick tracking or analytics ones (like YouTube's `pp` in `watch?pp=…&v=…`) so the same post is recognised every time. An unticked parameter is ignored on **every page of the site**; tick **Only this feed** to give one feed its own choice instead.
   3. You choose the **post structure**: the parts of the sample post every post has (time link, text, action buttons, …). Ghostify suggests which are required and which optional (a thumbnail only some posts have), shows how many items match and outlines the rest. The ghost button only appears on items with every required part, so ads and headings that share the item selector are skipped. When you edit a site again, the sample post starts at the first post with that structure.
   4. You choose which page paths the feeds apply to.
   5. You choose whether they're for the **logged-in**, the **logged-out** or **any** view. For a specific view, you can pick an element that only shows in it (for example your avatar), so Ghostify can tell the views apart.
@@ -46,7 +47,8 @@ See [CHANGELOG.md](CHANGELOG.md) for every release.
   **Edit selectors** in the popup reopens the overlay on a site you already added. While the picker is open, ghostified posts show blurred with a **Ghostified** label, so a feed you've fully ghostified can still be found. Drag a panel by its header (or move it with the arrow keys) when it covers a post, or collapse it; it opens where you last left it on that site.
 - **Settings → Sites** lists your sites with a search box, and each site opens on its own page (with a breadcrumb back to the list). It lets you:
   - turn sites on or off and delete the ones you added;
-  - see and edit each page's path pattern, view, selectors, post link with its query parameters, and post structure (required and optional parts, or suggested from the saved sample); edits are checked against a saved sample of each feed, and edited built-in selectors are kept over Ghostify's updates;
+  - list and edit the **ignored query parameters** of the whole site, and see which feeds have their own choice;
+  - see and edit each page's path pattern, view, selectors, post link with its query parameters (the site's choice, or **Only this feed**), and post structure (required and optional parts, or suggested from the saved sample); edits are checked against a saved sample of each feed, and edited built-in selectors are kept over Ghostify's updates;
   - restore a built-in site, or one edited built-in page, to how Ghostify ships it;
   - edit the login indicator;
   - export and import your sites as JSON.
@@ -61,7 +63,8 @@ See [CHANGELOG.md](CHANGELOG.md) for every release.
   - **auto-ghostify rules**: in **Settings → Sites**, write plain-language rules per site, such as "crypto hype" or "posts that are mostly self-promotion". The decision model checks new feed items against them and ghostifies the matches. Auto-ghostified posts are labelled with their rule. **Not this** brings a post back, and that rule never hides it again.
 - **AI activity** (the pulse button in the Ghostify page header, or **Settings → AI activity**) lists every AI request: summaries, tags, indexing, rule checks, searches, model tests and questions. Expand a row to see its model, prompt, input, output and error. Each job can be paused, resumed or stopped, and **Pause all**, **Resume all** and **Stop all** act on everything at once. A pause lasts across browser restarts. While AI is paused, searches fall back to keywords and auto-ghostify rules don't run.
 - **Settings → Prompts** lets you change what Ghostify asks the AI: the summary-and-tags prompt, the **Summarize** and **Ask** prompts, and the rule question sent to System One decision models. **Reset to default** restores the original prompt.
-- **Backups** (**Settings → General**): **Download data backup** saves your Ghostified posts as a file (without AI vectors or loaded full content); restoring one adds the posts you don't have and keeps your newer copies. **Take snapshot** keeps everything (posts, AI data, sites and settings, but never API keys) inside Ghostify; **Restore** goes back to it in one click, and each snapshot can be downloaded and restored from the file later. Ghostify takes a snapshot before every restore and keeps the last five automatic ones.
+- **When a site's query parameter choice changes**, the Ghostify page shows how many Ghostified posts still use their old links (so they could show again on the site). **Update items** moves them to the new links, merging duplicates (the earliest one, the more active tab, all tags), after taking a snapshot. It never runs on its own.
+- **Backups** (**Settings → General**): **Download data backup** saves your Ghostified posts as a file (without AI vectors or loaded full content); restoring one adds the posts you don't have and keeps your newer copies. **Take snapshot** keeps everything (posts, AI data, sites and settings, but never API keys) inside Ghostify; **Restore** goes back to it in one click, and each snapshot can be downloaded and restored from the file later. Ghostify takes a snapshot before every restore and before updating item links, and keeps the last five automatic ones.
 - Everything stays local in your browser (IndexedDB), with no account and no sync. With in-browser models or Ollama, AI stays on your machine too.
 
 ## AI setup
@@ -196,7 +199,7 @@ git push origin v1.0.0
 
 ## Project docs
 - The spec is `specs/SPEC-v1.md`, the plan is `specs/PLAN-v1.md`, and the tasks are `specs/TASKS-v1.md`.
-- This version covers every task, **T01–T31** (Phases 1–5), and all of the spec:
+- This version covers every task, **T01–T41** (Phases 1–6), and all of the spec:
   - feedgrab feed reading;
   - the dev.to home feeds (logged in and out), plus adding more sites;
   - custom feed selectors through feedgrab;
@@ -213,7 +216,7 @@ git push origin v1.0.0
   - performance: indexed, limited item lists; search reads only the current model's vectors; a single backlog per indexing run; fewer content-script restarts; a throttled login-view watcher; and a ghost button placed once per frame;
   - UI: Undo for unghostifying, paged lists, a viewer that stays open when its post moves tabs, settings that stay in sync across pages, focus handling for drawers, and a confirmation before deleting a site;
   - in-browser models, which are now the default AI provider (see [AI setup](#ai-setup)).
-- Phase 6 (T32–T41) adds backups and snapshots, a better picker (draggable panels, ghostified posts shown while picking), and query parameters ignored across a whole site with a safe update of saved posts. v1.8.0 has T32–T35.
+- Phase 6 (T32–T41) adds backups and snapshots, a better picker (draggable panels, ghostified posts shown while picking), and query parameters ignored across a whole site with a safe update of saved posts. v1.8.0 has T32–T35, and v1.9.0 completes the phase (T36–T41, with feedgrab 0.5.0).
 
 ## Known limits
 - Ghostify isn't published to the Chrome Web Store or Firefox Add-ons. Install it from a release zip or a local build.
