@@ -218,7 +218,7 @@ Spec: `specs/SPEC-v1.md`. Plan: `specs/PLAN-v1.md`.
   Depends: T33
   Done: `ghostify:picking` start restores hidden items, turns the ghost button off and draws labelled blurred boxes in the runtime's shadow root that follow scroll and resize; stop hides them again; the picker reveals before `detectFeeds`; tests pass.
 
-- [ ] T35: Docs and version 1.8.0
+- [x] T35: Docs and version 1.8.0
   Refs: specs/PLAN-v1.md L264-273
   Files: CHANGELOG.md, README.md, package.json
   Depends: T32, T34

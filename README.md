@@ -3,8 +3,9 @@
 Ghostify is a browser extension (Chrome and Firefox) for feeds that keep showing you the same posts, or posts you probably want to deal with later. Hover a post, click the ghost, and it disappears from the site's feed. Ghostify keeps a copy so you can find them again later, snooze them, read later, run AI models on them, and many more interesting features are coming up!
 
 ## Updates
-Latest: [**v1.7.0**](https://github.com/SweaDev/ghostify/tree/v1.7.0) ([release](https://github.com/SweaDev/ghostify/releases/tag/v1.7.0)) | [DEV Challenge Submission](https://dev.to/fm/from-a-simple-mark-as-seen-to-feedgrab-ghostify-story-of-my-life-33dl) Entry: [**v1.0.0**](https://github.com/SweaDev/ghostify/tree/v1.0.0) ([release](https://github.com/SweaDev/ghostify/releases/tag/v1.0.0)) 
+Latest: [**v1.8.0**](https://github.com/SweaDev/ghostify/tree/v1.8.0) ([release](https://github.com/SweaDev/ghostify/releases/tag/v1.8.0)) | [DEV Challenge Submission](https://dev.to/fm/from-a-simple-mark-as-seen-to-feedgrab-ghostify-story-of-my-life-33dl) Entry: [**v1.0.0**](https://github.com/SweaDev/ghostify/tree/v1.0.0) ([release](https://github.com/SweaDev/ghostify/releases/tag/v1.0.0)) 
 
+- Back up your Ghostified posts, or take full snapshots and restore one in one click; the picker's panels can be dragged out of the way, and ghostified posts show blurred while you edit selectors (v1.8).
 - Pick a typical sample post and the parts every post has; the ghost button skips ads and headings that lack them (v1.7).
 - Choose which query parameters of a post link identify the post, e.g. YouTube's `v` but not `pp` (v1.6).
 - In-browser AI models keep working after one fails to load (v1.5.2).
@@ -42,7 +43,7 @@ See [CHANGELOG.md](CHANGELOG.md) for every release.
   4. You choose which page paths the feeds apply to.
   5. You choose whether they're for the **logged-in**, the **logged-out** or **any** view. For a specific view, you can pick an element that only shows in it (for example your avatar), so Ghostify can tell the views apart.
 
-  **Edit selectors** in the popup reopens the overlay on a site you already added.
+  **Edit selectors** in the popup reopens the overlay on a site you already added. While the picker is open, ghostified posts show blurred with a **Ghostified** label, so a feed you've fully ghostified can still be found. Drag a panel by its header (or move it with the arrow keys) when it covers a post, or collapse it; it opens where you last left it on that site.
 - **Settings → Sites** lists your sites with a search box, and each site opens on its own page (with a breadcrumb back to the list). It lets you:
   - turn sites on or off and delete the ones you added;
   - see and edit each page's path pattern, view, selectors, post link with its query parameters, and post structure (required and optional parts, or suggested from the saved sample); edits are checked against a saved sample of each feed, and edited built-in selectors are kept over Ghostify's updates;
@@ -60,6 +61,7 @@ See [CHANGELOG.md](CHANGELOG.md) for every release.
   - **auto-ghostify rules**: in **Settings → Sites**, write plain-language rules per site, such as "crypto hype" or "posts that are mostly self-promotion". The decision model checks new feed items against them and ghostifies the matches. Auto-ghostified posts are labelled with their rule. **Not this** brings a post back, and that rule never hides it again.
 - **AI activity** (the pulse button in the Ghostify page header, or **Settings → AI activity**) lists every AI request: summaries, tags, indexing, rule checks, searches, model tests and questions. Expand a row to see its model, prompt, input, output and error. Each job can be paused, resumed or stopped, and **Pause all**, **Resume all** and **Stop all** act on everything at once. A pause lasts across browser restarts. While AI is paused, searches fall back to keywords and auto-ghostify rules don't run.
 - **Settings → Prompts** lets you change what Ghostify asks the AI: the summary-and-tags prompt, the **Summarize** and **Ask** prompts, and the rule question sent to System One decision models. **Reset to default** restores the original prompt.
+- **Backups** (**Settings → General**): **Download data backup** saves your Ghostified posts as a file (without AI vectors or loaded full content); restoring one adds the posts you don't have and keeps your newer copies. **Take snapshot** keeps everything (posts, AI data, sites and settings, but never API keys) inside Ghostify; **Restore** goes back to it in one click, and each snapshot can be downloaded and restored from the file later. Ghostify takes a snapshot before every restore and keeps the last five automatic ones.
 - Everything stays local in your browser (IndexedDB), with no account and no sync. With in-browser models or Ollama, AI stays on your machine too.
 
 ## AI setup
@@ -211,13 +213,14 @@ git push origin v1.0.0
   - performance: indexed, limited item lists; search reads only the current model's vectors; a single backlog per indexing run; fewer content-script restarts; a throttled login-view watcher; and a ghost button placed once per frame;
   - UI: Undo for unghostifying, paged lists, a viewer that stays open when its post moves tabs, settings that stay in sync across pages, focus handling for drawers, and a confirmation before deleting a site;
   - in-browser models, which are now the default AI provider (see [AI setup](#ai-setup)).
+- Phase 6 (T32–T41) adds backups and snapshots, a better picker (draggable panels, ghostified posts shown while picking), and query parameters ignored across a whole site with a safe update of saved posts. v1.8.0 has T32–T35.
 
 ## Known limits
 - Ghostify isn't published to the Chrome Web Store or Firefox Add-ons. Install it from a release zip or a local build.
 - Decision models get one yes/no (`noul`) System One question per rule. Ghostify reads the documented `{ "noul": <probability> }` answer and a few lenient variants (see `src/ai/decision.ts`). It treats anything else as "no match" and logs it.
 - **Load full content** shows what the page sends to Ghostify, using your cookies for that site. Pages built entirely in the browser by scripts may have little readable text. In that case, open the original.
 - Pausing a job that is already running stops its request, and **Resume** starts it again from the beginning. Rule checks and searches can't be paused, because a page is waiting for them, so pausing them stops them.
-- Data isn't synced between browsers. To move your sites, use export and import in **Settings → Sites**.
+- Data isn't synced between browsers. To move your sites, use export and import in **Settings → Sites**; to move everything, download a snapshot in **Settings → General** and restore it from the file.
 - In-browser models are small: summaries are plainer than those from larger models, and the smallest chat models sometimes leave out tags. They run on one CPU thread, because extension pages aren't cross-origin isolated. The extension includes ONNX Runtime's WebAssembly (about 27 MB).
 
 ## Permissions
