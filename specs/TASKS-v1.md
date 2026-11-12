@@ -224,11 +224,11 @@ Spec: `specs/SPEC-v1.md`. Plan: `specs/PLAN-v1.md`.
   Depends: T32, T34
   Done: CHANGELOG 1.8.0 section and links; README Updates and Latest; version 1.8.0; `bun run check`, builds and zips pass; tag v1.8.0.
 
-- [ ] T36: feedgrab: site-wide ignored query parameters and id exports
+- [x] T36: feedgrab: site-wide ignored query parameters and id exports
   Refs: specs/PLAN-v1.md L270
   Files: ../feedgrab/src/types.ts, ../feedgrab/src/profile/schema.ts, ../feedgrab/src/detect/permalink.ts, ../feedgrab/src/feed/item-id.ts, ../feedgrab/src/feed/unified-feed.ts, ../feedgrab/src/index.ts, ../feedgrab/tests/unit/*
   Depends: none
-  Done: `FeedDescriptor.permalinkIgnore` is validated and dropped from ids when `permalinkParams` is unset; `suggestPermalinkParams` leaves them out; `canonicalUrl` and `permalinkId` exported; feedgrab `bun run check` passes; committed in feedgrab.
+  Done: `FeedDescriptor.permalinkIgnore` is validated and dropped from ids when `permalinkParams` is unset; `suggestPermalinkParams` still reports them (the host shows them unticked); `canonicalUrl` and `permalinkId` exported; feedgrab `bun run check` passes; committed in feedgrab.
 
 - [ ] T37: feedgrab: draggable overlay panel and scroll to feed
   Refs: specs/PLAN-v1.md L272
@@ -238,7 +238,7 @@ Spec: `specs/SPEC-v1.md`. Plan: `specs/PLAN-v1.md`.
 
 - [ ] T38: feedgrab: version 0.5.0
   Refs: specs/PLAN-v1.md L270-272
-  Files: ../feedgrab/package.json, ../feedgrab/src/index.ts, ../feedgrab/tests/unit/smoke.test.ts, ../feedgrab/README.md, ../feedgrab/CHANGELOG.md
+  Files: ../feedgrab/package.json, ../feedgrab/src/index.ts, ../feedgrab/tests/unit/smoke.test.ts, ../feedgrab/README.md
   Depends: T36, T37
   Done: version 0.5.0 everywhere feedgrab's AGENTS.md lists; feedgrab `bun run check` passes; committed; the user pushes tag v0.5.0 to publish the tarball.
 
