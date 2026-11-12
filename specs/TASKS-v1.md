@@ -230,7 +230,7 @@ Spec: `specs/SPEC-v1.md`. Plan: `specs/PLAN-v1.md`.
   Depends: none
   Done: `FeedDescriptor.permalinkIgnore` is validated and dropped from ids when `permalinkParams` is unset; `suggestPermalinkParams` still reports them (the host shows them unticked); `canonicalUrl` and `permalinkId` exported; feedgrab `bun run check` passes; committed in feedgrab.
 
-- [ ] T37: feedgrab: draggable overlay panel and scroll to feed
+- [x] T37: feedgrab: draggable overlay panel and scroll to feed
   Refs: specs/PLAN-v1.md L272
   Files: ../feedgrab/src/overlay/*, ../feedgrab/tests/unit/*
   Depends: T36
