@@ -248,9 +248,9 @@ Spec: `specs/SPEC-v1.md`. Plan: `specs/PLAN-v1.md`.
   Depends: T38
   Done: feedgrab 0.5.0 tarball; `Site.ignoreParams` saved, imported and exported; added to every feed without its own choice at runtime and in sample checks; the chooser defaults unticks to the site list with "Only this feed"; Settings edits the list and marks overrides; the feedgrab overlay position is remembered; new items store `feedId`; tests pass.
 
-- [ ] T40: Re-key Ghostified items after identity rules change
+- [x] T40: Re-key Ghostified items after identity rules change
   Refs: specs/PLAN-v1.md L271
-  Files: src/store/rekey.ts, src/ui/RekeyBanner.tsx, src/ui/Dashboard.tsx, tests/rekey.test.ts
+  Files: src/store/rekey.ts, src/ui/RekeyBanner.tsx, src/ui/Dashboard.tsx, tests/rekey.test.tsx
   Depends: T32, T39
   Done: dry run counts movable items per host; Update takes a `before-rekey` snapshot and moves items, kept, embeddings, contents and AI job keys in one transaction; collisions merge as D56 says; text-id items untouched; banner render test and rekey tests pass.
 
