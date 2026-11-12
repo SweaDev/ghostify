@@ -23,6 +23,7 @@ import { IconButton } from './ItemCard';
 import { ItemDetail, type ViewerTab } from './ItemDetail';
 import { ItemList } from './ItemList';
 import { openUrl, viewerHash } from './open';
+import { RekeyBanner } from './RekeyBanner';
 import { SnoozeMenu } from './SnoozeMenu';
 import { sortItems } from './sort';
 import { Tabs } from './Tabs';
@@ -331,6 +332,7 @@ function Feed() {
         </div>
       </header>
       <main className="mx-auto max-w-4xl px-4 py-6">
+        <RekeyBanner onDone={(m) => toast.show(m)} />
         <div className="mb-6">
           <FilterBar
             hosts={hosts ?? []}

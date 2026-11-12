@@ -20,7 +20,7 @@ const REASONS: Record<SnapshotMeta['reason'], string> = {
 
 const stamp = (ts: number) => new Date(ts).toISOString().slice(0, 16).replace(':', '');
 
-function download(b: Backup) {
+export function downloadBackup(b: Backup) {
   const url = URL.createObjectURL(new Blob([JSON.stringify(b)], { type: 'application/json' }));
   const name = b.kind === 'data' ? 'ghostify-data' : 'ghostify-snapshot';
   Object.assign(document.createElement('a'), {
@@ -83,7 +83,7 @@ export function BackupSettings() {
           type="button"
           className={btn}
           disabled={busy}
-          onClick={() => run(async () => void download(await createBackup('data')))}
+          onClick={() => run(async () => void downloadBackup(await createBackup('data')))}
         >
           <Download className="size-4" /> Download data backup
         </button>
@@ -148,7 +148,7 @@ export function BackupSettings() {
                 className={btnQuiet}
                 disabled={busy}
                 aria-label="Download snapshot"
-                onClick={() => void run(async () => void download(await getSnapshot(s.id)))}
+                onClick={() => void run(async () => void downloadBackup(await getSnapshot(s.id)))}
               >
                 <Download className="size-4" />
               </button>
