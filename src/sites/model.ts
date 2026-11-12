@@ -33,6 +33,11 @@ export interface Site {
   profiles: SiteProfileEntry[];
   rules: SiteRule[];
   /**
+   * Query parameters ignored in post links on every page of the site (analytics ones, like
+   * YouTube's `pp`), unless a feed chose its own (`permalinkParams`).
+   */
+  ignoreParams?: string[];
+  /**
    * Built-in sites only: `pageKey`s of the shipped pages this install has already been given,
    * so pages added in an update are added once and pages the user removed stay removed.
    */

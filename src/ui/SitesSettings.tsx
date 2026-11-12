@@ -15,6 +15,7 @@ import {
   Search,
   Trash2,
   Upload,
+  X,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import {
@@ -29,11 +30,14 @@ import { mergeSites, parseSitesJson, serializeSites } from '../sites/io';
 import { linkOptions } from '../sites/link-chooser';
 import {
   checkFeed,
+  cleanParams,
   linkParams,
   optionIndex,
   optionLabel,
   paramOptions,
+  toggleIgnored,
   toggleParam,
+  withIgnore,
   withPostLink,
 } from '../sites/links';
 import {
@@ -172,6 +176,85 @@ function RulesEditor({ site }: { site: Site }) {
   );
 }
 
+/** The query parameters the site ignores in post links, and the feeds with their own choice. */
+function IgnoreEditor({ site }: { site: Site }) {
+  const [draft, setDraft] = useState('');
+  const ignore = site.ignoreParams ?? [];
+  const save = (next: string[]) => {
+    const { ignoreParams: _, ...rest } = site;
+    void saveSite(next.length ? { ...rest, ignoreParams: next } : rest);
+  };
+  const add = () => {
+    const names = cleanParams([...ignore, ...draft.split(/[\s,]+/)]);
+    if (names.length !== ignore.length) save(names);
+    setDraft('');
+  };
+  const own = site.profiles.flatMap((e) =>
+    e.profile.feeds.flatMap((f, i) =>
+      f.permalinkParams
+        ? [
+            `${e.profile.pathPattern}${e.profile.feeds.length > 1 ? ` (feed ${i + 1})` : ''} keeps ${
+              f.permalinkParams.length ? f.permalinkParams.join(', ') : 'no query'
+            }`,
+          ]
+        : [],
+    ),
+  );
+  return (
+    <div className="flex flex-col gap-2 text-sm">
+      <div>
+        <span className="font-medium">Ignored query parameters</span>
+        <span className="ml-2 text-xs text-zinc-500">
+          Left out of post links on every page of this site, so the same post is recognised with or
+          without them (like YouTube’s <code>pp</code>).
+        </span>
+      </div>
+      {ignore.length > 0 && (
+        <ul className="flex flex-wrap gap-1.5">
+          {ignore.map((n) => (
+            <li
+              key={n}
+              className="inline-flex items-center gap-1 rounded-full bg-zinc-100 py-0.5 pr-1 pl-2.5 font-mono text-xs dark:bg-zinc-800"
+            >
+              {n}
+              <IconButton
+                label={`Stop ignoring ${n}`}
+                onClick={() => save(ignore.filter((x) => x !== n))}
+              >
+                <X className="size-3" />
+              </IconButton>
+            </li>
+          ))}
+        </ul>
+      )}
+      <form
+        className="flex gap-2"
+        onSubmit={(e) => {
+          e.preventDefault();
+          add();
+        }}
+      >
+        <input
+          aria-label="Query parameter to ignore"
+          placeholder="e.g. pp, si"
+          value={draft}
+          spellCheck={false}
+          onChange={(e) => setDraft(e.target.value)}
+          className={`${input} flex-1 font-mono text-xs`}
+        />
+        <button type="submit" className={`${input} inline-flex items-center gap-1`}>
+          <Plus className="size-4" /> Ignore
+        </button>
+      </form>
+      {own.length > 0 && (
+        <p className="text-xs text-zinc-500">
+          Feeds with their own choice (edit the page to use the site’s): {own.join('; ')}.
+        </p>
+      )}
+    </div>
+  );
+}
+
 const siteHref = (id: string) => `#sites/${encodeURIComponent(id)}`;
 
 function Breadcrumb({ current }: { current: string }) {
@@ -260,19 +343,32 @@ function LinkField(props: {
   );
 }
 
-/** Checkboxes for the post link's query parameters that identify a post. */
+/**
+ * Checkboxes for the post link's query parameters that identify a post: the site's choice
+ * (unticked = ignored on every page of the site) or, with "Only this feed", the feed's own.
+ */
 function ParamsField(props: {
   label: string;
+  host: string;
   found: PermalinkParam[];
   params?: string[];
+  ignore: string[];
   onChange(params?: string[]): void;
+  onIgnore(ignore: string[]): void;
 }) {
-  const options = paramOptions(props.found, props.params);
+  const own = !!props.params;
+  const options = paramOptions(props.found, props.params, props.ignore);
   if (!options.length) return null;
+  const toggle = (name: string, kept: boolean) =>
+    own
+      ? props.onChange(toggleParam(options, name, kept))
+      : props.onIgnore(toggleIgnored(props.ignore, name, kept));
   return (
     <fieldset className="flex flex-col gap-1 text-xs">
       <legend className="mb-0.5 text-zinc-500">
-        Query parameters that identify a post (untick tracking ones)
+        {own
+          ? 'Query parameters that identify a post in this feed'
+          : `Query parameters that identify a post on ${props.host} (untick tracking ones; applies to every page of the site)`}
       </legend>
       {options.map((o) => (
         <label key={o.name} className="flex items-baseline gap-1.5 break-all">
@@ -280,7 +376,7 @@ function ParamsField(props: {
             type="checkbox"
             aria-label={`${props.label}: keep ${o.name}`}
             checked={o.kept}
-            onChange={(e) => props.onChange(toggleParam(options, o.name, e.target.checked))}
+            onChange={(e) => toggle(o.name, e.target.checked)}
           />
           <code className="font-mono">
             {o.value === undefined ? o.name : `${o.name}=${o.value}`}
@@ -288,6 +384,19 @@ function ParamsField(props: {
           {o.note && <span className="text-zinc-500">{o.note}</span>}
         </label>
       ))}
+      <label className="mt-0.5 flex items-baseline gap-1.5 text-zinc-500">
+        <input
+          type="checkbox"
+          aria-label={`${props.label}: only this feed`}
+          checked={own}
+          onChange={(e) =>
+            props.onChange(
+              e.target.checked ? options.filter((o) => o.kept).map((o) => o.name) : undefined,
+            )
+          }
+        />
+        Only this feed (its own choice, not the site’s)
+      </label>
     </fieldset>
   );
 }
@@ -393,6 +502,7 @@ function StructureField(props: {
 function PageForm(props: { site: Site; index: number; entry: SiteProfileEntry; onDone(): void }) {
   const { site, index, entry, onDone } = props;
   const [draft, setDraft] = useState<PageDraft>(() => pageDraft(entry));
+  const [ignore, setIgnore] = useState<string[]>(() => site.ignoreParams ?? []);
   const [error, setError] = useState<string>();
   const many = entry.profile.feeds.length > 1;
   const samples = useSamples(site.id);
@@ -412,8 +522,9 @@ function PageForm(props: { site: Site; index: number; entry: SiteProfileEntry; o
     updateFeed(i, ({ structure: _, ...f }) => ({ ...f, ...(next && { structure: next }) }));
   const save = async () => {
     try {
-      const { site: next, renamed } = editPage(site, index, draft);
-      await saveSite(next);
+      const { site: edited, renamed } = editPage(site, index, draft);
+      const { ignoreParams: _, ...next } = edited;
+      await saveSite(ignore.length ? { ...next, ignoreParams: ignore } : next);
       await renameSamples(site.id, renamed);
       onDone();
     } catch (e) {
@@ -467,7 +578,7 @@ function PageForm(props: { site: Site; index: number; entry: SiteProfileEntry; o
           ),
           d.structure,
         );
-        const { posts, options, found } = sampleLinks(sample, edited);
+        const { posts, options, found } = sampleLinks(sample, withIgnore(edited, ignore));
         const name = (part: string) =>
           many
             ? `Feed ${i + 1} ${part} selector`
@@ -504,9 +615,12 @@ function PageForm(props: { site: Site; index: number; entry: SiteProfileEntry; o
             />
             <ParamsField
               label={name('link')}
+              host={site.hostname}
               found={found}
               params={d.params}
+              ignore={ignore}
               onChange={(p) => setParams(i, p)}
+              onIgnore={setIgnore}
             />
             <span className="text-xs text-zinc-500">
               Post structure (parts inside each item; the button skips items without a required
@@ -519,7 +633,12 @@ function PageForm(props: { site: Site; index: number; entry: SiteProfileEntry; o
               onChange={(st) => setStructure(i, st)}
             />
             {samples && (
-              <SampleStatus sample={sample} saved={f} draft={edited} host={site.hostname} />
+              <SampleStatus
+                sample={sample}
+                saved={withIgnore(f, site.ignoreParams)}
+                draft={withIgnore(edited, ignore)}
+                host={site.hostname}
+              />
             )}
           </fieldset>
         );
@@ -621,7 +740,7 @@ function PageItem(props: {
                 {f.container.value} → {f.item.value}
                 {f.permalink?.value && ` → link: ${f.permalink.value}`}
                 {f.permalinkParams &&
-                  ` (query: ${f.permalinkParams.length ? f.permalinkParams.join(', ') : 'none'})`}
+                  ` (own query: ${f.permalinkParams.length ? f.permalinkParams.join(', ') : 'none'})`}
               </li>
             ))}
           </ul>
@@ -705,6 +824,9 @@ function SiteDetailBody({ site }: { site: Site }) {
       </div>
       <div className={card}>
         <IndicatorEditor key={`${site.id}:${ind?.selector}:${ind?.whenPresent}`} site={site} />
+      </div>
+      <div className={card}>
+        <IgnoreEditor site={site} />
       </div>
       <div className={card}>
         <RulesEditor site={site} />

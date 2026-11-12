@@ -11,6 +11,8 @@ export interface GhostItem {
   host: string;
   siteId: string;
   view: View;
+  /** feedgrab feed the item came from (items from before 1.9.0 have none). */
+  feedId?: string;
   url?: string;
   title: string;
   excerpt: string;
@@ -28,7 +30,7 @@ export interface GhostItem {
 
 /** What a content script knows about an item when it ghostifies it. */
 export type GhostDraft = Pick<GhostItem, 'id' | 'host' | 'siteId' | 'view' | 'title' | 'excerpt'> &
-  Partial<Pick<GhostItem, 'url' | 'image' | 'author' | 'auto'>>;
+  Partial<Pick<GhostItem, 'feedId' | 'url' | 'image' | 'author' | 'auto'>>;
 
 export interface Embedding {
   key: string;

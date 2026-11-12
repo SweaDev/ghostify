@@ -35,6 +35,19 @@ describe('picker merge', () => {
       view: 'loggedOut',
     });
     expect(merged.enabled).toBe(true);
+    expect(merged.ignoreParams).toBeUndefined();
+    const again = mergePicked([merged], 'dev.to', 'DEV', {
+      profile: { ...profile('dev.to', '/latest'), feeds: [] },
+      view: 'loggedOut',
+      ignoreParams: ['pp'],
+    });
+    expect(again.ignoreParams).toEqual(['pp']);
+    const cleared = mergePicked([again], 'dev.to', 'DEV', {
+      profile: { ...profile('dev.to', '/latest'), feeds: [] },
+      view: 'loggedOut',
+      ignoreParams: [],
+    });
+    expect(cleared.ignoreParams).toBeUndefined();
     expect(merged.profiles.map((e) => `${e.view} ${e.profile.pathPattern}`)).toEqual([
       'loggedOut /',
       'loggedOut /top/*',

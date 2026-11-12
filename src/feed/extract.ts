@@ -77,7 +77,7 @@ function findExcerpt(el: Element, title: string): string {
 
 /** Turns a feedgrab item into what Ghostify stores. */
 export function extractItem(
-  item: Pick<FeedItem, 'id' | 'element' | 'text' | 'permalink'>,
+  item: Pick<FeedItem, 'id' | 'element' | 'text' | 'permalink'> & Partial<Pick<FeedItem, 'feedId'>>,
   ctx: ExtractContext,
 ): GhostDraft {
   const el = item.element;
@@ -89,6 +89,7 @@ export function extractItem(
     host: ctx.host,
     siteId: ctx.siteId,
     view: ctx.view,
+    ...(item.feedId && { feedId: item.feedId }),
     title,
     excerpt,
     // feedgrab's permalink: the page's post-link selector, else its heuristic.

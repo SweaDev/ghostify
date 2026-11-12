@@ -12,7 +12,9 @@ import {
   optionLabel,
   type PostLink,
   paramOptions,
+  toggleIgnored,
   toggleParam,
+  withIgnore,
   withPostLink,
 } from './links';
 import { framePanel, PANEL_CSS } from './panel';
@@ -32,6 +34,7 @@ select, input { font: inherit; box-sizing: border-box; border: 1px solid var(--l
 .params label { display: flex; gap: 6px; align-items: baseline; word-break: break-all; }
 .params code { font: 12px ui-monospace, monospace; }
 .params .note { color: var(--faint); }
+.params label.own { margin-top: 4px; color: var(--muted); }
 .sample { display: flex; gap: 6px; align-items: center; margin: 0 0 6px; font-size: 12px; }
 .sample button { min-width: 28px; padding: 2px 8px; }
 .sample .which { white-space: nowrap; }
@@ -50,6 +53,12 @@ export interface LinkFeed {
 
 /** Post link (empty selector = automatic) and sample post index per feed id. */
 export type LinkChoice = Record<string, { link: PostLink; reference: number }>;
+
+/** The chosen post links, and the query parameters the site ignores in every feed. */
+export interface LinksResult {
+  links: LinkChoice;
+  ignore: string[];
+}
 
 /** feedgrab's ranked post links of sample post `reference`. */
 export const linkOptions = (items: Element[], reference: number, base: string) => {
@@ -84,14 +93,16 @@ function el<K extends keyof HTMLElementTagNameMap>(
 }
 
 /**
- * Asks for each feed's sample post (a typical one, not an ad or a heading) and which of its links
- * is the post's URL. Resolves null on cancel.
+ * Asks for each feed's sample post (a typical one, not an ad or a heading), which of its links
+ * is the post's URL, and which query parameters identify a post: for the whole site (starting
+ * from `ignore`, the site's ignored ones) or for one feed. Resolves null on cancel.
  */
 export function chooseLinks(
   doc: Document,
   base: string,
   feeds: LinkFeed[],
-): Promise<LinkChoice | null> {
+  ignore: readonly string[] = [],
+): Promise<LinksResult | null> {
   const host = doc.createElement('div');
   host.setAttribute('data-ghostify-chooser', '');
   const root = host.attachShadow({ mode: 'open' });
@@ -128,6 +139,10 @@ export function chooseLinks(
   const chosen: PostLink[] = feeds.map((f, i) =>
     f.link ? { ...f.link, selector: { ...f.link.selector } } : best(i),
   );
+  let ignored = [...ignore];
+  const siteName = new URL(base).hostname.replace(/^www\./, '');
+  // A site-wide parameter change shows in every feed that follows the site's choice.
+  const renders: (() => void)[] = [];
   const mark = () =>
     marks.set(
       feeds.flatMap((f, i) => {
@@ -205,27 +220,58 @@ export function chooseLinks(
 
     const renderParams = (d: FeedDescriptor, items: ReturnType<typeof checkFeed>['items']) => {
       const link = chosen[i] as PostLink;
-      const options = paramOptions(linkParams(items, d, base), link.params);
+      const own = !!link.params;
+      const options = paramOptions(linkParams(items, d, base), link.params, ignored);
       params.replaceChildren();
       if (!options.length) return;
+      const refocus = (name: string) =>
+        [...params.querySelectorAll('input')].find((b) => b.dataset.name === name)?.focus();
       params.append(
-        el(doc, 'p', {}, 'Query parameters that identify a post (untick tracking ones):'),
+        el(
+          doc,
+          'p',
+          {},
+          own
+            ? 'Query parameters that identify a post in this feed:'
+            : `Query parameters that identify a post on ${siteName} (untick tracking ones; this applies to every feed of the site):`,
+        ),
       );
       for (const o of options) {
         const box = el(doc, 'input', { type: 'checkbox', checked: o.kept });
         box.setAttribute('aria-label', `Keep ${o.name}`);
         box.dataset.name = o.name;
         box.addEventListener('change', () => {
-          const next = toggleParam(options, o.name, box.checked);
-          chosen[i] = { selector: link.selector, ...(next && { params: next }) };
-          render();
-          const same = [...params.querySelectorAll('input')].find((b) => b.dataset.name === o.name);
-          same?.focus();
+          if (own)
+            chosen[i] = {
+              selector: link.selector,
+              params: toggleParam(options, o.name, box.checked),
+            };
+          else ignored = toggleIgnored(ignored, o.name, box.checked);
+          for (const r of own ? [render] : renders) r();
+          refocus(o.name);
         });
         const value = o.value === undefined ? o.name : `${o.name}=${o.value}`;
         const note = o.note ? el(doc, 'span', { className: 'note' }, o.note) : '';
         params.append(el(doc, 'label', {}, box, el(doc, 'code', {}, value), note));
       }
+      const scope = el(doc, 'input', { type: 'checkbox', checked: own });
+      scope.dataset.name = ':own';
+      scope.addEventListener('change', () => {
+        chosen[i] = scope.checked
+          ? { selector: link.selector, params: options.filter((o) => o.kept).map((o) => o.name) }
+          : { selector: link.selector };
+        render();
+        refocus(':own');
+      });
+      params.append(
+        el(
+          doc,
+          'label',
+          { className: 'own' },
+          scope,
+          el(doc, 'span', {}, 'Only this feed (its own choice, not the site’s)'),
+        ),
+      );
     };
 
     const render = (typing = false) => {
@@ -236,7 +282,7 @@ export function chooseLinks(
       type.value = sel.type;
       if (!typing) input.value = sel.value;
       const d = withPostLink(f.descriptor, link);
-      const check = checkFeed(doc, d, base);
+      const check = checkFeed(doc, withIgnore(d, ignored), base);
       renderParams(d, check.items);
       const ref = f.items[refs[i] ?? 0];
       const url = check.items.find((it) => it.element === ref)?.permalink;
@@ -252,6 +298,7 @@ export function chooseLinks(
           ? `Opens: ${url} (found in ${check.linkHits} of ${n} posts)`
           : `No link in the sample post (found in ${check.linkHits} of ${n} posts).`;
     };
+    renders.push(() => render());
     choice.addEventListener('change', () => {
       const o = options[i]?.[Number(choice.value)];
       if (choice.value === AUTO) setSelector({ type: 'css', value: '' });
@@ -291,7 +338,7 @@ export function chooseLinks(
   doc.documentElement.append(host);
 
   return new Promise((resolve) => {
-    const done = (v: LinkChoice | null) => {
+    const done = (v: LinksResult | null) => {
       unframe();
       marks.destroy();
       host.remove();
@@ -310,7 +357,7 @@ export function chooseLinks(
           reference: refs[i] ?? 0,
         };
       });
-      done(links);
+      done({ links, ignore: ignored });
     });
   });
 }
