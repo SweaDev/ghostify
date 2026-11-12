@@ -200,11 +200,11 @@ Spec: `specs/SPEC-v1.md`. Plan: `specs/PLAN-v1.md`.
 
 ## Phase 6: Backups, site-wide ignored parameters, picker usability
 
-- [ ] T32: Data backups and full snapshots
+- [x] T32: Data backups and full snapshots
   Refs: specs/PLAN-v1.md L264-269
   Files: src/store/backup.ts, src/store/snapshots.ts, src/ui/BackupSettings.tsx, src/ui/GeneralSettings.tsx, tests/backup.test.ts
   Depends: none
-  Done: data backup has only items and kept and merges on restore (newer `updatedAt` wins); full snapshot has every table but secrets plus sites and settings and replaces them on restore; snapshots live in `ghostify-snapshots`, automatic ones capped at 5; a restore takes a `before-restore` snapshot first; a newer-schema main database (VersionError) can be reset and restored; Settings → General → Backups lists, downloads, restores and deletes; tests pass.
+  Done: data backup has only items and kept and merges on restore (newer `updatedAt` wins); full snapshot has every table but secrets plus sites and settings and replaces them on restore; snapshots live in `ghostify-snapshots`, automatic ones capped at 5; a restore takes a `before-restore` snapshot first; Settings → General → Backups lists, downloads, restores and deletes; tests pass.
 
 - [ ] T33: Draggable chooser panels
   Refs: specs/PLAN-v1.md L273

@@ -65,7 +65,7 @@ const SECTIONS: {
   {
     key: 'general',
     label: 'General',
-    hint: 'About Ghostify',
+    hint: 'Backups, snapshots and about Ghostify',
     icon: Info,
     Body: GeneralSettings,
   },
