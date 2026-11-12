@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.8.0] - 2026-11-12
+### Added
+- Backups in Settings → General: download a data backup of your Ghostified items, or take full snapshots (everything but API keys) and restore one in one click. A snapshot is taken before every restore.
+- Ghostified posts show blurred and labelled while you add or edit a site's selectors, so a feed of only ghostified posts can still be found.
+
+### Changed
+- The picker's panels can be dragged by their header (or moved with the arrow keys) and collapsed, show their step, follow dark mode, and open where you last left them on that site.
+
 ## [1.7.0] - 2026-11-11
 ### Added
 - Choose a sample post (not an ad or a heading) when adding a site or editing its selectors; post-link suggestions come from it.
@@ -160,7 +168,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Search index builds in the background, with live progress.
 - Ollama setup guide in the README.
 
-[Unreleased]: https://github.com/SweaDev/ghostify/compare/v1.7.0...HEAD
+[Unreleased]: https://github.com/SweaDev/ghostify/compare/v1.8.0...HEAD
+[1.8.0]: https://github.com/SweaDev/ghostify/compare/v1.7.0...v1.8.0
 [1.7.0]: https://github.com/SweaDev/ghostify/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/SweaDev/ghostify/compare/v1.5.4...v1.6.0
 [1.5.4]: https://github.com/SweaDev/ghostify/compare/v1.5.3...v1.5.4
