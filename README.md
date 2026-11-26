@@ -3,7 +3,7 @@
 Ghostify is a browser extension (Chrome and Firefox) for feeds that keep showing you the same posts, or posts you probably want to deal with later. Hover a post, click the ghost, and it disappears from the site's feed. Ghostify keeps a copy so you can find them again later, snooze them, read later, run AI models on them, and many more interesting features are coming up!
 
 ## Updates
-Latest: [**v1.9.0**](https://github.com/SweaDev/ghostify/tree/v1.9.0) ([release](https://github.com/SweaDev/ghostify/releases/tag/v1.9.0)) | [DEV Challenge Submission](https://dev.to/fm/from-a-simple-mark-as-seen-to-feedgrab-ghostify-story-of-my-life-33dl) Entry: [**v1.0.0**](https://github.com/SweaDev/ghostify/tree/v1.0.0) ([release](https://github.com/SweaDev/ghostify/releases/tag/v1.0.0)) 
+Latest: [**v1.9.0**](https://github.com/SweaDev/ghostify/tree/v1.9.0) ([release](https://github.com/SweaDev/ghostify/releases/tag/v1.9.0))
 
 - Ignore a query parameter (like YouTube's `pp`) on every page of a site, and update already Ghostified posts to match (v1.9).
 - Back up your Ghostified posts, or take full snapshots and restore one in one click; the picker's panels can be dragged out of the way, and ghostified posts show blurred while you edit selectors (v1.8).
