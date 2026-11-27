@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- Ghostified items know what they are: post, image, video, audio or PDF (from feedgrab), with their playable attributes (provider, player link, poster, duration) and images.
+- Cards show a kind badge and a video's or episode's duration; the Ghostify page filters by kind.
+
+### Changed
+- feedgrab 0.6.0 reads every item's title, author, date, text and images; Ghostify no longer has its own extractor, and dev.to's author is a feedgrab field rule.
 
 ## [1.9.0] - 2026-11-12
 ### Added
