@@ -118,6 +118,28 @@ describe('dashboard search and detail', () => {
     fireEvent.keyDown(document, { key: 'Escape' });
     await vi.waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
   });
+
+  it('badges media items with their kind and duration and filters by kind', async () => {
+    await ghostify(draft('p', { title: 'A text post' }), 1);
+    await ghostify(
+      draft('v', {
+        title: 'A video',
+        kind: 'video',
+        media: { kind: 'video', provider: 'youtube', duration: 754 },
+      }),
+      2,
+    );
+    render(<Dashboard />);
+    await screen.findByText('A video');
+    expect(screen.getByLabelText('Video')).toBeTruthy();
+    expect(screen.getByText('12:34')).toBeTruthy();
+    expect(screen.queryByLabelText('Post')).toBeNull();
+    fireEvent.change(screen.getByLabelText('Kind'), { target: { value: 'video' } });
+    await vi.waitFor(() => expect(screen.queryByText('A text post')).toBeNull());
+    fireEvent.change(screen.getByLabelText('Kind'), { target: { value: 'post' } });
+    await vi.waitFor(() => expect(screen.queryByText('A video')).toBeNull());
+    expect(screen.getByText('A text post')).toBeTruthy();
+  });
 });
 
 describe('dashboard sort', () => {
