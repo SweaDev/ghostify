@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-11-27
+### Added
+- **Load full content** also fills in what the feed didn't show: a video's or episode's player, the author, the date and an image (feedgrab 0.8 reads the item's page).
+- **Find the player on the page** for video and audio items that have none.
+
+### Changed
+- The Reader's article comes from feedgrab's article extraction (Readability) and is sanitized by Ghostify as before.
+- YouTube videos show their poster and play on YouTube in a small window, since YouTube's player refuses to run inside extensions.
+- feedgrab 0.8.0.
+
 ## [1.12.0] - 2026-11-27
 ### Added
 - The Grab panel: Feeds, Content and Save steps with advanced options folded away, light and dark, docked left, right or bottom (resizable) or in its own window.
@@ -201,7 +211,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Search index builds in the background, with live progress.
 - Ollama setup guide in the README.
 
-[Unreleased]: https://github.com/SweaDev/ghostify/compare/v1.12.0...HEAD
+[Unreleased]: https://github.com/SweaDev/ghostify/compare/v2.0.0...HEAD
+[2.0.0]: https://github.com/SweaDev/ghostify/compare/v1.12.0...v2.0.0
 [1.12.0]: https://github.com/SweaDev/ghostify/compare/v1.11.0...v1.12.0
 [1.11.0]: https://github.com/SweaDev/ghostify/compare/v1.10.0...v1.11.0
 [1.10.0]: https://github.com/SweaDev/ghostify/compare/v1.9.0...v1.10.0
