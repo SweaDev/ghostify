@@ -22,7 +22,7 @@ Spec: `specs/SPEC-v2.md`. Plan: `specs/PLAN-v2.md`. feedgrab tasks: `../feedgrab
   Depends: T43
   Done: cards show a kind badge for non-posts and a duration chip for media; the Kind filter lists All / Posts / Images / Videos / Audio / PDFs and filters the list; render tests pass.
 
-- [ ] T45: Remove code feedgrab now owns
+- [x] T45: Remove code feedgrab now owns
   Refs: specs/PLAN-v2.md L29-30
   Files: src/sites/selector.ts, src/sites/run-picker.ts, src/sites/links.ts, src/sites/link-chooser.ts, src/ui/SitesSettings.tsx, src/ui/SampleCheck.tsx, tests/selector.test.ts, tests/links.test.ts
   Depends: T42
