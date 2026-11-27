@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.11.0] - 2026-11-27
+### Added
+- The viewer shows each kind its own way: a player for videos and audio (direct files or the site's player), the image large with a lightbox, PDFs in the browser's viewer, and a post's own text from the feed.
+- **Play on site** opens the original in a small window when a site's player won't play inside Ghostify.
+- Local thumbnails (up to 64 KB each) once a site's image hosts are allowed in Settings → Sites; backups leave them out.
+
 ## [1.10.0] - 2026-11-27
 ### Added
 - Ghostified items know what they are: post, image, video, audio or PDF (from feedgrab), with their playable attributes (provider, player link, poster, duration) and images.
@@ -185,7 +191,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Search index builds in the background, with live progress.
 - Ollama setup guide in the README.
 
-[Unreleased]: https://github.com/SweaDev/ghostify/compare/v1.10.0...HEAD
+[Unreleased]: https://github.com/SweaDev/ghostify/compare/v1.11.0...HEAD
+[1.11.0]: https://github.com/SweaDev/ghostify/compare/v1.10.0...v1.11.0
 [1.10.0]: https://github.com/SweaDev/ghostify/compare/v1.9.0...v1.10.0
 [1.9.0]: https://github.com/SweaDev/ghostify/compare/v1.8.0...v1.9.0
 [1.8.0]: https://github.com/SweaDev/ghostify/compare/v1.7.0...v1.8.0
