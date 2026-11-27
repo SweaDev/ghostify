@@ -77,7 +77,7 @@ export async function applyRekey(moves: RekeyMove[], now = Date.now()): Promise<
   await takeSnapshot('before-rekey', now);
   return db.transaction(
     'rw',
-    [db.items, db.kept, db.embeddings, db.contents, db.aiJobs],
+    [db.items, db.kept, db.embeddings, db.contents, db.thumbs, db.aiJobs],
     async () => {
       let moved = 0;
       const to = new Map<string, string>();
@@ -94,7 +94,7 @@ export async function applyRekey(moves: RekeyMove[], now = Date.now()): Promise<
           await db.kept.delete(m.from);
           await db.kept.put({ key: m.to, at: Math.min(kept.at, there?.at ?? kept.at) });
         }
-        for (const table of [db.embeddings, db.contents] as const) {
+        for (const table of [db.embeddings, db.contents, db.thumbs] as const) {
           const row = await table.get(m.from);
           if (!row) continue;
           await table.delete(m.from);
