@@ -1,4 +1,6 @@
 import {
+  checkDescriptor,
+  type DescriptorCheck,
   type FeedDescriptor,
   type PermalinkCandidate,
   type Selector,
@@ -6,7 +8,6 @@ import {
 } from 'feedgrab';
 import { HIGHLIGHT_CSS, highlighter } from './highlight';
 import {
-  checkFeed,
   linkParams,
   optionIndex,
   optionLabel,
@@ -218,7 +219,7 @@ export function chooseLinks(
     prev.addEventListener('click', () => step(-1));
     nextPost.addEventListener('click', () => step(1));
 
-    const renderParams = (d: FeedDescriptor, items: ReturnType<typeof checkFeed>['items']) => {
+    const renderParams = (d: FeedDescriptor, items: DescriptorCheck['items']) => {
       const link = chosen[i] as PostLink;
       const own = !!link.params;
       const options = paramOptions(linkParams(items, d, base), link.params, ignored);
@@ -282,7 +283,7 @@ export function chooseLinks(
       type.value = sel.type;
       if (!typing) input.value = sel.value;
       const d = withPostLink(f.descriptor, link);
-      const check = checkFeed(doc, withIgnore(d, ignored), base);
+      const check = checkDescriptor(doc, withIgnore(d, ignored), { baseUrl: base });
       renderParams(d, check.items);
       const ref = f.items[refs[i] ?? 0];
       const url = check.items.find((it) => it.element === ref)?.permalink;
@@ -291,12 +292,12 @@ export function chooseLinks(
         opens.textContent = url
           ? `Automatic: opens ${url}`
           : 'Automatic: no link in the sample post.';
-      else if (!check.linkHits)
+      else if (!check.withLink)
         opens.textContent = `This selector finds no link in any of the ${n} posts, so the automatic link is used.`;
       else
         opens.textContent = url
-          ? `Opens: ${url} (found in ${check.linkHits} of ${n} posts)`
-          : `No link in the sample post (found in ${check.linkHits} of ${n} posts).`;
+          ? `Opens: ${url} (found in ${check.withLink} of ${n} posts)`
+          : `No link in the sample post (found in ${check.withLink} of ${n} posts).`;
     };
     renders.push(() => render());
     choice.addEventListener('change', () => {
