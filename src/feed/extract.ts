@@ -9,27 +9,14 @@ export interface ExtractContext {
   baseUrl: string;
 }
 
-const HEADING = 'h1, h2, h3, h4, [role="heading"]';
-const AUTHOR = [
-  '[rel="author"]',
-  '[itemprop="author"]',
-  'a[class*="author"]',
-  '[class*="author"] a',
-  '[class*="byline"]',
-  '.crayons-story__secondary',
-  '[class*="author"]',
-];
-const DESCRIPTION = 'p, [class*="excerpt"], [class*="description"], [class*="summary"]';
-/** Chrome around the content that should not end up in an excerpt. */
-const NOISE =
-  'h1, h2, h3, h4, [role="heading"], button, time, svg, img, [hidden], [aria-hidden="true"], [class*="dropdown"], [class*="preview"], [class*="author"], [class*="avatar"], [class*="reaction"], [class*="comment"], [class*="tag"], [class*="meta"], [class*="bottom"], [class*="footer"]';
-const NOT_CONTENT_IMG = /avatar|profile|icon|logo|emoji/i;
 const MAX_EXCERPT = 400;
+const MAX_TITLE = 120;
 
 const clean = (s: string | null | undefined) => (s ?? '').replace(/\s+/g, ' ').trim();
+const clip = (s: string, n: number) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
 
 function absolute(href: string | null | undefined, base: string): string | undefined {
-  if (!href || href.startsWith('#') || href.startsWith('javascript:')) return undefined;
+  if (!href) return undefined;
   try {
     const u = new URL(href, base);
     return u.protocol === 'http:' || u.protocol === 'https:' ? u.href : undefined;
@@ -38,52 +25,19 @@ function absolute(href: string | null | undefined, base: string): string | undef
   }
 }
 
-function findImage(el: Element, base: string): string | undefined {
-  const preload = el.querySelector('[data-preload-image]')?.getAttribute('data-preload-image');
-  if (preload) return absolute(preload, base);
-  for (const img of el.querySelectorAll('img')) {
-    const hint = `${img.className} ${img.alt}`;
-    if (NOT_CONTENT_IMG.test(hint)) continue;
-    const src = absolute(img.getAttribute('src'), base);
-    if (src) return src;
-  }
-  return undefined;
-}
-
-function findAuthor(el: Element): string | undefined {
-  for (const sel of AUTHOR) {
-    for (const node of el.querySelectorAll(sel)) {
-      const t = clean(node.textContent);
-      if (t && t.length <= 80) return t;
-    }
-  }
-  return undefined;
-}
-
-/** Description-like paragraphs if there are any, else the item's text without its chrome. */
-function findExcerpt(el: Element, title: string): string {
-  const paras = [...el.querySelectorAll(DESCRIPTION)]
-    .filter((p) => !p.closest(HEADING) && !p.parentElement?.closest(DESCRIPTION))
-    .map((p) => clean(p.textContent))
-    .filter((t) => t && t !== title);
-  let text = [...new Set(paras)].join(' ');
-  if (!text) {
-    const copy = el.cloneNode(true) as Element;
-    for (const n of copy.querySelectorAll(NOISE)) n.remove();
-    text = clean(copy.textContent).replace(title, '').trim();
-  }
-  return text.length > MAX_EXCERPT ? `${text.slice(0, MAX_EXCERPT - 1)}…` : text;
-}
-
-/** Turns a feedgrab item into what Ghostify stores. */
+/**
+ * Turns a feedgrab item into what Ghostify stores. feedgrab recognizes the item's kind and
+ * attributes (`item.content()`); Ghostify only picks and shapes what it keeps.
+ */
 export function extractItem(
-  item: Pick<FeedItem, 'id' | 'element' | 'text' | 'permalink'> & Partial<Pick<FeedItem, 'feedId'>>,
+  item: Pick<FeedItem, 'id' | 'text' | 'permalink' | 'content'> & Partial<Pick<FeedItem, 'feedId'>>,
   ctx: ExtractContext,
 ): GhostDraft {
-  const el = item.element;
-  const heading = el.querySelector(HEADING);
-  const title = clean(heading?.textContent) || clean(item.text()).slice(0, 120) || 'Untitled';
-  const excerpt = findExcerpt(el, title);
+  const c = item.content();
+  const text = clean(c.text);
+  const title = clean(c.title) || clip(clean(item.text()), MAX_TITLE) || 'Untitled';
+  const excerpt = clip(text, MAX_EXCERPT);
+  const image = c.media?.poster ?? c.images[0]?.src;
   return {
     id: item.id,
     host: ctx.host,
@@ -94,7 +48,12 @@ export function extractItem(
     excerpt,
     // feedgrab's permalink: the page's post-link selector, else its heuristic.
     url: absolute(item.permalink, ctx.baseUrl),
-    image: findImage(el, ctx.baseUrl),
-    author: findAuthor(el),
+    image,
+    author: c.author,
+    kind: c.kind,
+    ...(c.publishedAt && { publishedAt: c.publishedAt }),
+    ...(c.images.length > 0 && { images: c.images }),
+    ...(c.media && { media: c.media }),
+    ...(c.html && { html: c.html }),
   };
 }
