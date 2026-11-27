@@ -1,6 +1,8 @@
+import type { ContentKind } from 'feedgrab';
 import { Search, Shuffle, Sparkles, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { Sort, SortBy, SortOrder } from '../store/settings';
+import { KIND_INFO, KINDS } from './kinds';
 
 const SELECT =
   'rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-900';
@@ -53,6 +55,8 @@ export interface Filters {
   text: string;
   host: string;
   tag?: string;
+  /** Only items of this content kind. */
+  kind?: ContentKind;
   /** Rank by meaning (embeddings) instead of matching keywords. */
   semantic?: boolean;
 }
@@ -123,6 +127,21 @@ export function FilterBar(props: {
         </button>
       )}
       <SortControls value={props.sort} onChange={props.onSort} />
+      <select
+        aria-label="Kind"
+        value={value.kind ?? ''}
+        onChange={(e) =>
+          onChange({ ...value, kind: (e.target.value || undefined) as ContentKind | undefined })
+        }
+        className={SELECT}
+      >
+        <option value="">All kinds</option>
+        {KINDS.map((k) => (
+          <option key={k} value={k}>
+            {KIND_INFO[k].plural}
+          </option>
+        ))}
+      </select>
       {props.hosts.length > 1 && (
         <select
           aria-label="Site"
