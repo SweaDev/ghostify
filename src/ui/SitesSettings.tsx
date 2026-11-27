@@ -54,6 +54,7 @@ import { IconButton } from './ItemCard';
 import { btn, btnDanger, btnPrimary, card, field } from './kit';
 import { type Sample, SampleStatus, useSamples } from './SampleCheck';
 import { Switch } from './Switch';
+import { ThumbsEditor } from './ThumbsEditor';
 import { useDialogFocus } from './useDialogFocus';
 import { useSettings } from './useSettings';
 
@@ -827,6 +828,9 @@ function SiteDetailBody({ site }: { site: Site }) {
       </div>
       <div className={card}>
         <IgnoreEditor site={site} />
+      </div>
+      <div className={card}>
+        <ThumbsEditor site={site} />
       </div>
       <div className={card}>
         <RulesEditor site={site} />
