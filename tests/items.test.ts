@@ -84,6 +84,15 @@ describe('items repository', () => {
     expect((await listItems({ text: 'ada post' })).map((i) => i.id)).toEqual(['a']);
     expect((await listItems({ limit: 1 })).map((i) => i.id)).toEqual(['c']);
   });
+
+  it('filters by content kind; items without one are posts', async () => {
+    await ghostify(draft('old'), 1);
+    await ghostify(draft('v', { kind: 'video', media: { kind: 'video', provider: 'youtube' } }), 2);
+    await ghostify(draft('p', { kind: 'post' }), 3);
+    expect((await listItems({ kind: 'post' })).map((i) => i.id)).toEqual(['p', 'old']);
+    expect((await listItems({ kind: 'video' })).map((i) => i.id)).toEqual(['v']);
+    expect(await db.items.where('kind').equals('video').count()).toBe(1);
+  });
 });
 
 describe('listHosts', () => {
