@@ -149,6 +149,19 @@ export interface SampleRow {
   capturedAt: number;
 }
 
+/** A small local copy of an item's image, so cards still show when the site's link expires. */
+export interface ThumbRow {
+  key: string;
+  /** Encoded image bytes (webp or jpeg), at most 64 KB. */
+  data: ArrayBuffer;
+  type: string;
+  width: number;
+  height: number;
+  /** The image URL it was made from. */
+  src: string;
+  at: number;
+}
+
 export const db = new Dexie('ghostify') as Dexie & {
   items: EntityTable<GhostItem, 'key'>;
   embeddings: EntityTable<Embedding, 'key'>;
@@ -160,6 +173,7 @@ export const db = new Dexie('ghostify') as Dexie & {
   aiJobs: EntityTable<AiJob, 'id'>;
   contents: EntityTable<ContentRow, 'key'>;
   samples: EntityTable<SampleRow, 'key'>;
+  thumbs: EntityTable<ThumbRow, 'key'>;
 };
 
 db.version(1).stores({
@@ -178,3 +192,4 @@ db.version(8).stores({ samples: 'key, siteId' });
 db.version(9).stores({
   items: 'key, state, host, createdAt, snoozeUntil, *tags, [state+createdAt], kind',
 });
+db.version(10).stores({ thumbs: 'key' });
