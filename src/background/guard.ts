@@ -1,3 +1,4 @@
+import type { ContentKind, ImageInfo, MediaInfo } from 'feedgrab';
 import { browser } from 'wxt/browser';
 import type { ProtocolMap } from '../messaging';
 import type { GhostDraft } from '../store/db';
@@ -19,7 +20,19 @@ export const CONTENT_MESSAGES = new Set<keyof ProtocolMap>([
   'saveSample',
 ]);
 
-const MAX = { id: 200, title: 300, excerpt: 2000, author: 120, url: 2048, ids: 500 };
+const MAX = {
+  id: 200,
+  title: 300,
+  excerpt: 2000,
+  author: 120,
+  url: 2048,
+  ids: 500,
+  images: 8,
+  html: 20_000,
+  short: 60,
+};
+const KINDS = new Set<ContentKind>(['post', 'image', 'video', 'audio', 'pdf']);
+const MEDIA_KINDS = new Set<MediaInfo['kind']>(['video', 'audio', 'pdf']);
 
 /** A content script: it runs in a tab and its URL is the page's, not an extension page. */
 export function isContentScript(sender: Sender, extBase = browser.runtime.getURL('/')): boolean {
@@ -39,6 +52,52 @@ export function safeUrl(u: unknown): string | undefined {
   }
 }
 
+const size = (n: unknown) => {
+  const v = Math.round(Number(n));
+  return Number.isFinite(v) && v > 0 && v < 1e6 ? v : undefined;
+};
+
+function cleanImages(list: unknown): ImageInfo[] | undefined {
+  if (!Array.isArray(list)) return undefined;
+  const out: ImageInfo[] = [];
+  for (const i of list.slice(0, MAX.images) as Partial<ImageInfo>[]) {
+    const src = safeUrl(i?.src);
+    if (!src) continue;
+    const img: ImageInfo = { src };
+    const srcset = typeof i.srcset === 'string' ? clip(i.srcset, MAX.url * 2) : '';
+    if (srcset) img.srcset = srcset;
+    const alt = clip(i.alt, MAX.title);
+    if (alt) img.alt = alt;
+    const width = size(i.width);
+    const height = size(i.height);
+    if (width) img.width = width;
+    if (height) img.height = height;
+    out.push(img);
+  }
+  return out.length ? out : undefined;
+}
+
+function cleanMedia(m: unknown): MediaInfo | undefined {
+  const v = m as Partial<MediaInfo> | undefined;
+  if (!v || !MEDIA_KINDS.has(v.kind as MediaInfo['kind'])) return undefined;
+  const out: MediaInfo = { kind: v.kind as MediaInfo['kind'] };
+  for (const k of ['url', 'embedUrl', 'poster'] as const) {
+    const u = safeUrl(v[k]);
+    if (u) out[k] = u;
+  }
+  for (const k of ['mime', 'provider', 'providerId'] as const) {
+    const s = clip(v[k], k === 'providerId' ? MAX.id : MAX.short);
+    if (s) out[k] = s;
+  }
+  for (const k of ['duration', 'width', 'height'] as const) {
+    const n = size(v[k]);
+    if (n) out[k] = n;
+  }
+  return out;
+}
+
+const ISO = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/;
+
 /** A draft with bounded strings and only http(s) links. */
 export function cleanDraft(d: GhostDraft): GhostDraft {
   const auto = d.auto && {
@@ -46,6 +105,8 @@ export function cleanDraft(d: GhostDraft): GhostDraft {
     criteria: clip(d.auto.criteria, MAX.title),
     confidence: Math.max(0, Math.min(1, Number(d.auto.confidence) || 0)),
   };
+  const images = cleanImages(d.images);
+  const media = cleanMedia(d.media);
   return {
     id: clip(d.id, MAX.id),
     host: clip(d.host, 253),
@@ -58,6 +119,12 @@ export function cleanDraft(d: GhostDraft): GhostDraft {
     image: safeUrl(d.image),
     author: d.author ? clip(d.author, MAX.author) : undefined,
     ...(auto && { auto }),
+    ...(d.kind && KINDS.has(d.kind) && { kind: d.kind }),
+    ...(typeof d.publishedAt === 'string' &&
+      ISO.test(d.publishedAt) && { publishedAt: d.publishedAt }),
+    ...(images && { images }),
+    ...(media && { media }),
+    ...(typeof d.html === 'string' && d.html.length <= MAX.html && { html: d.html }),
   };
 }
 
