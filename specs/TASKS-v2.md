@@ -38,7 +38,7 @@ Spec: `specs/SPEC-v2.md`. Plan: `specs/PLAN-v2.md`. feedgrab tasks: `../feedgrab
 
 - [x] T47: Thumbnails — Refs: specs/SPEC-v2.md L8; specs/PLAN-v2.md L31. Local thumbnail per item (≤ 64 KB), host permission asked at grab time, backups and snapshots include them.
 - [x] T48: Viewers by kind — Refs: specs/SPEC-v2.md L9; specs/PLAN-v2.md L32. Post, image, video, audio and PDF viewers; Play on site fallback.
-- [ ] T49: Docs and version 1.11.0
+- [x] T49: Docs and version 1.11.0
 
 ## Phase 9: Grab panel (v1.12.0)
 
