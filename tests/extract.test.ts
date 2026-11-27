@@ -21,6 +21,13 @@ const feed = (container: string, item: string): FeedDescriptor => ({
   confirmed: true,
 });
 
+/** The first item, failing the test when there is none. */
+function first<T>(list: T[]): T {
+  const [x] = list;
+  if (!x) throw new Error('no item');
+  return x;
+}
+
 function itemsOf(html: string, d: FeedDescriptor) {
   const doc = document.implementation.createHTMLDocument('t');
   doc.body.innerHTML = html;
@@ -30,10 +37,12 @@ function itemsOf(html: string, d: FeedDescriptor) {
 describe('extractItem', () => {
   it('maps a dev.to story through feedgrab content and the built-in field rules', () => {
     const doc = devtoDoc();
-    const d = DEVTO_SITE.profiles[0]!.profile.feeds.find((f) => f.id === 'devto-stories')!;
-    const [item] = checkDescriptor(doc, d, { baseUrl: 'https://dev.to/' }).items;
-    const el = item!.element;
-    const draft = extractItem(item!, ctx);
+    const d = first(
+      first(DEVTO_SITE.profiles).profile.feeds.filter((f) => f.id === 'devto-stories'),
+    );
+    const item = first(checkDescriptor(doc, d, { baseUrl: 'https://dev.to/' }).items);
+    const el = item.element;
+    const draft = extractItem(item, ctx);
     expect(draft.title).toBe(el.querySelector('h2')?.textContent?.trim());
     expect(draft.url).toMatch(/^https:\/\/dev\.to\//);
     expect(draft.image).toMatch(/^https:\/\/media2\.dev\.to\//);
@@ -43,7 +52,7 @@ describe('extractItem', () => {
     expect(draft.kind).toBe('post');
     expect(draft.html).toBeTypeOf('string');
     expect(draft).toMatchObject({
-      id: item!.id,
+      id: item.id,
       host: 'dev.to',
       siteId: 'devto',
       view: 'loggedOut',
@@ -51,30 +60,34 @@ describe('extractItem', () => {
   });
 
   it('falls back to the text for untitled items and keeps only http(s) links', () => {
-    const [item] = itemsOf(
-      '<ul><li>just some words without a heading <img class="avatar" src="/a.png"></li><li>x</li></ul>',
-      feed('ul', ':scope > li'),
+    const item = first(
+      itemsOf(
+        '<ul><li>just some words without a heading <img class="avatar" src="/a.png"></li><li>x</li></ul>',
+        feed('ul', ':scope > li'),
+      ),
     );
-    const d = extractItem(item!, ctx);
+    const d = extractItem(item, ctx);
     expect(d.title).toBe('just some words without a heading');
     expect(d.url).toBeUndefined();
     expect(d.image).toBeUndefined();
     const bad = {
-      ...item!,
-      id: item!.id,
-      text: item!.text,
-      content: item!.content,
+      ...item,
+      id: item.id,
+      text: item.text,
+      content: item.content,
       permalink: 'javascript:alert(1)',
     };
     expect(extractItem(bad, ctx).url).toBeUndefined();
   });
 
   it('keeps playable attributes of a video and its poster as the image', () => {
-    const [item] = itemsOf(
-      `<div class="g"><div class="v"><a href="https://www.youtube.com/watch?v=abcDEF12345"><img src="/t.jpg" width="320"><span>4:05</span></a><h3>Clip</h3></div></div>`,
-      feed('.g', ':scope > .v'),
+    const item = first(
+      itemsOf(
+        `<div class="g"><div class="v"><a href="https://www.youtube.com/watch?v=abcDEF12345"><img src="/t.jpg" width="320"><span>4:05</span></a><h3>Clip</h3></div></div>`,
+        feed('.g', ':scope > .v'),
+      ),
     );
-    const d = extractItem(item!, ctx);
+    const d = extractItem(item, ctx);
     expect(d.kind).toBe('video');
     expect(d.media).toMatchObject({
       kind: 'video',
