@@ -16,7 +16,7 @@ Spec: `specs/SPEC-v2.md`. Plan: `specs/PLAN-v2.md`. feedgrab tasks: `../feedgrab
   Depends: T42
   Done: Dexie v9 with a `kind` index; `extractItem` maps `item.content()` (no extraction logic left in Ghostify); dev.to's author is a feedgrab field rule; drafts clamp the new fields and keep only http(s) media and image URLs; `listItems({ kind })` filters (missing kind = post); tests pass.
 
-- [ ] T44: Kind badge, duration and Kind filter
+- [x] T44: Kind badge, duration and Kind filter
   Refs: specs/SPEC-v2.md L9; specs/PLAN-v2.md L28
   Files: src/ui/ItemCard.tsx, src/ui/FilterBar.tsx, src/ui/Dashboard.tsx, src/ui/useItems.ts, src/ui/format.ts, tests/ui.test.tsx, tests/dashboard.test.tsx
   Depends: T43
