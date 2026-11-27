@@ -3,8 +3,9 @@
 Ghostify is a browser extension (Chrome and Firefox) for feeds that keep showing you the same posts, or posts you probably want to deal with later. Hover a post, click the ghost, and it disappears from the site's feed. Ghostify keeps a copy so you can find them again later, snooze them, read later, run AI models on them, and many more interesting features are coming up!
 
 ## Updates
-Latest: [**v1.12.0**](https://github.com/SweaDev/ghostify/tree/v1.12.0) ([release](https://github.com/SweaDev/ghostify/releases/tag/v1.12.0))
+Latest: [**v2.0.0**](https://github.com/SweaDev/ghostify/tree/v2.0.0) ([release](https://github.com/SweaDev/ghostify/releases/tag/v2.0.0))
 
+- Ghostify 2: every ghost knows what it is and shows the way it's best seen; loading a post's page also finds its player, author and date (v2.0).
 - A new Grab panel adds sites in three tidy steps, shows what each feed holds and lets you pick any attribute; dock it or open it in its own window (v1.12).
 - Watch, listen to, view or read each ghost in the viewer, and keep small local thumbnails (v1.11).
 - Every ghost knows whether it's a post, image, video, audio or PDF; cards show the kind and a video's length, and you can filter by kind (v1.10).
@@ -38,7 +39,7 @@ See [CHANGELOG.md](CHANGELOG.md) for every release.
 - **Search** your ghosts by keyword and **filter** them by site or kind. **Sort** them by date ghostified or relevance (to the search; by date without one), descending, ascending or random (**Shuffle again** reshuffles); the choice is remembered. Long lists load 50 at a time (**Show more**), and **Unghostify** on the Ghostify page has an **Undo**.
 - **The viewer** opens when you click a post's title, thumbnail or excerpt. It has three tabs:
   - **Overview**: the post itself the way its kind is best seen (a player for videos and audio, the image large, the PDF in your browser's viewer, or the cover and the post's text as it was in the feed), plus the summary and tags. Players from sites that refuse to play inside Ghostify offer **Play on site**, which opens the original in a small window.
-  - **Reader**: **Load full content** fetches the post and shows its main text inside Ghostify, without the site's ads and menus (the first time, you're asked to allow access to that site). **Reload** fetches it again.
+  - **Reader**: **Load full content** fetches the post and shows its main text inside Ghostify, without the site's ads and menus (the first time, you're asked to allow access to that site). It also fills in what the feed didn't show: a video's or episode's player, the author, the date and an image. **Reload** fetches it again. A video or audio item without a player offers **Find the player on the page**, which does the same. YouTube videos play on YouTube in a small window, because YouTube's player refuses to run inside extensions.
   - **Ask AI**: **Summarize** the full content, or ask your own questions about it. Answers stream in as they're written, and each one can be paused, resumed or stopped.
 
   Toolbar buttons open the original post in a new tab or a new window, open the viewer as its own page (which you can also move to a new window), or widen the panel. The popup can open Ghostify in a new window.
@@ -201,8 +202,12 @@ git push origin v1.0.0
 ```
 
 ## Project docs
-- The spec is `specs/SPEC-v1.md`, the plan is `specs/PLAN-v1.md`, and the tasks are `specs/TASKS-v1.md`.
-- This version covers every task, **T01–T41** (Phases 1–6), and all of the spec:
+- **v2 (current)**: the spec is `specs/SPEC-v2.md`, the plan is `specs/PLAN-v2.md`, and the tasks are `specs/TASKS-v2.md`. v2.0.0 covers every task, **T42–T58** (Phases 7–10), on [feedgrab](https://github.com/SweaDev/feedgrab) 0.6–0.8 (its `spec/SPEC-02.md`):
+  - content kinds (post, image, video, audio, PDF) with playable attributes, a kind badge, length and filter (Phase 7, v1.10.0);
+  - viewers by kind and local thumbnails (Phase 8, v1.11.0);
+  - the Grab panel, docked or in its own window, and content editing in Settings (Phase 9, v1.12.0);
+  - item pages read through feedgrab: the Reader's article, and a missing player, author, date or image filled in from the page (Phase 10, v2.0.0).
+- **v1 (done)**: `specs/SPEC-v1.md`, `specs/PLAN-v1.md`, `specs/TASKS-v1.md`. It covers every task, **T01–T41** (Phases 1–6), and all of its spec:
   - feedgrab feed reading;
   - the dev.to home feeds (logged in and out), plus adding more sites;
   - custom feed selectors through feedgrab;
