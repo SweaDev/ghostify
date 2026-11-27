@@ -138,9 +138,34 @@ export const handlers: Handlers = {
     await saveSample({ siteId, feedId, url, html });
   },
   addSite: async ({ tabId }) => {
+    const token = crypto.randomUUID();
+    await browser.storage.session.set({ [`grab:${tabId}`]: token });
+    // The page agent reads its launch (token, tab) from the extension's isolated world.
+    await browser.scripting.executeScript({
+      target: { tabId },
+      func: (launch: { token: string; tabId: number }) => {
+        (globalThis as Record<string, unknown>).__ghostifyGrab = launch;
+      },
+      args: [{ token, tabId }],
+    });
     await browser.scripting.executeScript({
       target: { tabId },
       files: ['/content-scripts/picker.js'],
+    });
+  },
+  openGrabWindow: async ({ token, tabId }) => {
+    if (tabId === undefined) return;
+    const stored = (await browser.storage.session.get(`grab:${tabId}`))[`grab:${tabId}`];
+    if (stored !== token) return;
+    const q = new URLSearchParams({ tab: String(tabId), token, mode: 'window' });
+    await browser.windows.create({
+      // Its own page: grab.html is web-accessible with a per-session URL, which Chrome only
+      // serves inside the page's iframe.
+      url: `${browser.runtime.getURL('/grab-window.html')}?${q}`,
+      type: 'popup',
+      width: 440,
+      height: 860,
+      focused: true,
     });
   },
 };
