@@ -3,6 +3,7 @@ import {
   createProfile,
   detectFeeds,
   type FeedDescriptor,
+  generateSelector,
   type ItemStructure,
   openFeed,
   type SiteProfile,
@@ -17,7 +18,6 @@ import { detectView } from './model';
 import { panelPosition, savePanelPosition } from './panel';
 import { existingEntry, findSite, mergePicked } from './picker';
 import { getSites, saveSite } from './registry';
-import { selectorFor } from './selector';
 import { defaultReference, startingParts, withStructure } from './structure';
 import { chooseStructure } from './structure-chooser';
 import { chooseView, notice } from './view-chooser';
@@ -92,7 +92,7 @@ async function pick(): Promise<void> {
   };
   const choice = await chooseView(document, {
     indicator: site?.loginIndicator,
-    pickIndicator: async () => selectorFor(await pickElement(document)),
+    pickIndicator: async () => generateSelector(await pickElement(document)).value,
   });
   if (!choice) return;
   const title =
