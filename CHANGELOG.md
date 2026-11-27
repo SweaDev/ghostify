@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.12.0] - 2026-11-27
+### Added
+- The Grab panel: Feeds, Content and Save steps with advanced options folded away, light and dark, docked left, right or bottom (resizable) or in its own window.
+- The Content step shows what a feed holds, a preview of the sample item and every attribute with its coverage; pick any attribute on the page or give it a selector.
+- Settings → Sites edits each feed's content type and attribute selectors, checked against the saved sample.
+- Saving a site can ask once to keep thumbnails from its image hosts.
+
+### Removed
+- The four separate picker panels (feedgrab's overlay, post link, structure and view choosers); their options live in the Grab panel.
+
 ## [1.11.0] - 2026-11-27
 ### Added
 - The viewer shows each kind its own way: a player for videos and audio (direct files or the site's player), the image large with a lightbox, PDFs in the browser's viewer, and a post's own text from the feed.
@@ -191,7 +201,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Search index builds in the background, with live progress.
 - Ollama setup guide in the README.
 
-[Unreleased]: https://github.com/SweaDev/ghostify/compare/v1.11.0...HEAD
+[Unreleased]: https://github.com/SweaDev/ghostify/compare/v1.12.0...HEAD
+[1.12.0]: https://github.com/SweaDev/ghostify/compare/v1.11.0...v1.12.0
 [1.11.0]: https://github.com/SweaDev/ghostify/compare/v1.10.0...v1.11.0
 [1.10.0]: https://github.com/SweaDev/ghostify/compare/v1.9.0...v1.10.0
 [1.9.0]: https://github.com/SweaDev/ghostify/compare/v1.8.0...v1.9.0
