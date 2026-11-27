@@ -21,6 +21,7 @@ import { ReaderView } from './ReaderView';
 import { Tags } from './Tags';
 import { useContent } from './useContent';
 import { useDialogFocus } from './useDialogFocus';
+import { InFeedContent, MediaView } from './viewers/MediaView';
 
 export type ViewerTab = 'overview' | 'reader' | 'ask';
 const TABS: { key: ViewerTab; label: string; icon: ComponentType<{ className?: string }> }[] = [
@@ -52,7 +53,7 @@ function Overview(props: {
   const { item } = props;
   return (
     <>
-      {item.image && <img src={item.image} alt="" className="aspect-[2/1] w-full object-cover" />}
+      <MediaView item={item} />
       <div className="flex flex-col gap-3 p-5">
         <h2 className="font-semibold text-xl leading-snug">{item.title}</h2>
         <p className="text-sm text-zinc-500 dark:text-zinc-400">
@@ -84,10 +85,14 @@ function Overview(props: {
             {Math.round(item.auto.confidence * 100)}% sure).
           </p>
         )}
-        {item.excerpt && (
-          <p className="whitespace-pre-line text-sm text-zinc-700 leading-relaxed dark:text-zinc-300">
-            {item.excerpt}
-          </p>
+        {item.html ? (
+          <InFeedContent item={item} />
+        ) : (
+          item.excerpt && (
+            <p className="whitespace-pre-line text-sm text-zinc-700 leading-relaxed dark:text-zinc-300">
+              {item.excerpt}
+            </p>
+          )
         )}
         <div className="flex flex-wrap items-center gap-2 pt-2">
           {item.url && (
