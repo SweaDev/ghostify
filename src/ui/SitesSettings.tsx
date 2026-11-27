@@ -6,6 +6,7 @@ import type {
   Selector,
   StructurePart,
 } from 'feedgrab';
+import { checkDescriptor } from 'feedgrab';
 import {
   ChevronRight,
   Download,
@@ -29,7 +30,6 @@ import { editPage, type PageDraft, pageDraft } from '../sites/edit';
 import { mergeSites, parseSitesJson, serializeSites } from '../sites/io';
 import { linkOptions } from '../sites/link-chooser';
 import {
-  checkFeed,
   cleanParams,
   linkParams,
   optionIndex,
@@ -410,7 +410,7 @@ function sampleLinks(
   d: FeedDescriptor,
 ): { posts: Element[]; options: PermalinkCandidate[]; found: PermalinkParam[] } {
   if (!sample) return { posts: [], options: [], found: [] };
-  const { items } = checkFeed(sample.doc, d, sample.row.url);
+  const { items } = checkDescriptor(sample.doc, d, { baseUrl: sample.row.url });
   const posts = items.map((i) => i.element);
   return {
     posts,
