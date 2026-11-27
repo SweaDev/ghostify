@@ -28,7 +28,7 @@ Spec: `specs/SPEC-v2.md`. Plan: `specs/PLAN-v2.md`. feedgrab tasks: `../feedgrab
   Depends: T42
   Done: `selectorFor` replaced by feedgrab `generateSelector`, `checkFeed` by `checkDescriptor`; their tests now cover the Ghostify callers only; `bun run check` passes.
 
-- [ ] T46: Docs and version 1.10.0
+- [x] T46: Docs and version 1.10.0
   Refs: specs/PLAN-v2.md L35-41
   Files: CHANGELOG.md, README.md, package.json
   Depends: T43, T44, T45
