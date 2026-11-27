@@ -5,6 +5,7 @@ import { duration, timeAgo } from './format';
 import { GhostIcon } from './GhostIcon';
 import { KIND_INFO } from './kinds';
 import { Tags } from './Tags';
+import { useThumb } from './useThumb';
 
 export interface ItemCardProps {
   item: GhostItem;
@@ -49,6 +50,7 @@ function KindBadge({ item }: { item: GhostItem }) {
 
 export function ItemCard(props: ItemCardProps) {
   const { item, compact, actions, note, onUnghost, onOpen } = props;
+  const image = useThumb(item);
   const thumb = compact ? 'size-12' : 'size-16 sm:h-[72px] sm:w-28';
   const titleClass =
     'line-clamp-2 text-left font-medium text-sm leading-snug hover:text-ghost-600 dark:hover:text-ghost-300';
@@ -67,8 +69,8 @@ export function ItemCard(props: ItemCardProps) {
         onClick={() => onOpen?.(item)}
         className={`${thumb} relative shrink-0 overflow-hidden rounded-lg bg-gradient-to-br from-ghost-100 to-ghost-200 enabled:cursor-zoom-in dark:from-ghost-900 dark:to-zinc-800`}
       >
-        {item.image ? (
-          <img src={item.image} alt="" loading="lazy" className="size-full object-cover" />
+        {image ? (
+          <img src={image} alt="" loading="lazy" className="size-full object-cover" />
         ) : (
           <GhostIcon className="size-full p-2.5 drop-shadow-sm transition group-hover:-rotate-6 group-hover:scale-110" />
         )}
