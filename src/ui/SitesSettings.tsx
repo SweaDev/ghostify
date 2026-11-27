@@ -1,12 +1,14 @@
-import type {
-  FeedDescriptor,
-  ItemStructure,
-  PermalinkCandidate,
-  PermalinkParam,
-  Selector,
-  StructurePart,
+import {
+  checkDescriptor,
+  type FeedContent,
+  type FeedDescriptor,
+  type ItemStructure,
+  type PermalinkCandidate,
+  type PermalinkParam,
+  partCoverage,
+  type Selector,
+  type StructurePart,
 } from 'feedgrab';
-import { checkDescriptor } from 'feedgrab';
 import {
   ChevronRight,
   Download,
@@ -28,9 +30,9 @@ import {
 } from '../sites/builtin';
 import { editPage, type PageDraft, pageDraft } from '../sites/edit';
 import { mergeSites, parseSitesJson, serializeSites } from '../sites/io';
-import { linkOptions } from '../sites/link-chooser';
 import {
   cleanParams,
+  linkOptions,
   linkParams,
   optionIndex,
   optionLabel,
@@ -48,8 +50,9 @@ import {
   type View,
 } from '../sites/model';
 import { deleteSite, getSites, saveSite, sitesItem } from '../sites/registry';
-import { defaultReference, partCoverage, suggestParts, withStructure } from '../sites/structure';
+import { defaultReference, suggestParts, withStructure } from '../sites/structure';
 import { deleteSamples, renameSamples } from '../store/samples';
+import { ContentField } from './ContentField';
 import { IconButton } from './ItemCard';
 import { btn, btnDanger, btnPrimary, card, field } from './kit';
 import { type Sample, SampleStatus, useSamples } from './SampleCheck';
@@ -521,6 +524,8 @@ function PageForm(props: { site: Site; index: number; entry: SiteProfileEntry; o
     updateFeed(i, ({ params: _, ...f }) => ({ ...f, ...(next && { params: next }) }));
   const setStructure = (i: number, next?: ItemStructure) =>
     updateFeed(i, ({ structure: _, ...f }) => ({ ...f, ...(next && { structure: next }) }));
+  const setContent = (i: number, next?: FeedContent) =>
+    updateFeed(i, ({ content: _, ...f }) => ({ ...f, ...(next && { content: next }) }));
   const save = async () => {
     try {
       const { site: edited, renamed } = editPage(site, index, draft);
@@ -632,6 +637,16 @@ function PageForm(props: { site: Site; index: number; entry: SiteProfileEntry; o
               structure={d.structure}
               posts={posts}
               onChange={(st) => setStructure(i, st)}
+            />
+            <span className="text-xs text-zinc-500">
+              Content (what the feed holds; attributes are read automatically unless you add a
+              selector)
+            </span>
+            <ContentField
+              content={d.content}
+              descriptor={withIgnore(edited, ignore)}
+              {...(sample && { sample: { doc: sample.doc, url: sample.row.url } })}
+              onChange={(c) => setContent(i, c)}
             />
             {samples && (
               <SampleStatus
