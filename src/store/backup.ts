@@ -19,7 +19,8 @@ export interface Backup {
 
 const DATA_TABLES = ['items', 'kept'];
 /** API keys never leave the browser. */
-const SKIPPED = new Set(['secrets']);
+// Thumbnails are binary and can be fetched again, so no backup holds them.
+const SKIPPED = new Set(['secrets', 'thumbs']);
 const STORAGE_KEYS = ['local:sites', 'local:settings'] as const;
 
 const tableNames = (kind: BackupKind) =>
