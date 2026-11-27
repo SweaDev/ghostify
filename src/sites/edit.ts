@@ -1,4 +1,5 @@
 import {
+  type FeedContent,
   type ItemStructure,
   parseProfile,
   type Selector,
@@ -26,6 +27,8 @@ export interface PageDraft {
     link: Selector;
     params?: string[];
     structure?: ItemStructure;
+    /** What the feed holds and where attributes are read from (feedgrab); unset = detected. */
+    content?: FeedContent;
   }[];
 }
 
@@ -40,6 +43,7 @@ export const pageDraft = (e: Site['profiles'][number]): PageDraft => ({
       link: selector,
       ...(params && { params }),
       ...(f.structure && { structure: f.structure }),
+      ...(f.content && { content: f.content }),
     };
   }),
 });
@@ -86,10 +90,22 @@ export function editPage(
       ...p,
       selector: checkSelector(doc, p.selector, `Part ${j + 1} selector${n}`),
     }));
-    const linked = withStructure(
+    const fields = Object.fromEntries(
+      Object.entries(d.content?.fields ?? {}).map(([name, rule]) => [
+        name,
+        { ...rule, selector: checkSelector(doc, rule.selector, `${name} field selector${n}`) },
+      ]),
+    );
+    const { content: _, ...plain } = withStructure(
       withPostLink(f, { selector: link, ...(d.params && { params: d.params }) }),
       { parts },
     );
+    const linked = d.content
+      ? {
+          ...plain,
+          content: { type: d.content.type, ...(Object.keys(fields).length && { fields }) },
+        }
+      : plain;
     if (same(container, f.container) && same(item, f.item)) return linked;
     const id = `edited-${stamp}-${i}`;
     renamed[f.id] = id;
