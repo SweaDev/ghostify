@@ -2,7 +2,7 @@ import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { App } from '@/entrypoints/popup/App';
 import { db } from '@/src/store/db';
 import { ghostify } from '@/src/store/items';
-import { timeAgo } from '@/src/ui/format';
+import { duration, timeAgo } from '@/src/ui/format';
 
 const draft = (id: string) => ({
   id,
@@ -44,5 +44,11 @@ describe('timeAgo', () => {
     expect(timeAgo(1000, 1000)).toBe('just now');
     expect(timeAgo(0, 2 * 3_600_000)).toBe('2 hours ago');
     expect(timeAgo(2 * 86_400_000, 0)).toBe('in 2 days');
+  });
+});
+
+describe('duration', () => {
+  it('formats seconds as m:ss or h:mm:ss', () => {
+    expect([duration(5), duration(754), duration(3723)]).toEqual(['0:05', '12:34', '1:02:03']);
   });
 });
