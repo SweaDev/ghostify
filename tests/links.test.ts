@@ -1,7 +1,6 @@
-import { type FeedDescriptor, suggestPermalinks } from 'feedgrab';
+import { checkDescriptor, type FeedDescriptor, suggestPermalinks } from 'feedgrab';
 import { chooseLinks } from '@/src/sites/link-chooser';
 import {
-  checkFeed,
   cleanParams,
   linkParams,
   migrateLinks,
@@ -47,26 +46,29 @@ describe('links', () => {
 
   it('checks a descriptor like the runtime: heuristic or post-link selector', () => {
     const doc = page();
-    const auto = checkFeed(doc, feed, BASE);
+    const auto = checkDescriptor(doc, feed, { baseUrl: BASE });
     expect(auto.items.map((i) => i.permalink)).toEqual([
       'https://x.example/alice/status/1',
       'https://x.example/bob/status/2',
     ]);
-    const author = checkFeed(
+    const author = checkDescriptor(
       doc,
       withPostLink(feed, { selector: { type: 'css', value: 'a[role="link"]' } }),
-      BASE,
+      { baseUrl: BASE },
     );
     expect(author.items[0]?.permalink).toBe('https://x.example/alice');
-    expect(author.linkHits).toBe(2);
-    const none = checkFeed(
+    expect(author.withLink).toBe(2);
+    const none = checkDescriptor(
       doc,
       withPostLink(feed, { selector: { type: 'css', value: '.nope' } }),
-      BASE,
+      { baseUrl: BASE },
     );
-    expect(none.linkHits).toBe(0);
+    expect(none.withLink).toBe(0);
     expect(none.items[0]?.permalink).toBe('https://x.example/alice/status/1');
-    expect(checkFeed(doc, { ...feed, item: { type: 'css', value: 'a[' } }, BASE).items).toEqual([]);
+    expect(
+      checkDescriptor(doc, { ...feed, item: { type: 'css', value: 'a[' } }, { baseUrl: BASE })
+        .items,
+    ).toEqual([]);
   });
 
   it('labels suggestions and moves 1.4.6 links onto feeds', () => {
@@ -95,7 +97,7 @@ describe('links', () => {
           `<article><h3><a href="/watch?pp=${i ? 'x' : 'y'}&v=${v}">${v}</a></h3></article>`,
       )
       .join('')}</main>`;
-    const all = checkFeed(document, feed, BASE);
+    const all = checkDescriptor(document, feed, { baseUrl: BASE });
     expect(all.items[0]?.permalink).toBe('https://x.example/watch?pp=y&v=a');
     const found = linkParams(all.items, feed, BASE);
     expect(found.map((p) => p.name)).toEqual(['pp', 'v']);
@@ -112,7 +114,7 @@ describe('links', () => {
     expect(postLinkOf(d)).toEqual({ selector: { type: 'css', value: '' }, params: ['v'] });
     expect(samePostLink(d, feed)).toBe(false);
     expect(samePostLink(d, { ...feed, permalinkParams: ['v'] })).toBe(true);
-    expect(checkFeed(document, d, BASE).items.map((i) => i.permalink)).toEqual([
+    expect(checkDescriptor(document, d, { baseUrl: BASE }).items.map((i) => i.permalink)).toEqual([
       'https://x.example/watch?v=a',
       'https://x.example/watch?v=b',
       'https://x.example/watch?v=c',
@@ -136,7 +138,9 @@ describe('links', () => {
     expect(site.permalinkIgnore).toEqual(['pp']);
     expect(withIgnore(site, [])).toEqual(feed);
     expect(withIgnore(d, ['pp']).permalinkIgnore).toBeUndefined();
-    expect(checkFeed(document, site, BASE).items.map((i) => i.permalink)).toEqual([
+    expect(
+      checkDescriptor(document, site, { baseUrl: BASE }).items.map((i) => i.permalink),
+    ).toEqual([
       'https://x.example/watch?v=a',
       'https://x.example/watch?v=b',
       'https://x.example/watch?v=c',
