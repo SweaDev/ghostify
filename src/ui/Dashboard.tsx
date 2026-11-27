@@ -222,6 +222,7 @@ function Feed() {
     text: filters.semantic ? undefined : filters.text,
     host: filters.host || undefined,
     tag: filters.tag,
+    kind: filters.kind,
   });
   const sort = settings?.ui.sort;
   const semanticOn = !!(settings?.ai.enabled && filters.semantic && filters.text.trim());
@@ -229,14 +230,14 @@ function Feed() {
   useEffect(() => {
     if (!semanticOn) return setSemantic(undefined);
     let live = true;
-    const q = { state: tab, host: filters.host || undefined, tag: filters.tag };
+    const q = { state: tab, host: filters.host || undefined, tag: filters.tag, kind: filters.kind };
     void sendMessage('searchSemantic', { query: filters.text, filters: q }).then((r) => {
       if (live) setSemantic(r);
     });
     return () => {
       live = false;
     };
-  }, [semanticOn, filters.text, filters.host, filters.tag, tab]);
+  }, [semanticOn, filters.text, filters.host, filters.tag, filters.kind, tab]);
   const onTag = (tag: string) => setSearch((f) => ({ ...f, tag: f.tag === tag ? undefined : tag }));
   const hosts = useHosts();
   const found = semanticOn ? semantic?.items : keywordItems;
@@ -246,7 +247,7 @@ function Feed() {
     () => found && sort && sortItems(found, sort, { text: filters.text, ranked }),
     [found, sort, filters.text, ranked],
   );
-  const filtering = !!(filters.text || filters.host || filters.tag);
+  const filtering = !!(filters.text || filters.host || filters.tag || filters.kind);
   // Read by key, so the viewer stays open when its item leaves the filtered list (e.g. moved to Later).
   const listed = items?.find((i) => i.key === openKey);
   const live = useLiveQuery(() => (openKey ? db.items.get(openKey) : undefined), [openKey]);
