@@ -4,7 +4,7 @@ Spec: `specs/SPEC-v2.md`. Plan: `specs/PLAN-v2.md`. feedgrab tasks: `../feedgrab
 
 ## Phase 7: Content kinds (v1.10.0)
 
-- [ ] T42: Install feedgrab 0.7.0
+- [x] T42: Install feedgrab 0.7.0
   Refs: specs/PLAN-v2.md L35-41; specs/PLAN-v2.md L43-44
   Files: package.json, bun.lock
   Depends: feedgrab T51 (v0.7.0 released; v0.6.0 is tagged without a release, E3)
