@@ -56,6 +56,47 @@ describe('draft cleaning', () => {
     expect(cleanDraft({ ...draft, feedId: 'f'.repeat(500) }).feedId).toHaveLength(200);
     expect('feedId' in cleanDraft(draft)).toBe(false);
   });
+
+  it('keeps only valid kinds, dates, http(s) media and images, and bounded html', () => {
+    const d = cleanDraft({
+      ...draft,
+      kind: 'video',
+      publishedAt: '2026-01-02T00:00:00.000Z',
+      images: [
+        { src: 'javascript:x' },
+        { src: 'https://i.test/a.jpg', alt: 'a', width: -3, height: 200 },
+        ...Array.from({ length: 20 }, (_, i) => ({ src: `https://i.test/${i}.jpg` })),
+      ],
+      media: {
+        kind: 'video',
+        url: 'data:video/mp4,AA',
+        embedUrl: 'https://www.youtube-nocookie.com/embed/x',
+        provider: 'youtube',
+        duration: 61.4,
+        width: Number.NaN,
+      },
+      html: '<p>hi</p>',
+    });
+    expect(d.kind).toBe('video');
+    expect(d.publishedAt).toBe('2026-01-02T00:00:00.000Z');
+    expect(d.images?.[0]).toEqual({ src: 'https://i.test/a.jpg', alt: 'a', height: 200 });
+    expect(d.images?.length).toBeLessThanOrEqual(8);
+    expect(d.media).toEqual({
+      kind: 'video',
+      embedUrl: 'https://www.youtube-nocookie.com/embed/x',
+      provider: 'youtube',
+      duration: 61,
+    });
+    expect(d.html).toBe('<p>hi</p>');
+    const odd = cleanDraft({
+      ...draft,
+      kind: 'podcast' as never,
+      publishedAt: 'yesterday',
+      media: { kind: 'game' as never },
+      html: 'x'.repeat(30_000),
+    });
+    expect(['kind', 'publishedAt', 'media', 'html'].filter((k) => k in odd)).toEqual([]);
+  });
 });
 
 describe('site import validation', () => {
