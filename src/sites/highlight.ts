@@ -1,10 +1,10 @@
-/** Box styles for highlighted page elements. */
+/**
+ * Box styles for the "Ghostified" veil (Ghostify's own UX; page outlines while grabbing use
+ * feedgrab's highlighter). Unlike feedgrab's, it draws without layout too, so tests can see it.
+ */
 export const HIGHLIGHT_CSS = `
 .hl-layer { position: fixed; inset: 0; pointer-events: none; z-index: 2147483646; }
 .hl { position: fixed; box-sizing: border-box; border-radius: 6px; }
-.hl.sample { outline: 3px solid #7c5cff; background: rgba(124, 92, 255, 0.08); }
-.hl.part { outline: 2px solid #3b82f6; background: rgba(59, 130, 246, 0.15); }
-.hl.off { outline: 2px dashed #ef4444; background: rgba(239, 68, 68, 0.06); }
 .hl.ghost {
   outline: 1px dashed rgba(124, 92, 255, 0.8); background: rgba(124, 92, 255, 0.12);
   backdrop-filter: blur(6px) saturate(0.6); -webkit-backdrop-filter: blur(6px) saturate(0.6);
@@ -16,7 +16,7 @@ export const HIGHLIGHT_CSS = `
 }
 `;
 
-export type HighlightKind = 'sample' | 'part' | 'off' | 'ghost';
+export type HighlightKind = 'ghost';
 
 export interface HighlightTarget {
   el: Element;
