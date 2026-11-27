@@ -1,16 +1,19 @@
-import type { FeedDescriptor, ItemStructure, StructurePart } from 'feedgrab';
+import {
+  type FeedDescriptor,
+  type ItemStructure,
+  partText,
+  type StructurePart,
+  structureCoverage,
+} from 'feedgrab';
 import { isPageCustomized } from '@/src/sites/builtin';
 import { DEVTO_SITE } from '@/src/sites/defaults';
 import {
-  countMatching,
   defaultReference,
-  partText,
   sameStructure,
   startingParts,
   suggestParts,
   withStructure,
 } from '@/src/sites/structure';
-import { chooseStructure } from '@/src/sites/structure-chooser';
 
 const feed: FeedDescriptor = {
   id: 'f',
@@ -57,8 +60,8 @@ describe('structure helpers', () => {
       label: 'time',
     });
     expect(parts.find((p) => p.label === 'image')?.required).toBe(false);
-    expect(countMatching(items, { parts })).toBe(6);
-    expect(countMatching(items)).toBe(8);
+    expect(structureCoverage(items, { parts })).toBe(6);
+    expect(structureCoverage(items)).toBe(8);
     // The first post with the time and the most optional parts (the photo) is post 1.
     expect(defaultReference(items, time)).toBe(2);
     expect(defaultReference(items.slice(3), time)).toBe(1);
@@ -94,76 +97,5 @@ describe('structure helpers', () => {
       },
     };
     expect(isPageCustomized(shaped, entry)).toBe(true);
-  });
-});
-
-describe('chooseStructure', () => {
-  afterEach(() => {
-    for (const n of document.querySelectorAll('[data-ghostify-chooser]')) n.remove();
-    document.body.innerHTML = '';
-  });
-
-  const open = () => {
-    const items = page();
-    const parts = suggestParts(items, 2);
-    const p = chooseStructure(document, [{ descriptor: feed, items, reference: 2, parts }]);
-    const root = document.querySelector('[data-ghostify-chooser]')?.shadowRoot as ShadowRoot;
-    const $ = <T extends Element>(s: string) => root.querySelector(s) as T;
-    return { p, parts, root, $ };
-  };
-
-  it('shows the parts with coverage, counts matches and outlines items without them', async () => {
-    const { p, parts, root, $ } = open();
-    expect($('.matches').textContent).toBe('6 of 8 items have every required part.');
-    expect(root.querySelectorAll('.hl.off').length).toBe(2);
-    expect(root.querySelectorAll('.hl.sample').length).toBe(1);
-    const image = $<HTMLInputElement>('input[aria-label="Require image img.thumb"]');
-    expect(image.checked).toBe(false);
-    expect(image.closest('label')?.textContent).toContain('“photo 1”in 3 of 8 posts');
-
-    // Requiring the photo leaves only half the posts; hovering it outlines it in the sample post.
-    image.checked = true;
-    image.dispatchEvent(new Event('change'));
-    expect($('.matches').textContent).toBe('3 of 8 items have every required part.');
-    image.closest('label')?.dispatchEvent(new Event('mouseenter'));
-    expect(root.querySelectorAll('.hl.part').length).toBe(1);
-
-    $<HTMLButtonElement>('.next').click();
-    const out = await p;
-    expect(out?.f?.parts).toEqual(
-      parts.map((x) => (x.label === 'image' ? { ...x, required: true } : x)),
-    );
-    expect(document.querySelector('[data-ghostify-chooser]')).toBeNull();
-  });
-
-  it('warns when nothing matches, suggests again and resolves null on cancel', async () => {
-    const { p, root, $ } = open();
-    for (const box of root.querySelectorAll<HTMLInputElement>('input[type=checkbox]')) {
-      box.checked = true;
-      box.dispatchEvent(new Event('change'));
-    }
-    // Every part, the photo too: posts 1, 3 and 5.
-    expect($('.matches').textContent).toBe('3 of 8 items have every required part.');
-    for (const box of root.querySelectorAll<HTMLInputElement>('input[type=checkbox]')) {
-      box.checked = false;
-      box.dispatchEvent(new Event('change'));
-    }
-    expect($('.matches').textContent).toBe(
-      'No part is required, so the button shows on all 8 items.',
-    );
-    $<HTMLButtonElement>('.again').click();
-    expect($('.matches').textContent).toBe('6 of 8 items have every required part.');
-    $<HTMLButtonElement>('.cancel').click();
-    expect(await p).toBeNull();
-  });
-
-  it('warns when no item has every required part', () => {
-    const items = page();
-    const parts = [{ selector: { type: 'css' as const, value: '.nope' }, required: true }];
-    chooseStructure(document, [{ descriptor: feed, items, reference: 2, parts }]);
-    const root = document.querySelector('[data-ghostify-chooser]')?.shadowRoot as ShadowRoot;
-    const m = root.querySelector('.matches');
-    expect(m?.className).toBe('matches warn');
-    expect(m?.textContent).toMatch(/^No item has every required part/);
   });
 });
