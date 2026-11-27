@@ -28,6 +28,30 @@ describe('applyPageEdit', () => {
     expect(feed).toMatchObject({ source: 'manual', confirmed: true });
   });
 
+  it('saves the content type and field rules, checks their selectors, and clears them', () => {
+    const d = pageDraft(entry);
+    const [first] = d.feeds;
+    if (!first) throw new Error('no feed');
+    expect(first.content?.type).toBe('post');
+    d.feeds[0] = {
+      ...first,
+      content: { type: 'video', fields: { title: { selector: { type: 'css', value: ' h2 a ' } } } },
+    };
+    const feed = applyPageEdit(site, top, d).profiles[top]?.profile.feeds[0];
+    expect(feed?.content).toEqual({
+      type: 'video',
+      fields: { title: { selector: { type: 'css', value: 'h2 a' } } },
+    });
+    d.feeds[0] = {
+      ...first,
+      content: { type: 'post', fields: { author: { selector: { type: 'css', value: '[[' } } } },
+    };
+    expect(() => applyPageEdit(site, top, d)).toThrow(/author field selector/);
+    const { content: _, ...plain } = first;
+    d.feeds[0] = plain;
+    expect(applyPageEdit(site, top, d).profiles[top]?.profile.feeds[0]?.content).toBeUndefined();
+  });
+
   it('keeps feed ids when selectors are unchanged', () => {
     const next = applyPageEdit(site, top, pageDraft(entry)).profiles[top];
     expect(next?.profile.feeds.map((f) => f.id)).toEqual(entry.profile.feeds.map((f) => f.id));
