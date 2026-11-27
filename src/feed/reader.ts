@@ -1,27 +1,61 @@
 /** Reader view: used by extension pages (dashboard), never by content scripts. */
-import { Readability } from '@mozilla/readability';
+
+import type { PageDescription } from 'feedgrab';
+import { extractArticle } from 'feedgrab/article';
+import { describePage } from 'feedgrab/page';
 import { browser } from 'wxt/browser';
-import { type ContentRow, db } from '../store/db';
+import { type ContentRow, db, type GhostItem } from '../store/db';
 import { sanitizeHtml } from '../ui/sanitize';
 
 export type Readable = Pick<ContentRow, 'title' | 'byline' | 'siteName' | 'html' | 'text'>;
 
-/** The main content of a page (Readability), sanitized, with links made absolute. */
-export function parseReadable(html: string, url: string): Readable | undefined {
+/** An item page as Ghostify uses it: the article (sanitized) and what feedgrab says about the page. */
+export interface ParsedPage {
+  article?: Readable;
+  page: PageDescription;
+}
+
+/** Parses a fetched item page with feedgrab: the main article (sanitized) and the page's facts. */
+export function parsePage(html: string, url: string): ParsedPage {
   const doc = new DOMParser().parseFromString(html, 'text/html');
   const base = doc.createElement('base');
   base.href = url;
   doc.head.prepend(base);
-  const article = new Readability(doc).parse();
-  if (!article?.content) return undefined;
-  const clean = sanitizeHtml(article.content);
+  const page = describePage(doc, url);
+  const a = extractArticle(doc);
+  if (!a?.html) return { page };
   return {
-    title: article.title?.trim() || doc.title,
-    byline: article.byline?.trim() || undefined,
-    siteName: article.siteName?.trim() || undefined,
-    html: clean,
-    text: (article.textContent ?? '').replace(/\n{3,}/g, '\n\n').trim(),
+    page,
+    article: {
+      title: a.title || page.title || doc.title,
+      byline: a.byline,
+      siteName: a.siteName ?? page.siteName,
+      html: sanitizeHtml(a.html),
+      text: a.text,
+    },
   };
+}
+
+const PLAYABLE = new Set(['video', 'audio', 'pdf']);
+
+/**
+ * What the item's page adds to the item: its player or file when the item is media without one,
+ * and the author, date and image when the item has none. The item's kind never changes.
+ */
+export function pageFacts(item: GhostItem, page: PageDescription): Partial<GhostItem> {
+  const patch: Partial<GhostItem> = {};
+  const kind = item.kind ?? 'post';
+  const playable = item.media?.url || item.media?.embedUrl;
+  if (PLAYABLE.has(kind) && !playable && page.media && page.media.kind === kind) {
+    patch.media = { ...page.media, ...item.media, kind: page.media.kind };
+    if (page.media.url) patch.media.url = page.media.url;
+    if (page.media.embedUrl) patch.media.embedUrl = page.media.embedUrl;
+  }
+  if (!item.author && page.author) patch.author = page.author;
+  if (!item.publishedAt && page.publishedAt) patch.publishedAt = page.publishedAt;
+  const image = page.media?.poster ?? page.images[0]?.src;
+  if (!item.image && image) patch.image = image;
+  return patch;
 }
 
 /** Origin pattern for a host permission request (`https://dev.to/*`). */
@@ -64,12 +98,15 @@ async function readCapped(res: Response, max: number): Promise<string> {
   return new TextDecoder().decode(all);
 }
 
-/** Fetches an item's page, extracts its content and stores it (keeping AI notes made before). */
+/**
+ * Fetches an item's page, stores its article (keeping AI notes made before) and fills in what the
+ * page tells about the item (see `pageFacts`).
+ */
 export async function grabContent(
   key: string,
   url: string,
   fetcher: typeof fetch = fetch,
-): Promise<ContentRow> {
+): Promise<ContentRow | undefined> {
   if (!/^https?:$/.test(new URL(url).protocol)) throw new Error('Only web pages can be loaded');
   // Cookies are sent so pages you are logged in to load; only origins you granted are reachable.
   const res = await fetcher(url, {
@@ -82,11 +119,18 @@ export async function grabContent(
   const type = res.headers.get('content-type') ?? '';
   if (type && !/^text\/|xhtml/i.test(type))
     throw new Error(`Not a web page (${type.split(';')[0]})`);
-  const readable = parseReadable(await readCapped(res, MAX_PAGE_BYTES), res.url || url);
-  if (!readable) throw new Error('No readable content found on the page');
-  return db.transaction('rw', db.contents, async () => {
+  const { article, page } = parsePage(await readCapped(res, MAX_PAGE_BYTES), res.url || url);
+  return db.transaction('rw', db.contents, db.items, async () => {
+    const item = await db.items.get(key);
+    const facts = item ? pageFacts(item, page) : {};
+    if (item && Object.keys(facts).length)
+      await db.items.update(key, { ...facts, updatedAt: Date.now() });
+    if (!article) {
+      if (Object.keys(facts).length) return db.contents.get(key);
+      throw new Error('No readable content found on the page');
+    }
     const old = await db.contents.get(key);
-    const row: ContentRow = { ...old, ...readable, key, url, fetchedAt: Date.now() };
+    const row: ContentRow = { ...old, ...article, key, url, fetchedAt: Date.now() };
     await db.contents.put(row);
     return row;
   });
