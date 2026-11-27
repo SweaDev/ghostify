@@ -1,4 +1,5 @@
 import { Dexie, type EntityTable } from 'dexie';
+import type { ContentKind, ImageInfo, MediaInfo } from 'feedgrab';
 import type { View } from '../sites/model';
 
 export type ItemState = 'ghost' | 'later' | 'snoozed';
@@ -18,6 +19,16 @@ export interface GhostItem {
   excerpt: string;
   image?: string;
   author?: string;
+  /** feedgrab content kind; unset means `post` (items from before 1.10.0). */
+  kind?: ContentKind;
+  /** ISO 8601 publication date, when the item states one. */
+  publishedAt?: string;
+  /** The item's images (feedgrab), at most 8. */
+  images?: ImageInfo[];
+  /** Playable attributes of a video, audio or PDF item (feedgrab); media is never downloaded. */
+  media?: MediaInfo;
+  /** In-feed content HTML of a post or image (feedgrab-cleaned); sanitize before rendering. */
+  html?: string;
   state: ItemState;
   snoozeUntil?: number;
   returnedAt?: number;
@@ -30,7 +41,21 @@ export interface GhostItem {
 
 /** What a content script knows about an item when it ghostifies it. */
 export type GhostDraft = Pick<GhostItem, 'id' | 'host' | 'siteId' | 'view' | 'title' | 'excerpt'> &
-  Partial<Pick<GhostItem, 'feedId' | 'url' | 'image' | 'author' | 'auto'>>;
+  Partial<
+    Pick<
+      GhostItem,
+      | 'feedId'
+      | 'url'
+      | 'image'
+      | 'author'
+      | 'auto'
+      | 'kind'
+      | 'publishedAt'
+      | 'images'
+      | 'media'
+      | 'html'
+    >
+  >;
 
 export interface Embedding {
   key: string;
@@ -150,3 +175,6 @@ db.version(7).stores({
   items: 'key, state, host, createdAt, snoozeUntil, *tags, [state+createdAt]',
 });
 db.version(8).stores({ samples: 'key, siteId' });
+db.version(9).stores({
+  items: 'key, state, host, createdAt, snoozeUntil, *tags, [state+createdAt], kind',
+});
