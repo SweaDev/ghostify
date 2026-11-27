@@ -3,8 +3,6 @@ import {
   type FeedItem,
   findReferenceItem,
   type ItemStructure,
-  matchSelector,
-  matchStructure,
   type StructurePart,
   suggestStructure,
 } from 'feedgrab';
@@ -64,35 +62,4 @@ export function suggestParts(items: Element[], reference: number): StructurePart
     required: p.required,
     ...(p.label && { label: p.label }),
   }));
-}
-
-/** How many of `items` have every required part (all of them without a structure). */
-export function countMatching(items: Element[], structure?: ItemStructure): number {
-  if (!hasRequired(structure)) return items.length;
-  return items.filter((el) => matchStructure(el, structure as ItemStructure).ok).length;
-}
-
-/** How many of `items` have `part`. */
-export const partCoverage = (items: Element[], part: StructurePart) =>
-  countMatching(items, { parts: [{ ...part, required: true }] });
-
-/** The part's first element in `item`, or null (also for an invalid selector). */
-export function partElement(item: Element, part: StructurePart): Element | null {
-  try {
-    return matchSelector(item.ownerDocument, part.selector, { root: item }).elements[0] ?? null;
-  } catch {
-    return null;
-  }
-}
-
-/** Short text of the part in `item`: its text, `alt` or `aria-label`. */
-export function partText(item: Element, part: StructurePart): string {
-  const el = partElement(item, part);
-  if (!el) return '';
-  const text =
-    el.textContent?.replace(/\s+/g, ' ').trim() ||
-    el.getAttribute('alt') ||
-    el.getAttribute('aria-label') ||
-    '';
-  return text.length > 60 ? `${text.slice(0, 60)}…` : text;
 }
