@@ -11,7 +11,10 @@ const BUILTIN_FEEDS = new Map(
   DEFAULT_SITES.flatMap((s) => s.profiles.flatMap((e) => e.profile.feeds)).map((f) => [f.id, f]),
 );
 
-/** Updates the selectors of built-in feeds to the shipped ones (sites change their markup). */
+/**
+ * Updates the selectors of built-in feeds to the shipped ones (sites change their markup), and
+ * gives them the shipped content rules unless the user set their own.
+ */
 function refreshBuiltin(site: Site): Site {
   if (!site.builtin) return site;
   const profiles = site.profiles.map((e) => ({
@@ -20,7 +23,9 @@ function refreshBuiltin(site: Site): Site {
       ...e.profile,
       feeds: e.profile.feeds.map((f) => {
         const d = BUILTIN_FEEDS.get(f.id);
-        return d ? { ...f, container: d.container, item: d.item } : f;
+        if (!d) return f;
+        const content = f.content ?? d.content;
+        return { ...f, container: d.container, item: d.item, ...(content && { content }) };
       }),
     },
   }));
