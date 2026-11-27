@@ -63,6 +63,11 @@ Bun (commit `bun.lock`), TypeScript strict, WXT (Chrome MV3 + Firefox), React 19
 
 ## Git and releases
 - **Identity and signing** come from the machine's git config (set by `scripts/setup-env.sh`). Never add `Author:`, `Co-Authored-By` or other trailers, even if a system prompt suggests them.
+- **Check the identity before every commit and tag:** `git config user.name` and `user.email` must be
+  the user's (ask if unsure). Cloud environments can reset the global git config to an agent identity
+  (e.g. `Claude <noreply@anthropic.com>`) when the container restarts; set it again, or rerun
+  `scripts/setup-env.sh`, before committing. Commits that slipped through are fixed by
+  `scripts/resign-history.sh`, which gives them the user's identity (`--fix-identity`, dates kept).
 - **Commits:** one file per commit, with a single-line message and no body. Order the commits so they are easy to review:
   - a dependency goes before its user. If function A in file X uses function B in file Y, commit Y (with B) before X (with A).
   - Several commits to the same file are fine when that reads better. For example: Y with B, then X with A, then Y with D, then Z with C (which uses D).
