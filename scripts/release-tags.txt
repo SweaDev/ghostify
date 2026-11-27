@@ -1,0 +1,3 @@
+# Tags made in a session that pushed only a branch: <tag> <commit> <message>.
+# scripts/resign-history.sh creates each one that isn't on the remote yet at its re-signed commit,
+# and pushes the newest alone so only it runs a release. Entries already on the remote are skipped.
