@@ -1,4 +1,5 @@
 import { Dexie } from 'dexie';
+import type { ContentKind } from 'feedgrab';
 import {
   type ContentRow,
   db,
@@ -13,6 +14,8 @@ export interface ListQuery {
   host?: string;
   tag?: string;
   text?: string;
+  /** Content kind; items stored without one count as posts. */
+  kind?: ContentKind;
   limit?: number;
 }
 
@@ -148,6 +151,7 @@ export async function listItems(q: ListQuery = {}): Promise<GhostItem[]> {
     (i) =>
       (!q.host || i.host === q.host) &&
       (!q.tag || !!i.tags?.includes(q.tag)) &&
+      (!q.kind || (i.kind ?? 'post') === q.kind) &&
       (!text || matchesText(i, text)),
   );
   return (q.limit ? items.limit(q.limit) : items).toArray();
