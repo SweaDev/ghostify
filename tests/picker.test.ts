@@ -3,7 +3,6 @@ import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { handlers } from '@/src/background/handlers';
 import { DEVTO_SITE } from '@/src/sites/defaults';
 import { existingProfile, findSite, mergePicked } from '@/src/sites/picker';
-import { chooseView } from '@/src/sites/view-chooser';
 
 const profile = (host: string, pathPattern: string): SiteProfile => ({
   version: 1,
@@ -84,39 +83,34 @@ describe('picker merge', () => {
   });
 });
 
-describe('view chooser', () => {
-  const root = () => document.querySelector('[data-ghostify-chooser]')?.shadowRoot as ShadowRoot;
-
-  it('resolves the chosen view with a picked indicator', async () => {
-    const p = chooseView(document, { pickIndicator: async () => '#avatar' });
-    const loggedIn = root().querySelector('input[value=loggedIn]') as HTMLInputElement;
-    loggedIn.checked = true;
-    loggedIn.dispatchEvent(new Event('change'));
-    (root().querySelector('.pick') as HTMLButtonElement).click();
-    await vi.waitFor(() => expect(root().querySelector('.sel')?.textContent).toContain('#avatar'));
-    (root().querySelector('.save') as HTMLButtonElement).click();
-    expect(await p).toEqual({
-      view: 'loggedIn',
-      indicator: { selector: '#avatar', whenPresent: 'loggedIn' },
-    });
-    expect(document.querySelector('[data-ghostify-chooser]')).toBeNull();
-  });
-
-  it('resolves null on cancel', async () => {
-    const p = chooseView(document);
-    (root().querySelector('.cancel') as HTMLButtonElement).click();
-    expect(await p).toBeNull();
-  });
-});
-
 describe('addSite handler', () => {
-  it('injects the picker script into the tab', async () => {
+  it('gives the tab a one-time grab token, then injects the picker script', async () => {
     const executeScript = vi.fn(async () => []);
     Object.assign(fakeBrowser, { scripting: { executeScript } });
     await handlers.addSite({ tabId: 7 });
-    expect(executeScript).toHaveBeenCalledWith({
+    const token = (await fakeBrowser.storage.session.get('grab:7'))['grab:7'];
+    expect(token).toMatch(/^[0-9a-f-]{36}$/);
+    expect(executeScript).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ target: { tabId: 7 }, args: [{ token, tabId: 7 }] }),
+    );
+    expect(executeScript).toHaveBeenNthCalledWith(2, {
       target: { tabId: 7 },
       files: ['/content-scripts/picker.js'],
     });
+  });
+
+  it('opens the panel window only for the tab that holds the token', async () => {
+    const create = vi.spyOn(fakeBrowser.windows, 'create').mockResolvedValue({} as never);
+    await fakeBrowser.storage.session.set({ 'grab:7': 'secret' });
+    await handlers.openGrabWindow({ token: 'wrong', tabId: 7 });
+    expect(create).not.toHaveBeenCalled();
+    await handlers.openGrabWindow({ token: 'secret', tabId: 7 });
+    expect(create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'popup',
+        url: expect.stringContaining('grab-window.html?tab=7&token=secret'),
+      }),
+    );
   });
 });
