@@ -18,6 +18,7 @@ export const CONTENT_MESSAGES = new Set<keyof ProtocolMap>([
   'llm',
   'samplesNeeded',
   'saveSample',
+  'openGrabWindow',
 ]);
 
 const MAX = {
@@ -160,6 +161,12 @@ export function guard<K extends keyof ProtocolMap>(
   }
   if (type === 'unghost' && !(data as { key: string }).key?.startsWith(`${host}:`))
     deny('host mismatch');
+  if (type === 'openGrabWindow') {
+    const tabId = (sender.tab as { id?: number } | undefined)?.id;
+    const token = (data as { token?: unknown }).token;
+    if (typeof tabId !== 'number' || typeof token !== 'string') deny('bad grab window request');
+    return { token, tabId } as never;
+  }
   if (type === 'samplesNeeded' || type === 'saveSample') {
     const d = data as {
       siteId: unknown;
