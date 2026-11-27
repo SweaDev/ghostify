@@ -6,7 +6,9 @@ import {
   type Selector,
   type SiteProfile,
   suggestPermalinkParams,
+  suggestPermalinks,
 } from 'feedgrab';
+import { poolAround } from './structure';
 
 export const NO_SELECTOR: Selector = { type: 'css', value: '' };
 
@@ -114,6 +116,12 @@ export const linkParams = (items: FeedItem[], d: FeedDescriptor, baseUrl: string
     baseUrl,
     d.permalink,
   );
+
+/** feedgrab's ranked post links of sample post `reference`. */
+export const linkOptions = (items: Element[], reference: number, base: string) => {
+  const ref = items[reference];
+  return ref ? suggestPermalinks(poolAround(items, reference), base, { reference: ref }) : [];
+};
 
 /** Index of the candidate whose selector equals `sel`, or -1. */
 export const optionIndex = (options: PermalinkCandidate[], sel: Selector) =>
