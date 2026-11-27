@@ -45,7 +45,7 @@ Spec: `specs/SPEC-v2.md`. Plan: `specs/PLAN-v2.md`. feedgrab tasks: `../feedgrab
 - [x] T50: (done in T42: feedgrab 0.7.0 is installed in Phase 7, E3)
 - [x] T51: Grab protocol and page agent — Refs: specs/PLAN-v2.md L33.
 - [x] T52: Grab panel page (Feeds, Content, Save; advanced options folded) — Refs: specs/SPEC-v2.md L10-15.
-- [ ] T53: Dock and pop-out window — Refs: specs/SPEC-v2.md L15; specs/PLAN-v2.md L33.
+- [x] T53: Dock and pop-out window — Refs: specs/SPEC-v2.md L15; specs/PLAN-v2.md L33.
 - [ ] T54: Settings → Sites content type and fields — Refs: specs/SPEC-v2.md L17.
 - [ ] T55: Remove the old choosers; docs and version 1.12.0
 
