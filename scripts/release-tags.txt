@@ -2,3 +2,4 @@
 # scripts/resign-history.sh creates each one that isn't on the remote yet at its re-signed commit,
 # and pushes the newest alone so only it runs a release. Entries already on the remote are skipped.
 v1.10.0 4dd055b5ca8ba357cfcd1b51091d31106ee3bf0d v1.10.0: ghosts know their kind (post, image, video, audio, pdf) with playable attributes; kind badge and filter; extraction from feedgrab 0.7
+v1.11.0 f866df7c7109077d4580eff03a5f0789e0d61269 v1.11.0: viewers by kind (players, Play on site, image lightbox, PDF, in-feed content) and local thumbnails
