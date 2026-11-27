@@ -1,8 +1,6 @@
 import {
   type FeedDescriptor,
   type FeedItem,
-  matchSelector,
-  openFeed,
   type PermalinkCandidate,
   type PermalinkParam,
   type Selector,
