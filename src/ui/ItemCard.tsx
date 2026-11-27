@@ -1,8 +1,9 @@
 import { Eye } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { GhostItem } from '../store/db';
-import { timeAgo } from './format';
+import { duration, timeAgo } from './format';
 import { GhostIcon } from './GhostIcon';
+import { KIND_INFO } from './kinds';
 import { Tags } from './Tags';
 
 export interface ItemCardProps {
@@ -33,6 +34,19 @@ export function IconButton(props: { label: string; onClick(): void; children: Re
   );
 }
 
+/** Kind badge (not for posts) and duration chip, over the card's thumbnail. */
+function KindBadge({ item }: { item: GhostItem }) {
+  const kind = item.kind && item.kind !== 'post' ? KIND_INFO[item.kind] : undefined;
+  const secs = item.media?.duration;
+  if (!kind && !secs) return null;
+  return (
+    <span className="pointer-events-none absolute right-1 bottom-1 inline-flex items-center gap-0.5 rounded-md bg-zinc-900/75 px-1 py-0.5 font-medium text-[10px] text-white leading-none backdrop-blur-sm">
+      {kind && <kind.Icon className="size-3" aria-label={kind.label} />}
+      {secs ? <span>{duration(secs)}</span> : null}
+    </span>
+  );
+}
+
 export function ItemCard(props: ItemCardProps) {
   const { item, compact, actions, note, onUnghost, onOpen } = props;
   const thumb = compact ? 'size-12' : 'size-16 sm:h-[72px] sm:w-28';
@@ -51,13 +65,14 @@ export function ItemCard(props: ItemCardProps) {
         aria-label="Show details"
         disabled={!onOpen}
         onClick={() => onOpen?.(item)}
-        className={`${thumb} shrink-0 overflow-hidden rounded-lg bg-gradient-to-br from-ghost-100 to-ghost-200 enabled:cursor-zoom-in dark:from-ghost-900 dark:to-zinc-800`}
+        className={`${thumb} relative shrink-0 overflow-hidden rounded-lg bg-gradient-to-br from-ghost-100 to-ghost-200 enabled:cursor-zoom-in dark:from-ghost-900 dark:to-zinc-800`}
       >
         {item.image ? (
           <img src={item.image} alt="" loading="lazy" className="size-full object-cover" />
         ) : (
           <GhostIcon className="size-full p-2.5 drop-shadow-sm transition group-hover:-rotate-6 group-hover:scale-110" />
         )}
+        <KindBadge item={item} />
       </button>
       <div className="min-w-0 flex-1 basis-0">
         {onOpen ? (
