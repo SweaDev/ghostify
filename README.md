@@ -3,8 +3,9 @@
 Ghostify is a browser extension (Chrome and Firefox) for feeds that keep showing you the same posts, or posts you probably want to deal with later. Hover a post, click the ghost, and it disappears from the site's feed. Ghostify keeps a copy so you can find them again later, snooze them, read later, run AI models on them, and many more interesting features are coming up!
 
 ## Updates
-Latest: [**v1.10.0**](https://github.com/SweaDev/ghostify/tree/v1.10.0) ([release](https://github.com/SweaDev/ghostify/releases/tag/v1.10.0))
+Latest: [**v1.11.0**](https://github.com/SweaDev/ghostify/tree/v1.11.0) ([release](https://github.com/SweaDev/ghostify/releases/tag/v1.11.0))
 
+- Watch, listen to, view or read each ghost in the viewer, and keep small local thumbnails (v1.11).
 - Every ghost knows whether it's a post, image, video, audio or PDF; cards show the kind and a video's length, and you can filter by kind (v1.10).
 - Ignore a query parameter (like YouTube's `pp`) on every page of a site, and update already Ghostified posts to match (v1.9).
 - Back up your Ghostified posts, or take full snapshots and restore one in one click; the picker's panels can be dragged out of the way, and ghostified posts show blurred while you edit selectors (v1.8).
@@ -32,9 +33,10 @@ See [CHANGELOG.md](CHANGELOG.md) for every release.
   - **Snoozed** holds posts that come back later.
 - **Snooze** a post until later today, tomorrow, the weekend, next week, or a date you choose. The post stays hidden on the site, and when the time is up it shows in **Back from snooze** at the top of Ghostified.
 - **Every ghost knows what it is**: a post, image, video, audio or PDF, recognized by [feedgrab](https://github.com/SweaDev/feedgrab). Cards show the kind and a video's or episode's length, and Ghostify keeps what's needed to play or view it later (the player link, poster and duration), never the media itself.
+- **Thumbnails**: in **Settings → Sites**, allow Ghostify to fetch a site's images once and it keeps a small copy (up to 64 KB) of each item's image, so cards still show when the site's image links expire. Videos, audio and PDFs are never downloaded.
 - **Search** your ghosts by keyword and **filter** them by site or kind. **Sort** them by date ghostified or relevance (to the search; by date without one), descending, ascending or random (**Shuffle again** reshuffles); the choice is remembered. Long lists load 50 at a time (**Show more**), and **Unghostify** on the Ghostify page has an **Undo**.
 - **The viewer** opens when you click a post's title, thumbnail or excerpt. It has three tabs:
-  - **Overview**: the summary, tags and excerpt.
+  - **Overview**: the post itself the way its kind is best seen (a player for videos and audio, the image large, the PDF in your browser's viewer, or the cover and the post's text as it was in the feed), plus the summary and tags. Players from sites that refuse to play inside Ghostify offer **Play on site**, which opens the original in a small window.
   - **Reader**: **Load full content** fetches the post and shows its main text inside Ghostify, without the site's ads and menus (the first time, you're asked to allow access to that site). **Reload** fetches it again.
   - **Ask AI**: **Summarize** the full content, or ask your own questions about it. Answers stream in as they're written, and each one can be paused, resumed or stopped.
 
