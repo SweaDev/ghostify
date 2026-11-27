@@ -21,7 +21,7 @@ import { ReaderView } from './ReaderView';
 import { Tags } from './Tags';
 import { useContent } from './useContent';
 import { useDialogFocus } from './useDialogFocus';
-import { InFeedContent, MediaView } from './viewers/MediaView';
+import { type Finder, InFeedContent, MediaView } from './viewers/MediaView';
 
 export type ViewerTab = 'overview' | 'reader' | 'ask';
 const TABS: { key: ViewerTab; label: string; icon: ComponentType<{ className?: string }> }[] = [
@@ -46,6 +46,7 @@ function ToolButton(props: { label: string; onClick(): void; children: ReactNode
 
 function Overview(props: {
   item: GhostItem;
+  finder?: Finder;
   actions?: ReactNode;
   onTag?(tag: string): void;
   onRegenerate?(): void;
@@ -53,7 +54,7 @@ function Overview(props: {
   const { item } = props;
   return (
     <>
-      <MediaView item={item} />
+      <MediaView item={item} finder={props.finder} />
       <div className="flex flex-col gap-3 p-5">
         <h2 className="font-semibold text-xl leading-snug">{item.title}</h2>
         <p className="text-sm text-zinc-500 dark:text-zinc-400">
@@ -217,6 +218,7 @@ export function ItemDetail(props: {
       {tab === 'overview' && (
         <Overview
           item={item}
+          finder={{ find: grab.grab, busy: grab.busy, error: grab.error }}
           actions={props.actions}
           onTag={props.onTag}
           onRegenerate={props.onRegenerate}
