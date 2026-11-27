@@ -55,15 +55,15 @@ describe('viewers', () => {
           kind: 'video',
           media: {
             kind: 'video',
-            provider: 'youtube',
-            providerId: 'x',
-            embedUrl: 'https://www.youtube-nocookie.com/embed/x',
+            provider: 'vimeo',
+            providerId: '76979871',
+            embedUrl: 'https://player.vimeo.com/video/76979871',
           },
         })}
       />,
     );
     const frame = container.querySelector('iframe');
-    expect(frame?.getAttribute('src')).toBe('https://www.youtube-nocookie.com/embed/x');
+    expect(frame?.getAttribute('src')).toBe('https://player.vimeo.com/video/76979871');
     expect(frame?.getAttribute('allow')).toContain('fullscreen');
     expect(screen.queryByText(/didn't load/)).toBeNull();
     act(() => vi.advanceTimersByTime(EMBED_TIMEOUT_MS + 1));
@@ -150,5 +150,48 @@ describe('viewers', () => {
     expect(container.innerHTML).not.toContain('script');
     expect(container.innerHTML).not.toContain('onclick');
     expect(container.querySelector('.reader a')?.getAttribute('target')).toBe('_blank');
+  });
+
+  it('offers to find a missing player on the page, only when there is none', async () => {
+    const find = vi.fn(async () => true);
+    const finder = { find, busy: false };
+    const none = render(<MediaView item={item({ kind: 'video' })} finder={finder} />);
+    fireEvent.click(screen.getByText('Find the player on the page'));
+    expect(find).toHaveBeenCalledTimes(1);
+    none.unmount();
+    render(
+      <MediaView
+        item={item({ kind: 'video', media: { kind: 'video', url: 'https://cdn.test/a.mp4' } })}
+        finder={finder}
+      />,
+    );
+    expect(screen.queryByText('Find the player on the page')).toBeNull();
+    cleanup();
+    render(<MediaView item={item({ kind: 'audio', url: undefined })} finder={finder} />);
+    expect(screen.queryByText('Find the player on the page')).toBeNull();
+  });
+
+  it('plays YouTube on its site instead of a player that refuses extension pages', () => {
+    const create = vi.spyOn(fakeBrowser.windows, 'create').mockResolvedValue({} as never);
+    const { container } = render(
+      <MediaView
+        item={item({
+          kind: 'video',
+          media: {
+            kind: 'video',
+            provider: 'youtube',
+            embedUrl: 'https://www.youtube-nocookie.com/embed/x',
+            poster: 'https://i.test/p.jpg',
+          },
+        })}
+        finder={{ find: async () => true, busy: false }}
+      />,
+    );
+    expect(container.querySelector('iframe')).toBeNull();
+    expect(container.querySelector('img')?.getAttribute('src')).toBe('https://i.test/p.jpg');
+    expect(screen.getByText(/Plays on YouTube/)).toBeTruthy();
+    expect(screen.queryByText('Find the player on the page')).toBeNull();
+    fireEvent.click(screen.getByLabelText('Play on site'));
+    expect(create).toHaveBeenCalledWith(expect.objectContaining({ type: 'popup' }));
   });
 });
