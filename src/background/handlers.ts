@@ -16,6 +16,7 @@ import { deleteModel, downloadModel } from './browser-models';
 import { guard } from './guard';
 import { backfill, reindex } from './indexer';
 import { afterGhostify, ask, digest, embedKey, enrich, forget, searchSemantic } from './jobs';
+import { makeThumb } from './thumbs';
 
 const JOB = { pause: pauseJob, resume: resumeJob, stop: stopJob };
 const ALL = { pause: pauseAll, resume: resumeAll, stop: stopAll };
@@ -49,12 +50,16 @@ export const handlers: Handlers = {
   ghostify: async (draft) => {
     const item = await ghostify(draft);
     void afterGhostify(item.key);
+    void makeThumb(item.key);
     return item;
   },
   unghost: ({ key }) => unghost(key),
   autoGhostify: async (draft) => {
     const item = await autoGhostify(draft);
-    if (item) void afterGhostify(item.key);
+    if (item) {
+      void afterGhostify(item.key);
+      void makeThumb(item.key);
+    }
     return item;
   },
   setState: ({ key, state, snoozeUntil }) => setState(key, state, snoozeUntil),
