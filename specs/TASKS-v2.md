@@ -4,11 +4,11 @@ Spec: `specs/SPEC-v2.md`. Plan: `specs/PLAN-v2.md`. feedgrab tasks: `../feedgrab
 
 ## Phase 7: Content kinds (v1.10.0)
 
-- [ ] T42: Install feedgrab 0.6.0
+- [ ] T42: Install feedgrab 0.7.0
   Refs: specs/PLAN-v2.md L35-41; specs/PLAN-v2.md L43-44
   Files: package.json, bun.lock
-  Depends: feedgrab T46 (v0.6.0 released)
-  Done: `package.json` points at the v0.6.0 release tarball; `bun install --frozen-lockfile` and `bun run check` pass.
+  Depends: feedgrab T51 (v0.7.0 released; v0.6.0 is tagged without a release, E3)
+  Done: `package.json` points at the v0.7.0 release tarball; `bun install --frozen-lockfile` and `bun run check` pass.
 
 - [x] T43: Content kinds in the data model and extraction
   Refs: specs/SPEC-v2.md L7-8; specs/PLAN-v2.md L5-20; specs/PLAN-v2.md L24-27
@@ -42,7 +42,7 @@ Spec: `specs/SPEC-v2.md`. Plan: `specs/PLAN-v2.md`. feedgrab tasks: `../feedgrab
 
 ## Phase 9: Grab panel (v1.12.0)
 
-- [ ] T50: Install feedgrab 0.7.0 — Depends: feedgrab T51.
+- [ ] T50: (done in T42: feedgrab 0.7.0 is installed in Phase 7, E3)
 - [ ] T51: Grab protocol and page agent — Refs: specs/PLAN-v2.md L33.
 - [ ] T52: Grab panel page (Feeds, Content, Save; advanced options folded) — Refs: specs/SPEC-v2.md L10-15.
 - [ ] T53: Dock and pop-out window — Refs: specs/SPEC-v2.md L15; specs/PLAN-v2.md L33.
