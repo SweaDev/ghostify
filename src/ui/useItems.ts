@@ -4,7 +4,7 @@ import { countByState, type ListQuery, listHosts, listItems } from '../store/ite
 
 /** Live list of items (updates when any context writes to the DB). `undefined` while loading. */
 export function useItems(q: ListQuery): GhostItem[] | undefined {
-  return useLiveQuery(() => listItems(q), [q.state, q.host, q.tag, q.text, q.limit]);
+  return useLiveQuery(() => listItems(q), [q.state, q.host, q.tag, q.kind, q.text, q.limit]);
 }
 
 export function useCounts() {
