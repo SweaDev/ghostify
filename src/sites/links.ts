@@ -132,39 +132,6 @@ export function optionLabel(o: PermalinkCandidate, base: string): string {
   return o.text ? `${where} · ${o.text}` : where;
 }
 
-/** What a feed descriptor finds in a document. */
-export interface FeedCheck {
-  items: FeedItem[];
-  /** Items in which the post-link selector (if any) finds a link. */
-  linkHits: number;
-}
-
-function selectorFindsLink(item: Element, sel: Selector): boolean {
-  try {
-    const el = matchSelector(item.ownerDocument, sel, { root: item }).elements[0];
-    return !!el && !!(el.closest('a[href]') ?? el.querySelector('a[href]'));
-  } catch {
-    return false;
-  }
-}
-
-/** Runs `d` on `doc` the way the feed runtime does (no live updates), e.g. on a saved sample. */
-export function checkFeed(doc: Document, d: FeedDescriptor, baseUrl: string): FeedCheck {
-  let items: FeedItem[] = [];
-  try {
-    const feed = openFeed(
-      doc,
-      { version: 1, hostname: new URL(baseUrl).hostname, pathPattern: '/', feeds: [d] },
-      { live: false, builtinExclusions: false, baseUrl },
-    );
-    items = feed.items();
-    feed.dispose();
-  } catch {}
-  const sel = d.permalink;
-  const linkHits = sel ? items.filter((i) => selectorFindsLink(i.element, sel)).length : 0;
-  return { items, linkHits };
-}
-
 type LegacyLinks = Record<string, { selector?: Selector } | undefined>;
 
 /** Ghostify 1.4.6 kept post links beside the profile; they now live on feedgrab descriptors. */
