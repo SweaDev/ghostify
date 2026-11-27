@@ -1,6 +1,12 @@
 import { CURRENT_PROFILE_VERSION, type FeedDescriptor, type SiteProfile } from 'feedgrab';
 import { pageKey, type Site } from './model';
 
+/** dev.to posts: the author link has a site-specific class feedgrab's heuristics can't know. */
+const DEVTO_CONTENT: FeedDescriptor['content'] = {
+  type: 'post',
+  fields: { author: { selector: { type: 'css', value: '.crayons-story__secondary' } } },
+};
+
 const DEVTO_FEEDS: FeedDescriptor[] = [
   {
     id: 'devto-stories',
@@ -13,6 +19,7 @@ const DEVTO_FEEDS: FeedDescriptor[] = [
     source: 'manual',
     confidence: 1,
     confirmed: true,
+    content: DEVTO_CONTENT,
   },
   {
     id: 'devto-featured',
@@ -23,6 +30,7 @@ const DEVTO_FEEDS: FeedDescriptor[] = [
     source: 'manual',
     confidence: 1,
     confirmed: true,
+    content: DEVTO_CONTENT,
   },
 ];
 
@@ -40,6 +48,7 @@ const DEVTO_LOGGED_IN_FEEDS: FeedDescriptor[] = [
     source: 'manual',
     confidence: 1,
     confirmed: true,
+    content: DEVTO_CONTENT,
   },
 ];
 
