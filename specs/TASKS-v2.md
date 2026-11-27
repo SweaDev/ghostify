@@ -10,7 +10,7 @@ Spec: `specs/SPEC-v2.md`. Plan: `specs/PLAN-v2.md`. feedgrab tasks: `../feedgrab
   Depends: feedgrab T46 (v0.6.0 released)
   Done: `package.json` points at the v0.6.0 release tarball; `bun install --frozen-lockfile` and `bun run check` pass.
 
-- [ ] T43: Content kinds in the data model and extraction
+- [x] T43: Content kinds in the data model and extraction
   Refs: specs/SPEC-v2.md L7-8; specs/PLAN-v2.md L5-20; specs/PLAN-v2.md L24-27
   Files: src/store/db.ts, src/feed/extract.ts, src/sites/defaults.ts, src/background/guard.ts, src/store/items.ts, src/messaging.ts, tests/extract.test.ts, tests/guard.test.ts, tests/items.test.ts
   Depends: T42
