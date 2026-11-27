@@ -3,8 +3,9 @@
 Ghostify is a browser extension (Chrome and Firefox) for feeds that keep showing you the same posts, or posts you probably want to deal with later. Hover a post, click the ghost, and it disappears from the site's feed. Ghostify keeps a copy so you can find them again later, snooze them, read later, run AI models on them, and many more interesting features are coming up!
 
 ## Updates
-Latest: [**v1.11.0**](https://github.com/SweaDev/ghostify/tree/v1.11.0) ([release](https://github.com/SweaDev/ghostify/releases/tag/v1.11.0))
+Latest: [**v1.12.0**](https://github.com/SweaDev/ghostify/tree/v1.12.0) ([release](https://github.com/SweaDev/ghostify/releases/tag/v1.12.0))
 
+- A new Grab panel adds sites in three tidy steps, shows what each feed holds and lets you pick any attribute; dock it or open it in its own window (v1.12).
 - Watch, listen to, view or read each ghost in the viewer, and keep small local thumbnails (v1.11).
 - Every ghost knows whether it's a post, image, video, audio or PDF; cards show the kind and a video's length, and you can filter by kind (v1.10).
 - Ignore a query parameter (like YouTube's `pp`) on every page of a site, and update already Ghostified posts to match (v1.9).
@@ -41,18 +42,16 @@ See [CHANGELOG.md](CHANGELOG.md) for every release.
   - **Ask AI**: **Summarize** the full content, or ask your own questions about it. Answers stream in as they're written, and each one can be paused, resumed or stopped.
 
   Toolbar buttons open the original post in a new tab or a new window, open the viewer as its own page (which you can also move to a new window), or widen the panel. The popup can open Ghostify in a new window.
-- **Add any site.** On a page with a feed, open the popup and click **Add this site**. Ghostify asks for access to that site only, and then:
-  1. [feedgrab](https://github.com/SweaDev/feedgrab) proposes the feeds on the page, and its overlay lets you confirm them, pick containers and items, or type CSS/XPath selectors. **Feed N** scrolls to that feed's first post.
-  2. You step to a typical **sample post** (the first item can be an ad or a heading), then choose which of its links opens a post, and which of the link's query parameters identify the post. Untick tracking or analytics ones (like YouTube's `pp` in `watch?pp=…&v=…`) so the same post is recognised every time. An unticked parameter is ignored on **every page of the site**; tick **Only this feed** to give one feed its own choice instead.
-  3. You choose the **post structure**: the parts of the sample post every post has (time link, text, action buttons, …). Ghostify suggests which are required and which optional (a thumbnail only some posts have), shows how many items match and outlines the rest. The ghost button only appears on items with every required part, so ads and headings that share the item selector are skipped. When you edit a site again, the sample post starts at the first post with that structure.
-  4. You choose which page paths the feeds apply to.
-  5. You choose whether they're for the **logged-in**, the **logged-out** or **any** view. For a specific view, you can pick an element that only shows in it (for example your avatar), so Ghostify can tell the views apart.
+- **Add any site.** On a page with a feed, open the popup and click **Add this site**. Ghostify asks for access to that site only, and opens the **Grab panel**, docked at the side of the page. It follows your light or dark theme, keeps advanced options folded away until you open them, and has three steps:
+  1. **Feeds**: [feedgrab](https://github.com/SweaDev/feedgrab) finds the feeds on the page and tells what each holds (posts, images, videos, audio, PDFs or mixed), with outlines on the page. Tick the ones to keep, or **Pick on the page** to point at one. *Advanced*: container and item selectors (CSS/XPath) and rules to skip items (selectors or plain-language AI rules).
+  2. **Content**: the feed's type (detected, or set it yourself) and a typical **sample item** (step past ads and headings), with a preview of how it will look in Ghostify and each attribute feedgrab found: title, text, author, date, image, and for media the player, file, poster and length, each with how many items have it. **Pick** any attribute on the page to change where it comes from. *Advanced*: selectors and attribute sources for each attribute, the post link and which of its query parameters identify a post (for the whole site, or **Only this feed**), and the post structure (parts every post has; the ghost button skips items without them, like ads).
+  3. **Save**: the pages the feeds apply to (`*` one path segment, `**` any) and the view (**any**, **logged in** or **logged out**, with an element only that view shows), and whether to keep small thumbnails.
 
-  **Edit selectors** in the popup reopens the overlay on a site you already added. While the picker is open, ghostified posts show blurred with a **Ghostified** label, so a feed you've fully ghostified can still be found. Drag a panel by its header (or move it with the arrow keys) when it covers a post, or collapse it; it opens where you last left it on that site.
+  Dock the panel to the left, right or bottom (drag its edge to resize; Ghostify remembers it), or **open it in its own window**, like the browser's developer tools; the outlines stay on the page. **Edit selectors** in the popup reopens the panel on a site you already added. While it's open, ghostified posts show blurred with a **Ghostified** label, so a feed you've fully ghostified can still be found.
 - **Settings → Sites** lists your sites with a search box, and each site opens on its own page (with a breadcrumb back to the list). It lets you:
   - turn sites on or off and delete the ones you added;
   - list and edit the **ignored query parameters** of the whole site, and see which feeds have their own choice;
-  - see and edit each page's path pattern, view, selectors, post link with its query parameters (the site's choice, or **Only this feed**), and post structure (required and optional parts, or suggested from the saved sample); edits are checked against a saved sample of each feed, and edited built-in selectors are kept over Ghostify's updates;
+  - see and edit each page's path pattern, view, selectors, content type and attribute selectors (checked against the saved sample), post link with its query parameters (the site's choice, or **Only this feed**), and post structure (required and optional parts, or suggested from the saved sample); edits are checked against a saved sample of each feed, and edited built-in selectors are kept over Ghostify's updates;
   - restore a built-in site, or one edited built-in page, to how Ghostify ships it;
   - edit the login indicator;
   - export and import your sites as JSON.
