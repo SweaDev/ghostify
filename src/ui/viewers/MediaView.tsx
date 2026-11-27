@@ -1,4 +1,4 @@
-import { ExternalLink, FileText, Play, X } from 'lucide-react';
+import { ExternalLink, FileText, Loader2, Play, Search, X } from 'lucide-react';
 import { type ReactNode, useEffect, useState } from 'react';
 import { browser } from 'wxt/browser';
 import type { GhostItem } from '../../store/db';
@@ -6,8 +6,47 @@ import { duration } from '../format';
 import { btn } from '../kit';
 import { sanitizeHtml } from '../sanitize';
 
+/**
+ * Providers whose players refuse to play inside extension pages (YouTube answers "Error 153"
+ * without a web page's referrer), so Ghostify shows the poster and plays them on the site.
+ */
+const NO_EXTENSION_EMBED = new Set(['youtube']);
+
+const PROVIDER_NAME: Record<string, string> = {
+  youtube: 'YouTube',
+  vimeo: 'Vimeo',
+  dailymotion: 'Dailymotion',
+  spotify: 'Spotify',
+  soundcloud: 'SoundCloud',
+};
+
 /** A provider player that hasn't loaded after this long gets the "Play on site" hint. */
 export const EMBED_TIMEOUT_MS = 6000;
+
+/** Loads the item's page to find what the feed didn't show (its player); resolves true on success. */
+export interface Finder {
+  find(): Promise<boolean>;
+  busy: boolean;
+  error?: string;
+}
+
+function FindPlayer({ finder }: { finder?: Finder }) {
+  if (!finder) return null;
+  return (
+    <span className="flex flex-col items-center gap-1">
+      <button
+        type="button"
+        className={btn}
+        disabled={finder.busy}
+        onClick={() => void finder.find()}
+      >
+        {finder.busy ? <Loader2 className="size-4 animate-spin" /> : <Search className="size-4" />}
+        Find the player on the page
+      </button>
+      {finder.error && <span className="text-rose-300 text-xs">{finder.error}</span>}
+    </span>
+  );
+}
 
 /** Opens the original in a small popup window: for players that refuse to play inside Ghostify. */
 export function playOnSite(url: string): void {
@@ -58,12 +97,12 @@ function EmbedFrame(props: { src: string; title: string; height?: number; fallba
 function MediaBar({ item }: { item: GhostItem }) {
   const m = item.media;
   const facts = [
-    m?.provider && m.provider !== 'file' ? m.provider : undefined,
+    m?.provider && m.provider !== 'file' ? (PROVIDER_NAME[m.provider] ?? m.provider) : undefined,
     m?.duration ? duration(m.duration) : undefined,
   ].filter(Boolean);
   return (
     <div className="flex flex-wrap items-center gap-2 px-5 pt-3 text-xs text-zinc-500 dark:text-zinc-400">
-      {facts.length > 0 && <span className="capitalize">{facts.join(' · ')}</span>}
+      {facts.length > 0 && <span>{facts.join(' · ')}</span>}
       <span className="ml-auto">
         <PlayOnSite url={item.url ?? m?.url} />
       </span>
@@ -71,7 +110,7 @@ function MediaBar({ item }: { item: GhostItem }) {
   );
 }
 
-function VideoView({ item }: { item: GhostItem }) {
+function VideoView({ item, finder }: { item: GhostItem; finder?: Finder }) {
   const m = item.media;
   const poster = m?.poster ?? item.image;
   const [failed, setFailed] = useState(false);
@@ -88,7 +127,7 @@ function VideoView({ item }: { item: GhostItem }) {
         className="aspect-video w-full bg-black"
       />
     );
-  } else if (m?.embedUrl) {
+  } else if (m?.embedUrl && !NO_EXTENSION_EMBED.has(m.provider ?? '')) {
     player = (
       <EmbedFrame
         key={m.embedUrl}
@@ -101,15 +140,24 @@ function VideoView({ item }: { item: GhostItem }) {
     player = (
       <div className="relative aspect-video w-full bg-zinc-900">
         {poster && <img src={poster} alt="" className="size-full object-cover opacity-70" />}
-        <button
-          type="button"
-          aria-label="Play on site"
-          disabled={!item.url}
-          onClick={() => item.url && playOnSite(item.url)}
-          className="absolute inset-0 m-auto flex size-16 items-center justify-center rounded-full bg-white/90 text-zinc-900 shadow-lg transition hover:scale-105"
-        >
-          <Play className="size-7" />
-        </button>
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
+          <button
+            type="button"
+            aria-label="Play on site"
+            disabled={!item.url}
+            onClick={() => item.url && playOnSite(item.url)}
+            className="flex size-16 items-center justify-center rounded-full bg-white/90 text-zinc-900 shadow-lg transition hover:scale-105"
+          >
+            <Play className="size-7" />
+          </button>
+          {m?.embedUrl ? (
+            <span className="rounded-full bg-zinc-900/70 px-3 py-1 text-white text-xs">
+              Plays on {m.provider === 'youtube' ? 'YouTube' : 'its site'} in a small window
+            </span>
+          ) : (
+            <FindPlayer finder={finder} />
+          )}
+        </div>
       </div>
     );
   }
@@ -123,7 +171,7 @@ function VideoView({ item }: { item: GhostItem }) {
 
 const EMBED_HEIGHT: Record<string, number> = { spotify: 152, soundcloud: 166 };
 
-function AudioView({ item }: { item: GhostItem }) {
+function AudioView({ item, finder }: { item: GhostItem; finder?: Finder }) {
   const m = item.media;
   const cover = m?.poster ?? item.image;
   return (
@@ -145,7 +193,10 @@ function AudioView({ item }: { item: GhostItem }) {
               fallbackUrl={item.url}
             />
           ) : (
-            <PlayOnSite url={item.url} label="Listen on site" />
+            <span className="flex flex-wrap items-center gap-2">
+              <PlayOnSite url={item.url} label="Listen on site" />
+              <FindPlayer finder={finder} />
+            </span>
           )}
         </div>
       </div>
@@ -244,12 +295,12 @@ function ImageView({ item }: { item: GhostItem }) {
 }
 
 /** The item itself, the way its kind is best seen: a player, a picture, a PDF or a cover image. */
-export function MediaView({ item }: { item: GhostItem }) {
+export function MediaView({ item, finder }: { item: GhostItem; finder?: Finder }) {
   switch (item.kind) {
     case 'video':
-      return <VideoView item={item} />;
+      return <VideoView item={item} finder={item.url ? finder : undefined} />;
     case 'audio':
-      return <AudioView item={item} />;
+      return <AudioView item={item} finder={item.url ? finder : undefined} />;
     case 'pdf':
       return <PdfView item={item} />;
     case 'image':
