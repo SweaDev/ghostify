@@ -1,4 +1,6 @@
+import { checkDescriptor, type FeedDescriptor } from 'feedgrab';
 import { extractItem } from '@/src/feed/extract';
+import { DEVTO_SITE } from '@/src/sites/defaults';
 import { devtoDoc } from './devto-fixture';
 
 const ctx = {
@@ -8,48 +10,80 @@ const ctx = {
   baseUrl: 'https://dev.to/',
 };
 
+const feed = (container: string, item: string): FeedDescriptor => ({
+  id: 'f',
+  container: { type: 'css', value: container },
+  item: { type: 'css', value: item },
+  exclude: [],
+  include: [],
+  source: 'manual',
+  confidence: 1,
+  confirmed: true,
+});
+
+function itemsOf(html: string, d: FeedDescriptor) {
+  const doc = document.implementation.createHTMLDocument('t');
+  doc.body.innerHTML = html;
+  return checkDescriptor(doc, d, { baseUrl: 'https://site.test/' }).items;
+}
+
 describe('extractItem', () => {
-  it('extracts dev.to stories', () => {
+  it('maps a dev.to story through feedgrab content and the built-in field rules', () => {
     const doc = devtoDoc();
-    const stories = [...doc.querySelectorAll('#substories > .crayons-story')];
-    expect(stories).toHaveLength(3);
-    const el = stories[0] as Element;
-    const permalink = 'https://dev.to/user/post';
-    const d = extractItem(
-      { id: 'x', element: el, text: () => el.textContent ?? '', permalink },
-      ctx,
+    const d = DEVTO_SITE.profiles[0]!.profile.feeds.find((f) => f.id === 'devto-stories')!;
+    const [item] = checkDescriptor(doc, d, { baseUrl: 'https://dev.to/' }).items;
+    const el = item!.element;
+    const draft = extractItem(item!, ctx);
+    expect(draft.title).toBe(el.querySelector('h2')?.textContent?.trim());
+    expect(draft.url).toMatch(/^https:\/\/dev\.to\//);
+    expect(draft.image).toMatch(/^https:\/\/media2\.dev\.to\//);
+    expect(draft.image).not.toMatch(/profile_image/);
+    expect(draft.author).toBe(el.querySelector('.crayons-story__secondary')?.textContent?.trim());
+    expect(draft.excerpt).not.toContain('Follow');
+    expect(draft.kind).toBe('post');
+    expect(draft.html).toBeTypeOf('string');
+    expect(draft).toMatchObject({
+      id: item!.id,
+      host: 'dev.to',
+      siteId: 'devto',
+      view: 'loggedOut',
+    });
+  });
+
+  it('falls back to the text for untitled items and keeps only http(s) links', () => {
+    const [item] = itemsOf(
+      '<ul><li>just some words without a heading <img class="avatar" src="/a.png"></li><li>x</li></ul>',
+      feed('ul', ':scope > li'),
     );
-    expect(d.title).toBe(el.querySelector('h2')?.textContent?.trim());
-    expect(d.url).toBe(permalink);
-    expect(d.image).toMatch(/^https:\/\/media2\.dev\.to\//);
-    expect(d.image).not.toMatch(/profile_image/);
-    expect(d.author?.length).toBeGreaterThan(1);
-    expect(d.excerpt).toBe(el.querySelector('p')?.textContent?.trim());
-    expect(d.excerpt).not.toContain('Follow');
-    expect(d).toMatchObject({ id: 'x', host: 'dev.to', siteId: 'devto', view: 'loggedOut' });
-  });
-
-  it('falls back for bare items', () => {
-    const doc = document.implementation.createHTMLDocument('t');
-    doc.body.innerHTML =
-      '<li><a href="/p/1">Hello world, this is a post</a> <img class="avatar" src="/a.png"></li>';
-    const el = doc.querySelector('li') as Element;
-    const d = extractItem({ id: 'y', element: el, text: () => el.textContent ?? '' }, ctx);
-    expect(d.title).toBe('Hello world, this is a post');
+    const d = extractItem(item!, ctx);
+    expect(d.title).toBe('just some words without a heading');
     expect(d.url).toBeUndefined();
-    const bad = { id: 'y', element: el, text: () => '', permalink: 'javascript:alert(1)' };
-    expect(extractItem(bad, ctx).url).toBeUndefined();
     expect(d.image).toBeUndefined();
-    expect(d.excerpt).toBe('');
+    const bad = {
+      ...item!,
+      id: item!.id,
+      text: item!.text,
+      content: item!.content,
+      permalink: 'javascript:alert(1)',
+    };
+    expect(extractItem(bad, ctx).url).toBeUndefined();
   });
 
-  it('strips chrome from items without paragraphs', () => {
-    const doc = document.implementation.createHTMLDocument('t');
-    doc.body.innerHTML =
-      '<div><h3>Title</h3><span class="author">Ann</span><button>Follow</button><span>Real words here</span><time>Oct 1</time></div>';
-    const el = doc.querySelector('div') as Element;
-    const d = extractItem({ id: 'z', element: el, text: () => el.textContent ?? '' }, ctx);
-    expect(d.excerpt).toBe('Real words here');
-    expect(d.author).toBe('Ann');
+  it('keeps playable attributes of a video and its poster as the image', () => {
+    const [item] = itemsOf(
+      `<div class="g"><div class="v"><a href="https://www.youtube.com/watch?v=abcDEF12345"><img src="/t.jpg" width="320"><span>4:05</span></a><h3>Clip</h3></div></div>`,
+      feed('.g', ':scope > .v'),
+    );
+    const d = extractItem(item!, ctx);
+    expect(d.kind).toBe('video');
+    expect(d.media).toMatchObject({
+      kind: 'video',
+      provider: 'youtube',
+      providerId: 'abcDEF12345',
+      poster: 'https://site.test/t.jpg',
+      duration: 245,
+    });
+    expect(d.image).toBe('https://site.test/t.jpg');
+    expect(d.html).toBeUndefined();
   });
 });
