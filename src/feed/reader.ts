@@ -1,8 +1,8 @@
 /** Reader view: used by extension pages (dashboard), never by content scripts. */
 import { Readability } from '@mozilla/readability';
-import DOMPurify from 'dompurify';
 import { browser } from 'wxt/browser';
 import { type ContentRow, db } from '../store/db';
+import { sanitizeHtml } from '../ui/sanitize';
 
 export type Readable = Pick<ContentRow, 'title' | 'byline' | 'siteName' | 'html' | 'text'>;
 
@@ -14,17 +14,7 @@ export function parseReadable(html: string, url: string): Readable | undefined {
   doc.head.prepend(base);
   const article = new Readability(doc).parse();
   if (!article?.content) return undefined;
-  const purify = DOMPurify(window);
-  purify.addHook('afterSanitizeAttributes', (node) => {
-    if (node.tagName === 'A' && node.getAttribute('href')) {
-      node.setAttribute('target', '_blank');
-      node.setAttribute('rel', 'noreferrer');
-    }
-  });
-  const clean = purify.sanitize(article.content, {
-    FORBID_TAGS: ['style', 'form', 'input', 'button', 'iframe'],
-    FORBID_ATTR: ['style'],
-  });
+  const clean = sanitizeHtml(article.content);
   return {
     title: article.title?.trim() || doc.title,
     byline: article.byline?.trim() || undefined,
