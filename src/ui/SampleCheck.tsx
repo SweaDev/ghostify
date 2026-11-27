@@ -1,7 +1,7 @@
-import type { FeedDescriptor } from 'feedgrab';
+import { checkDescriptor, type FeedDescriptor } from 'feedgrab';
 import { useEffect, useMemo, useState } from 'react';
 import { extractItem } from '../feed/extract';
-import { checkFeed, samePostLink } from '../sites/links';
+import { samePostLink } from '../sites/links';
 import { defaultReference, hasRequired, offStructure, sameStructure } from '../sites/structure';
 import type { SampleRow } from '../store/db';
 import { getSamples } from '../store/samples';
@@ -64,8 +64,8 @@ export function SampleStatus(props: {
     );
   const { row, doc } = sample;
   const date = new Date(row.capturedAt).toLocaleDateString();
-  const total = checkFeed(doc, saved, row.url).items.length;
-  const check = checkFeed(doc, draft, row.url);
+  const total = checkDescriptor(doc, saved, { baseUrl: row.url }).items.length;
+  const check = checkDescriptor(doc, draft, { baseUrl: row.url });
   const n = check.items.length;
   const changedLink = !samePostLink(saved, draft);
   // The sample post: the one most like the structure (the post chosen in the picker), else the first.
@@ -99,7 +99,7 @@ export function SampleStatus(props: {
       {n > 0 && !shaped && !sameStructure(saved.structure, draft.structure) && (
         <Line kind="muted">No part is required, so every item gets the button.</Line>
       )}
-      {n > 0 && draft.permalink && check.linkHits === 0 && (
+      {n > 0 && draft.permalink && check.withLink === 0 && (
         <Line kind="warn">
           The post link selector finds no link in the sample, so the automatic link is used.
         </Line>
