@@ -53,4 +53,4 @@ Spec: `specs/SPEC-v2.md`. Plan: `specs/PLAN-v2.md`. feedgrab tasks: `../feedgrab
 
 - [x] T56: Install feedgrab 0.8.0 — Depends: feedgrab T54.
 - [x] T57: Reader and item pages through `feedgrab/page` — Refs: specs/SPEC-v2.md L16.
-- [ ] T58: Docs and version 2.0.0
+- [x] T58: Docs and version 2.0.0
