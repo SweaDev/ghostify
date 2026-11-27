@@ -26,6 +26,14 @@ export default defineConfig({
       ...(browser === 'firefox' ? [] : ['offscreen']),
     ],
     optional_host_permissions: ['*://*/*'],
+    // The Grab panel docks in pages as an iframe of grab.html; Chrome gives it a per-session URL.
+    web_accessible_resources: [
+      {
+        resources: ['grab.html'],
+        matches: ['*://*/*'],
+        ...(browser !== 'firefox' && { use_dynamic_url: true }),
+      },
+    ],
     action: { default_title: 'Ghostify' },
     // No remote code; wasm is allowed for the in-browser models (ONNX Runtime Web).
     content_security_policy: {
