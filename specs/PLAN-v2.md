@@ -35,7 +35,7 @@ interface GhostItem {                                                 // v1 fiel
 ## Releases
 | Tag | Needs feedgrab | Contents |
 |---|---|---|
-| v1.10.0 | v0.6.0 | Data model, extraction via `content()`, kind badge and filter, duplicate code removed |
+| v1.10.0 | v0.7.0 | Data model, extraction via `content()`, kind badge and filter, duplicate code removed |
 | v1.11.0 | v0.6.0 | Viewers and players, thumbnails |
 | v1.12.0 | v0.7.0 | Grab panel (docked and popped out), Settings → Sites content editing |
 | v2.0.0 | v0.8.0 | Item pages through `feedgrab/page`, docs |
@@ -43,3 +43,4 @@ interface GhostItem {                                                 // v1 fiel
 ## Decisions
 - E1: Releases build only from `main`. When a Ghostify tag needs a new feedgrab release and the session isn't pushing to `main`, the agent asks the user to push feedgrab's `main` and tag; meanwhile it develops against a local `npm pack` of feedgrab, never committed.
 - E2: When a feedgrab release is pending, Ghostify's code commits for the slice may land before the `package.json`/`bun.lock` commit that pins the release tarball (they are developed against a local pack). The pin is committed as soon as the release exists, before the version bump and the tag, so every tag still builds.
+- E3: History in both repos is re-signed with the user's key (`scripts/resign-history.sh`). Only the newest pending feedgrab tag (v0.7.0) runs a release; v0.6.0 is moved in a batch with the old tags and gets no release, so Ghostify v1.10.0 pins feedgrab 0.7.0 and Phase 9 needs no separate install task.
