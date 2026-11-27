@@ -25,6 +25,8 @@ export interface ProtocolMap {
   saveSample(data: { siteId: string; feedId: string; url: string; html: string }): void;
   /** Injects the add/edit-site picker into a tab. */
   addSite(data: { tabId: number }): void;
+  /** From the Grab panel's page agent: show the panel in its own window. */
+  openGrabWindow(data: { token: string; tabId?: number }): void;
   /** Tries the model configured for a purpose (AI settings "Test"). */
   checkAi(data: { purpose: Purpose }): CheckResult;
   /** Re-generates an item's summary and tags. */
